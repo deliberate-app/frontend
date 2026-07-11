@@ -4,7 +4,8 @@
  * contentURI and pins the same bytes to IPFS, so content can never drift.
  *
  * Budgets: every persona holds 100 vote tokens and an argument costs 10 -
- * alice authors 6, bob 10, carol 2, and dan 6 arguments.
+ * alice authors 6, bob 10, carol 2, and dan 6 arguments. In the rating phase,
+ * erika and frank join as pure raters, and the authors spend leftover budget.
  */
 
 import type { DebateScript } from '../devstack/debate';
@@ -48,5 +49,25 @@ export const climateDebate: DebateScript = {
     { kind: 'add', user: 'dan', key: 'uncertainty-cuts-both-ways', parent: 'uncertain-projections', side: 'con', approval: 70, text: 'Uncertainty cuts both ways: damages could just as well be far worse than projected.' },
     { kind: 'add', user: 'dan', key: 'off-grid-solar', parent: 'leapfrog', side: 'pro', approval: 65, text: 'Off-grid solar already powers tens of millions of homes across Africa and Asia.' },
     { kind: 'add', user: 'dan', key: 'storage-lags', parent: 'solar-cost-fall', side: 'con', approval: 60, text: "Cheap panels alone don't decarbonize grids; storage and transmission still lag." },
+
+    // Rating: editing ends after seven time units (two have passed), then participants price
+    // the arguments. Trading the thin constant-product markets produces uneven percentages,
+    // and con investments push overrated arguments below 50%.
+    { kind: 'wait', timeUnits: 5 },
+    { kind: 'advancePhase', user: 'erika' },
+    { kind: 'invest', user: 'erika', argument: 'habitability', side: 'pro', amount: 5 },
+    { kind: 'invest', user: 'erika', argument: 'jobs', side: 'pro', amount: 2 },
+    { kind: 'invest', user: 'erika', argument: 'uncertain-projections', side: 'con', amount: 2 },
+    { kind: 'invest', user: 'erika', argument: 'innovation', side: 'con', amount: 3 },
+    { kind: 'invest', user: 'frank', argument: 'innovation', side: 'con', amount: 2 },
+    { kind: 'invest', user: 'frank', argument: 'adapted-before', side: 'con', amount: 4 },
+    { kind: 'invest', user: 'frank', argument: 'displacement', side: 'pro', amount: 7 },
+    { kind: 'invest', user: 'frank', argument: 'free-rider', side: 'con', amount: 1 },
+    { kind: 'invest', user: 'frank', argument: 'fossil-industrialization', side: 'pro', amount: 3 },
+    { kind: 'invest', user: 'alice', argument: 'act-now', side: 'pro', amount: 4 },
+    { kind: 'invest', user: 'carol', argument: 'solar-cost-fall', side: 'pro', amount: 3 },
+    { kind: 'invest', user: 'carol', argument: 'subsidies-drove-it', side: 'pro', amount: 2 },
+    { kind: 'invest', user: 'dan', argument: 'job-losses', side: 'con', amount: 6 },
+    { kind: 'invest', user: 'dan', argument: 'mixed-causes', side: 'con', amount: 7 },
   ],
 };
