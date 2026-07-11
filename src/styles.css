@@ -403,6 +403,17 @@ button {
   white-space: nowrap;
 }
 
+.card-draft {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px dashed var(--bark);
+  color: var(--bark);
+}
+
 /* ── Approval gauge ──────────────────────────────────────────────────── */
 .gauge {
   display: flex;

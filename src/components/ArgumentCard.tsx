@@ -40,6 +40,11 @@ export function ArgumentCard({
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
         <ApprovalGauge approval={node.approval} weight={node.weight} />
+        {node.state === 'created' && (
+          <span className="card-draft" title="Not final yet - still editable, not yet tradeable">
+            draft
+          </span>
+        )}
         <span className="card-replies">
           {replies.length > 0 ? `${replies.join(' · ')} →` : 'No replies yet'}
         </span>

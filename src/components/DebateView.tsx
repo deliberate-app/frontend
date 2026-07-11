@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import type { Debate, Side } from '../types';
-import { ancestryOf, childrenOf, thesisOf } from '../types';
+import { ancestryOf, childrenOf, finalizable, thesisOf } from '../types';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
+import { FinalizePanel } from './FinalizePanel';
 import { InvestPanel } from './InvestPanel';
 import { PositionPanel } from './PositionPanel';
 
@@ -16,6 +17,8 @@ export interface DebateTx {
   position(argumentId: number): Promise<ArgumentPosition>;
   redeem(argumentId: number): Promise<void>;
   claimFees(argumentId: number): Promise<void>;
+  /** Permissionless - available to any connected account, joined or not. */
+  finalize(argumentId: number): Promise<void>;
 }
 
 /**
@@ -72,9 +75,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const cons = childrenOf(debate, focus.id, 'con');
   const isThesis = focus.id === thesis.id;
 
-  const authoring = tx !== null && tx.joined && debate.phase === 'editing';
-  const rating = tx !== null && tx.joined && debate.phase === 'rating' && !isThesis;
+  // Replying requires a final parent, so no composer under a draft focus.
+  const authoring = tx !== null && tx.joined && debate.phase === 'editing' && focus.state === 'final';
+  const rating = tx !== null && tx.joined && debate.phase === 'rating' && !isThesis && focus.state === 'final';
   const finished = tx !== null && debate.phase === 'finished' && !isThesis;
+  const draft = tx !== null && focus.state === 'created' && debate.phase !== 'finished';
 
   return (
     <main className="debate">
@@ -90,6 +95,13 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           <strong className="mono">{Math.round(focus.approval * 100)}%</strong> · weight{' '}
           <strong className="mono">{focus.weight} ⬡</strong>
         </p>
+        {draft && tx && (
+          <FinalizePanel
+            key={focus.id}
+            eligible={finalizable(focus, debate)}
+            onFinalize={() => tx.finalize(focus.id)}
+          />
+        )}
         {rating && tx && (
           <InvestPanel tokens={tx.tokens} onInvest={(side, amount) => tx.invest(focus.id, side, amount)} />
         )}

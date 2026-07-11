@@ -64,6 +64,8 @@ Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi
 - **Rate arguments** during Rating: invest vote tokens into the focused argument's pro or con side.
 - **After the debate**: redeem your shares and claim creator fees from the focused argument.
 
+The contract's **permissionless pokes** are surfaced too, so a debate progresses without scripts — any connected account may trigger them, joined or not. Draft arguments carry a dashed *draft* chip; focusing one offers *Finalize argument* once its editing window has passed. When a phase deadline passes, a poke appears next to the phase chip in the header (*Start rating*, *Start tallying*, and in Tallying *Tally the debate*, which computes the outcome and finishes the debate). The app polls the chain every 30 seconds, so newly opened gates and other participants' moves show up on their own.
+
 Every action is simulated before it is sent, so contract rejections (wrong phase, insufficient tokens, …) surface as readable messages without a signature prompt. The action layer is covered by a lifecycle test that drives a fresh deployment end to end against the local anvil (`just test` with the dev stack running).
 
 ## Design-review screenshots
