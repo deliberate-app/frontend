@@ -40,6 +40,19 @@
   },
   {
     "type": "function",
+    "name": "advancePhase",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "calculateInvestment",
     "inputs": [
       {
@@ -135,6 +148,24 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "finalizeArgument",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -469,5 +500,221 @@
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "tallyTree",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "error",
+    "name": "AddressInvalid",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "actual",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ArgumentLimitReached",
+    "inputs": [
+      {
+        "name": "limit",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ChildsUntallied",
+    "inputs": [
+      {
+        "name": "untalliedChilds",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "DebateUninitialized",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "IdentityProofInvalid",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InitialApprovalOutOfBounds",
+    "inputs": [
+      {
+        "name": "limit",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "actual",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsufficientVoteTokens",
+    "inputs": [
+      {
+        "name": "required",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "actual",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "PhaseExceeded",
+    "inputs": [
+      {
+        "name": "limit",
+        "type": "uint8",
+        "internalType": "enum Phase.Status"
+      },
+      {
+        "name": "actual",
+        "type": "uint8",
+        "internalType": "enum Phase.Status"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "PhaseInvalid",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "uint8",
+        "internalType": "enum Phase.Status"
+      },
+      {
+        "name": "actual",
+        "type": "uint8",
+        "internalType": "enum Phase.Status"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "RoleInvalid",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "uint8",
+        "internalType": "enum User.Role"
+      },
+      {
+        "name": "actual",
+        "type": "uint8",
+        "internalType": "enum User.Role"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "SafeCastOverflowedIntDowncast",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "int256",
+        "internalType": "int256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "SafeCastOverflowedUintDowncast",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "StateInvalid",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "uint8",
+        "internalType": "enum Argument.State"
+      },
+      {
+        "name": "actual",
+        "type": "uint8",
+        "internalType": "enum Argument.State"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ThesisHasNoMarket",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TimeOutOfBounds",
+    "inputs": [
+      {
+        "name": "limit",
+        "type": "uint48",
+        "internalType": "uint48"
+      },
+      {
+        "name": "actual",
+        "type": "uint48",
+        "internalType": "uint48"
+      }
+    ]
   }
 ]

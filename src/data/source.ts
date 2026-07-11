@@ -20,11 +20,14 @@ const PHASE_BY_STATUS: Record<number, Phase> = {
   4: 'finished',
 };
 
+const STATE_CREATED = 1;
+
 interface OnChainArgument {
   contentURI: Hex;
   isSupporting: boolean;
   state: number;
   parentArgumentId: number;
+  finalizationTime: bigint;
   pro: number;
   con: number;
   votes: number;
@@ -56,12 +59,19 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
     async load(debateId: number): Promise<Debate> {
       const id = BigInt(debateId);
 
-      const [currentPhase] = (await client.readContract({
-        address,
-        abi,
-        functionName: 'phases',
-        args: [id],
-      })) as [number, bigint, bigint, bigint];
+      const [[currentPhase, editingEndTime, ratingEndTime], latestBlock] = await Promise.all([
+        client.readContract({
+          address,
+          abi,
+          functionName: 'phases',
+          args: [id],
+        }) as Promise<[number, bigint, bigint, bigint]>,
+        client.getBlock(),
+      ]);
+
+      // The next block's timestamp is at least the head's and at least the wall clock
+      // (idle chains have stale heads; time-warped dev chains run ahead of the wall).
+      const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
 
       // Traverse the debate tree: every argument lies on a path from a leaf to the
       // thesis (id 0), so walking the parent links upward from all leaves visits the
@@ -112,15 +122,26 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                 // the scarcer the pro reserve, the higher the approval.
                 approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
                 weight: argument.votes,
-                state: argument.state,
+                rawState: argument.state,
+                state: argument.state === STATE_CREATED ? ('created' as const) : ('final' as const),
+                finalizationTime: Number(argument.finalizationTime),
               };
             }),
         )
       )
-        .filter((node) => node.state !== 0)
-        .map(({ state: _state, ...node }) => node);
+        .filter((node) => node.rawState !== 0)
+        .map(({ rawState: _rawState, ...node }) => node);
 
-      return { id: debateId, phase: PHASE_BY_STATUS[currentPhase] ?? 'editing', nodes };
+      return {
+        id: debateId,
+        phase: PHASE_BY_STATUS[currentPhase] ?? 'editing',
+        nodes,
+        timing: {
+          editingEndTime: Number(editingEndTime),
+          ratingEndTime: Number(ratingEndTime),
+          chainTime,
+        },
+      };
     },
   };
 }

@@ -53,7 +53,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
     const { abi } = await loadArtifact(CONTRACTS_DIR, 'ArborVote.sol', 'ArborVote');
 
-    // Permissionless plumbing (create/finalize/advance/tally) stays outside the action layer.
+    // Debate creation stays outside the action layer - it is a deployment concern.
     const act = async (account: HDAccount, functionName: string, args: unknown[]) => {
       const { request } = await client.simulateContract({
         account,
@@ -77,6 +77,8 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const config = { address, rpcUrl: RPC_URL };
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
     const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
+    // The keeper never joins: the pokes (finalize/advance/tally) are permissionless.
+    const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
 
     // Join.
     expect((await author.userState(0)).joined).toBe(false);
@@ -87,11 +89,17 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.addArgument(0, 0, 'pro', 80, 'A machine-authored argument');
     expect((await author.userState(0)).tokens).toBe(90);
 
-    // Finalize it and advance into the Rating phase.
+    // Too early for either poke: advancePhase silently no-ops on-chain, so the
+    // action verifies the effect; finalizeArgument reverts, decoded by name.
+    expect((await keeper.userState(0)).joined).toBe(false);
+    await expect(keeper.advancePhase(0)).rejects.toThrow('The debate did not advance');
+    await expect(keeper.finalizeArgument(0, 1)).rejects.toThrow('TimeOutOfBounds');
+
+    // The keeper finalizes it and advances into the Rating phase.
     await warp(timeUnit + 1);
-    await act(deployer, 'finalizeArgument', [0, 1]);
+    await keeper.finalizeArgument(0, 1);
     await warp(7 * timeUnit);
-    await act(deployer, 'advancePhase', [0]);
+    await keeper.advancePhase(0);
 
     // The rater disagrees: 20 tokens on con (fee 1, net 19) buy 8 + 19 - ceil(16/21) = 26 shares.
     await rater.join(0);
@@ -101,10 +109,10 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     expect(raterPosition.proShares).toBe(0);
     expect(raterPosition.claimableFees).toBe(0); // not the creator
 
-    // Finish the debate.
+    // The keeper finishes the debate.
     await warp(10 * timeUnit);
-    await act(deployer, 'advancePhase', [0]);
-    await act(deployer, 'tallyTree', [0]);
+    await keeper.advancePhase(0);
+    await keeper.tallyTree(0);
 
     // The correcting rater profits: 26 shares x 21/22 = 24 tokens back on 20 invested.
     await rater.redeemShares(0, 1);

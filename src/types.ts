@@ -2,6 +2,9 @@ export type Side = 'pro' | 'con';
 
 export type Phase = 'editing' | 'rating' | 'tallying' | 'finished';
 
+/** A created argument is still editable and has no tradeable market yet; a final one is locked in. */
+export type ArgumentState = 'created' | 'final';
+
 /** A node of the debate tree. The thesis is the node with `parentId: null`. */
 export interface ArgumentNode {
   id: number;
@@ -13,12 +16,59 @@ export interface ArgumentNode {
   approval: number;
   /** Vote tokens invested in this argument's market. */
   weight: number;
+  state: ArgumentState;
+  /** Chain time (unix seconds) from which the argument can be finalized; 0 once final. */
+  finalizationTime: number;
+}
+
+/** The debate's on-chain phase clock, in unix seconds. */
+export interface DebateTiming {
+  editingEndTime: number;
+  ratingEndTime: number;
+  /**
+   * Estimate of the next block's timestamp, from the chain head and the local
+   * wall clock. A fast local clock can put it slightly ahead of the chain, so
+   * it only decides what controls to SHOW - the action layer verifies effects
+   * on-chain instead of trusting it.
+   */
+  chainTime: number;
 }
 
 export interface Debate {
   id: number;
   phase: Phase;
   nodes: ArgumentNode[];
+  /** Absent for bundled sample data, which has no chain to poke. */
+  timing?: DebateTiming;
+}
+
+/** A permissionless phase transition that is currently open for anyone to trigger. */
+export interface PhasePoke {
+  /** `advance` maps to `advancePhase`, `tally` to `tallyTree` (the Finished transition). */
+  kind: 'advance' | 'tally';
+  target: Phase;
+}
+
+/** The phase poke currently open on the debate, if any. */
+export function availablePhasePoke(debate: Debate): PhasePoke | null {
+  if (debate.phase === 'tallying') return { kind: 'tally', target: 'finished' };
+  if (!debate.timing) return null;
+  const { chainTime, editingEndTime, ratingEndTime } = debate.timing;
+  const stuckInEditing = debate.phase === 'editing';
+  const stuckInRating = stuckInEditing || debate.phase === 'rating';
+  if (stuckInRating && chainTime > ratingEndTime) return { kind: 'advance', target: 'tallying' };
+  if (stuckInEditing && chainTime > editingEndTime) return { kind: 'advance', target: 'rating' };
+  return null;
+}
+
+/** Whether the permissionless finalize poke is open for this argument. */
+export function finalizable(node: ArgumentNode, debate: Debate): boolean {
+  return (
+    node.state === 'created' &&
+    debate.phase !== 'finished' &&
+    debate.timing !== undefined &&
+    debate.timing.chainTime >= node.finalizationTime
+  );
 }
 
 export function thesisOf(debate: Debate): ArgumentNode {

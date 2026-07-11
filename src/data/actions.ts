@@ -52,6 +52,10 @@ export interface DebateActions {
   invest(debateId: number, argumentId: number, side: Side, amount: number): Promise<void>;
   redeemShares(debateId: number, argumentId: number): Promise<void>;
   claimFees(debateId: number, argumentId: number): Promise<void>;
+  // The permissionless pokes: anyone may push a debate along once its time gates open.
+  finalizeArgument(debateId: number, argumentId: number): Promise<void>;
+  advancePhase(debateId: number): Promise<void>;
+  tallyTree(debateId: number): Promise<void>;
 }
 
 const PARTICIPANT_ROLE = 1;
@@ -87,7 +91,11 @@ export async function connectDebateActions(
       args,
     });
     const hash = await walletClient.writeContract(request);
-    await publicClient.waitForTransactionReceipt({ hash });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    // A mined transaction can still revert when another one beat it in a race.
+    if (receipt.status === 'reverted') {
+      throw new Error('The transaction was mined but reverted - someone else probably got there first.');
+    }
   };
 
   return {
@@ -132,6 +140,22 @@ export async function connectDebateActions(
       write('redeemArgumentShares', [BigInt(debateId), argumentId, account]),
 
     claimFees: (debateId, argumentId) => write('claimFees', [BigInt(debateId), argumentId]),
+
+    finalizeArgument: (debateId, argumentId) => write('finalizeArgument', [BigInt(debateId), argumentId]),
+
+    async advancePhase(debateId) {
+      // Below its time gates the contract silently does nothing instead of
+      // reverting, so a successful receipt alone does not mean progress -
+      // without this check a fast local clock burns gas with no feedback.
+      const phaseOf = async () => (await read<[number]>('phases', [BigInt(debateId)]))[0];
+      const phaseBefore = await phaseOf();
+      await write('advancePhase', [BigInt(debateId)]);
+      if ((await phaseOf()) === phaseBefore) {
+        throw new Error('The debate did not advance: the chain clock has not passed the deadline yet.');
+      }
+    },
+
+    tallyTree: (debateId) => write('tallyTree', [BigInt(debateId)]),
   };
 }
 
