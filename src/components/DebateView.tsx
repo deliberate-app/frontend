@@ -6,7 +6,7 @@ import { ancestryOf, childrenOf, finalizable, thesisOf } from '../types';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
 import { FinalizePanel } from './FinalizePanel';
-import { InvestPanel } from './InvestPanel';
+import { StakePanel } from './StakePanel';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
 
@@ -15,7 +15,7 @@ export interface DebateTx {
   joined: boolean;
   tokens: number;
   addArgument(parentArgumentId: number, side: Side, initialApproval: number, text: string): Promise<void>;
-  invest(argumentId: number, side: Side, amount: number): Promise<void>;
+  stake(argumentId: number, side: Side, amount: number): Promise<void>;
   position(argumentId: number): Promise<ArgumentPosition>;
   redeem(argumentId: number): Promise<void>;
   claimFees(argumentId: number): Promise<void>;
@@ -144,7 +144,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           />
         )}
         {rating && tx && (
-          <InvestPanel tokens={tx.tokens} onInvest={(side, amount) => tx.invest(focus.id, side, amount)} />
+          <StakePanel tokens={tx.tokens} onStake={(side, amount) => tx.stake(focus.id, side, amount)} />
         )}
         {finished && tx && (
           <PositionPanel

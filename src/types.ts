@@ -14,7 +14,7 @@ export interface ArgumentNode {
   text: string;
   /** The argument market's current pro share, 0..1. */
   approval: number;
-  /** Vote tokens invested in this argument's market. */
+  /** Vote tokens staked on this argument's market. */
   weight: number;
   state: ArgumentState;
   /** Chain time (unix seconds) from which the argument can be finalized; 0 once final. */

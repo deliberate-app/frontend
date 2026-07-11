@@ -53,62 +53,6 @@
   },
   {
     "type": "function",
-    "name": "calculateInvestment",
-    "inputs": [
-      {
-        "name": "debateId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "argumentId",
-        "type": "uint16",
-        "internalType": "uint16"
-      },
-      {
-        "name": "isPro",
-        "type": "bool",
-        "internalType": "bool"
-      },
-      {
-        "name": "voteTokenAmount",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "investmentData",
-        "type": "tuple",
-        "internalType": "struct Argument.Investment",
-        "components": [
-          {
-            "name": "isPro",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "voteTokensInvested",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "fee",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "sharesOut",
-            "type": "uint32",
-            "internalType": "uint32"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "claimFees",
     "inputs": [
       {
@@ -368,52 +312,6 @@
   },
   {
     "type": "function",
-    "name": "investInCon",
-    "inputs": [
-      {
-        "name": "debateId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "argumentId",
-        "type": "uint16",
-        "internalType": "uint16"
-      },
-      {
-        "name": "voteTokenAmount",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "investInPro",
-    "inputs": [
-      {
-        "name": "debateId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "argumentId",
-        "type": "uint16",
-        "internalType": "uint16"
-      },
-      {
-        "name": "voteTokenAmount",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "join",
     "inputs": [
       {
@@ -480,6 +378,62 @@
   },
   {
     "type": "function",
+    "name": "quoteStake",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "isPro",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "voteTokenAmount",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "stakeData",
+        "type": "tuple",
+        "internalType": "struct Argument.Stake",
+        "components": [
+          {
+            "name": "isPro",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "voteTokensStaked",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "fee",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "sharesOut",
+            "type": "uint32",
+            "internalType": "uint32"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "redeemArgumentShares",
     "inputs": [
       {
@@ -496,6 +450,52 @@
         "name": "account",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "stakeCon",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "voteTokenAmount",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "stakePro",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "voteTokenAmount",
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "outputs": [],

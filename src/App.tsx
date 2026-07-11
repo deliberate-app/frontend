@@ -141,8 +141,8 @@ export default function App() {
         await actions.addArgument(DEBATE_ID, parentArgumentId, side, initialApproval, text);
         await refresh();
       },
-      invest: async (argumentId, side, amount) => {
-        await actions.invest(DEBATE_ID, argumentId, side, amount);
+      stake: async (argumentId, side, amount) => {
+        await actions.stake(DEBATE_ID, argumentId, side, amount);
         await refresh();
       },
       position: (argumentId) => actions.position(DEBATE_ID, argumentId),

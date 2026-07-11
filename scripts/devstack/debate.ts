@@ -30,9 +30,9 @@ export interface WaitStep {
   timeUnits: number;
 }
 
-/** Invests vote tokens into an argument's market, acting as `user` (requires the Rating phase). */
-export interface InvestStep {
-  kind: 'invest';
+/** Stakes vote tokens on one side of an argument's market, acting as `user` (requires the Rating phase). */
+export interface StakeStep {
+  kind: 'stake';
   user: string;
   argument: string;
   side: Side;
@@ -45,7 +45,7 @@ export interface AdvancePhaseStep {
   user: string;
 }
 
-export type Step = AddStep | WaitStep | InvestStep | AdvancePhaseStep;
+export type Step = AddStep | WaitStep | StakeStep | AdvancePhaseStep;
 
 export interface DebateScript {
   /** The debate's time unit in seconds. */
@@ -195,14 +195,14 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
         log(`${step.user} adds ${step.side} "${step.key}" (${step.approval}%) under "${step.parent}" -> id ${newId}`);
         break;
       }
-      case 'invest': {
+      case 'stake': {
         await join(step.user);
-        await act(step.user, step.side === 'pro' ? 'investInPro' : 'investInCon', [
+        await act(step.user, step.side === 'pro' ? 'stakePro' : 'stakeCon', [
           debateId,
           argumentId(step.argument),
           step.amount,
         ]);
-        log(`${step.user} invests ${step.amount} in ${step.side} of "${step.argument}"`);
+        log(`${step.user} stakes ${step.amount} on ${step.side} of "${step.argument}"`);
         break;
       }
       case 'advancePhase': {

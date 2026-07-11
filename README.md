@@ -2,7 +2,7 @@
 
 A kialo-style viewer for ArborVote debates: the thesis (or any focused argument) on top, its pro and con arguments in two columns, click any card to drill down the tree. The ancestry rail above the focused claim shows the path back to the thesis, with each connector colored by that step's polarity. Above it, a clickable mini tree-view maps the debate around the focus — the thesis in black, pros green, cons red, the current path filled — expanding rows as you drill down and collapsing them as you climb back up.
 
-Every card shows the argument's **market approval** (the pro share of its argument market) and its **weight** (vote tokens invested).
+Every card shows the argument's **market approval** (the pro share of its argument market) and its **weight** (vote tokens staked).
 
 ## Develop
 
@@ -22,7 +22,7 @@ just dev-anvil
 
 One typed tool ([scripts/dev-anvil.ts](scripts/dev-anvil.ts)) runs the whole stack: it starts anvil (if not already running), builds and deploys ArborVote plus a mock Proof of Humanity, replays the seed **debate script** ([scripts/seed/climateDebate.ts](scripts/seed/climateDebate.ts)) as its four personas — each acting from its own account, joining before its first action — pins the argument texts to IPFS, writes `.env.local`, and starts the dev server. To interact from a wallet, add the network `http://127.0.0.1:8545` (chain id `31337`) and import one of the persona accounts printed by the tool.
 
-Debate scripts are typed data (`DebateScript` in [scripts/devstack/debate.ts](scripts/devstack/debate.ts)): personas plus `add`/`wait`/`invest`/`advancePhase` steps with symbolic argument keys. Editing one file changes the seeded texts, their on-chain digests, and what gets pinned — they cannot drift apart.
+Debate scripts are typed data (`DebateScript` in [scripts/devstack/debate.ts](scripts/devstack/debate.ts)): personas plus `add`/`wait`/`stake`/`advancePhase` steps with symbolic argument keys. Editing one file changes the seeded texts, their on-chain digests, and what gets pinned — they cannot drift apart.
 
 ## Reading any deployment
 
@@ -67,7 +67,7 @@ Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi
 
 - **Join** the debate from the header (the token balance replaces the button once joined).
 - **Author arguments** during Editing: a composer beneath each column publishes the text through the content pipeline, then commits the digest with `addArgument`.
-- **Rate arguments** during Rating: invest vote tokens into the focused argument's pro or con side.
+- **Rate arguments** during Rating: stake vote tokens on the focused argument being under- or overrated.
 - **After the debate**: redeem your shares and claim creator fees from the focused argument.
 
 The contract's **permissionless pokes** are surfaced too, so a debate progresses without scripts — any connected account may trigger them, joined or not. Draft arguments carry a dashed *draft* chip; focusing one offers *Finalize argument* once its editing window has passed. When a phase deadline passes, a poke appears next to the phase chip in the header (*Start rating*, *Start tallying*, and in Tallying *Tally the debate*, which computes the outcome and finishes the debate). The app polls the chain every 30 seconds, so newly opened gates and other participants' moves show up on their own.

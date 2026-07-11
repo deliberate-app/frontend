@@ -103,7 +103,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
 
     // The rater disagrees: 20 tokens on con (fee 1, net 19) buy 8 + 19 - ceil(16/21) = 26 shares.
     await rater.join(0);
-    await rater.invest(0, 1, 'con', 20);
+    await rater.stake(0, 1, 'con', 20);
     const raterPosition = await rater.position(0, 1);
     expect(raterPosition.conShares).toBe(26);
     expect(raterPosition.proShares).toBe(0);
@@ -114,7 +114,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await keeper.advancePhase(0);
     await keeper.tallyTree(0);
 
-    // The correcting rater profits: 26 shares x 21/22 = 24 tokens back on 20 invested.
+    // The correcting rater profits: 26 shares x 21/22 = 24 tokens back on 20 staked.
     await rater.redeemShares(0, 1);
     expect((await rater.userState(0)).tokens).toBe(104);
 

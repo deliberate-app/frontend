@@ -7,12 +7,12 @@ import type { Side } from '../types';
  * or overrated. Stance-free on purpose - one can agree with an argument and still
  * call it overrated. Underneath, the stake buys pro or con shares of its market.
  */
-export function InvestPanel({
+export function StakePanel({
   tokens,
-  onInvest,
+  onStake,
 }: {
   tokens: number;
-  onInvest: (side: Side, amount: number) => Promise<void>;
+  onStake: (side: Side, amount: number) => Promise<void>;
 }) {
   const [amount, setAmount] = useState(5);
   const [busy, setBusy] = useState<Side | null>(null);
@@ -24,7 +24,7 @@ export function InvestPanel({
     setBusy(side);
     setError(null);
     try {
-      await onInvest(side, amount);
+      await onStake(side, amount);
     } catch (cause) {
       setError(actionErrorMessage(cause));
     } finally {

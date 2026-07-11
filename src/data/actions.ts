@@ -49,7 +49,7 @@ export interface DebateActions {
     initialApproval: number,
     text: string,
   ): Promise<void>;
-  invest(debateId: number, argumentId: number, side: Side, amount: number): Promise<void>;
+  stake(debateId: number, argumentId: number, side: Side, amount: number): Promise<void>;
   redeemShares(debateId: number, argumentId: number): Promise<void>;
   claimFees(debateId: number, argumentId: number): Promise<void>;
   // The permissionless pokes: anyone may push a debate along once its time gates open.
@@ -133,8 +133,8 @@ export async function connectDebateActions(
       ]);
     },
 
-    invest: (debateId, argumentId, side, amount) =>
-      write(side === 'pro' ? 'investInPro' : 'investInCon', [BigInt(debateId), argumentId, amount]),
+    stake: (debateId, argumentId, side, amount) =>
+      write(side === 'pro' ? 'stakePro' : 'stakeCon', [BigInt(debateId), argumentId, amount]),
 
     redeemShares: (debateId, argumentId) =>
       write('redeemArgumentShares', [BigInt(debateId), argumentId, account]),

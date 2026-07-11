@@ -3,7 +3,7 @@ import type { ArgumentNode, Debate } from '../types';
 /**
  * Sample debate modeled on kialo.com's "Should humans act to fight climate change?"
  * (https://www.kialo.com/should-humans-act-to-fight-climate-change-4540).
- * Approval = the argument market's pro share; weight = vote tokens invested.
+ * Approval = the argument market's pro share; weight = vote tokens staked.
  * A mid-Rating snapshot: every argument is already final.
  */
 const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [

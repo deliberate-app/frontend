@@ -61,7 +61,7 @@ export function PositionPanel({
             <span className="action-hint">
               Your shares:{' '}
               <strong className="mono">
-                {position.proShares} pro · {position.conShares} con
+                {position.proShares} on underrated · {position.conShares} on overrated
               </strong>
             </span>
             <button type="button" className="btn btn-solid" onClick={() => run(onRedeem)} disabled={busy}>
