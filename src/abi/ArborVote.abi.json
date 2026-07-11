@@ -96,6 +96,24 @@
   },
   {
     "type": "function",
+    "name": "claimFees",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "debates",
     "inputs": [
       {
@@ -230,6 +248,95 @@
   },
   {
     "type": "function",
+    "name": "getUserRole",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "role",
+        "type": "uint8",
+        "internalType": "enum User.Role"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getUserShares",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "shares",
+        "type": "tuple",
+        "internalType": "struct User.Shares",
+        "components": [
+          {
+            "name": "pro",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "con",
+            "type": "uint32",
+            "internalType": "uint32"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getUserTokens",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tokens",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "investInCon",
     "inputs": [
       {
@@ -339,5 +446,28 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "redeemArgumentShares",
+    "inputs": [
+      {
+        "name": "debateId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "argumentId",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   }
 ]

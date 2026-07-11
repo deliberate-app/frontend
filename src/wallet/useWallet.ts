@@ -21,6 +21,8 @@ export interface WalletState {
   wallets: AnnouncedWallet[];
   /** The connected account, if any. */
   account: Address | null;
+  /** The connected wallet's EIP-1193 provider, for sending transactions. */
+  provider: EIP1193Provider | null;
   /** Name of the connected wallet. */
   walletName: string | null;
   connect(wallet: AnnouncedWallet): Promise<void>;
@@ -69,6 +71,7 @@ export function useWallet(): WalletState {
   return {
     wallets,
     account,
+    provider: connected?.provider ?? null,
     walletName: connected?.info.name ?? null,
     connect,
     disconnect,

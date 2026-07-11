@@ -3,6 +3,7 @@ import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
 import type { ArgumentNode, Debate, Phase } from '../types';
 import { climateDebate } from './climateDebate';
+import { contractConfig } from './config';
 
 export interface DebateSource {
   load(debateId: number): Promise<Debate>;
@@ -126,8 +127,6 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
 
 /** Picks the contract source when configured via env, the sample debate otherwise. */
 export function defaultSource(): DebateSource {
-  const address = import.meta.env.VITE_ARBORVOTE_ADDRESS as Address | undefined;
-  const rpcUrl = import.meta.env.VITE_RPC_URL as string | undefined;
-  const ipfsGateway = import.meta.env.VITE_IPFS_GATEWAY as string | undefined;
-  return address && rpcUrl ? contractSource(address, rpcUrl, ipfsGateway) : mockSource;
+  const config = contractConfig();
+  return config ? contractSource(config.address, config.rpcUrl, config.ipfsGateway) : mockSource;
 }
