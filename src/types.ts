@@ -51,25 +51,30 @@ export interface PhasePoke {
   target: Phase;
 }
 
-/** The phase poke currently open on the debate, if any. */
-export function availablePhasePoke(debate: Debate): PhasePoke | null {
+/**
+ * The phase poke currently open on the debate, if any. `atTime` (unix seconds,
+ * typically a ticking wall clock) lets the gate open live between reloads;
+ * the load-time chain estimate is always honored as a lower bound.
+ */
+export function availablePhasePoke(debate: Debate, atTime?: number): PhasePoke | null {
   if (debate.phase === 'tallying') return { kind: 'tally', target: 'finished' };
   if (!debate.timing) return null;
   const { chainTime, editingEndTime, ratingEndTime } = debate.timing;
+  const time = Math.max(chainTime, atTime ?? 0);
   const stuckInEditing = debate.phase === 'editing';
   const stuckInRating = stuckInEditing || debate.phase === 'rating';
-  if (stuckInRating && chainTime > ratingEndTime) return { kind: 'advance', target: 'tallying' };
-  if (stuckInEditing && chainTime > editingEndTime) return { kind: 'advance', target: 'rating' };
+  if (stuckInRating && time > ratingEndTime) return { kind: 'advance', target: 'tallying' };
+  if (stuckInEditing && time > editingEndTime) return { kind: 'advance', target: 'rating' };
   return null;
 }
 
-/** Whether the permissionless finalize poke is open for this argument. */
-export function finalizable(node: ArgumentNode, debate: Debate): boolean {
+/** Whether the permissionless finalize poke is open for this argument (`atTime` as above). */
+export function finalizable(node: ArgumentNode, debate: Debate, atTime?: number): boolean {
   return (
     node.state === 'created' &&
     debate.phase !== 'finished' &&
     debate.timing !== undefined &&
-    debate.timing.chainTime >= node.finalizationTime
+    Math.max(debate.timing.chainTime, atTime ?? 0) >= node.finalizationTime
   );
 }
 

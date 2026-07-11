@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DebateView, type DebateTx } from './components/DebateView';
+import { PhaseClock } from './components/PhaseClock';
 import { WalletMenu } from './components/WalletMenu';
 import {
   actionErrorMessage,
@@ -9,6 +10,7 @@ import {
 } from './data/actions';
 import { contractConfig } from './data/config';
 import { defaultSource } from './data/source';
+import { useNow } from './lib/time';
 import type { Debate, Phase } from './types';
 import { availablePhasePoke, PHASE_LABEL } from './types';
 import { useWallet } from './wallet/useWallet';
@@ -29,6 +31,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [userState, setUserState] = useState<UserState | null>(null);
   const wallet = useWallet();
+  const now = useNow();
 
   // The action layer exists once a wallet is connected against an on-chain deployment.
   const [actions, setActions] = useState<DebateActions | null>(null);
@@ -108,7 +111,8 @@ export default function App() {
     (debate?.phase === 'editing' || debate?.phase === 'rating');
 
   // The phase poke is permissionless - any connected account can push the debate along.
-  const poke = actions !== null && debate ? availablePhasePoke(debate) : null;
+  // The ticking clock opens the gate live, without waiting for the next poll.
+  const poke = actions !== null && debate ? availablePhasePoke(debate, now) : null;
   const [poking, setPoking] = useState(false);
   const [pokeError, setPokeError] = useState<string | null>(null);
   const runPoke = async () => {
@@ -166,6 +170,7 @@ export default function App() {
       <header className="topbar">
         <span className="wordmark">ArborVote</span>
         {debate && <span className={`phase phase-${debate.phase}`}>{PHASE_LABEL[debate.phase]}</span>}
+        {debate && <PhaseClock debate={debate} now={now} />}
         {poke && (
           <button type="button" className="btn" onClick={runPoke} disabled={poking}>
             {poking ? 'Poking…' : POKE_LABEL[poke.target]}

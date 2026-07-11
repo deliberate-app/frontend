@@ -54,6 +54,16 @@ describe('availablePhasePoke', () => {
     expect(availablePhasePoke(debate('editing'))).toBeNull();
     expect(availablePhasePoke(debate('rating'))).toBeNull();
   });
+
+  test('opens live on a ticking clock, keeping the load-time chain estimate as the floor', () => {
+    const stale = debate('editing', { ...TIMING, chainTime: 600 });
+    expect(availablePhasePoke(stale, 701)).toEqual({ kind: 'advance', target: 'rating' });
+    // A clock behind the chain estimate (time-warped dev chain) never closes the gate again.
+    expect(availablePhasePoke(debate('editing', { ...TIMING, chainTime: 701 }), 100)).toEqual({
+      kind: 'advance',
+      target: 'rating',
+    });
+  });
 });
 
 describe('finalizable', () => {
@@ -74,5 +84,10 @@ describe('finalizable', () => {
 
   test('never opens on sample data without a chain', () => {
     expect(finalizable(node('created', 0), debate('editing'))).toBe(false);
+  });
+
+  test('opens live on a ticking clock, keeping the load-time chain estimate as the floor', () => {
+    expect(finalizable(node('created', 501), live, 501)).toBe(true);
+    expect(finalizable(node('created', 500), live, 100)).toBe(true);
   });
 });

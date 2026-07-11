@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { actionErrorMessage } from '../data/actions';
+import { formatDuration } from '../lib/time';
 
 /**
  * The finalize poke for a focused draft argument. Finalizing is permissionless:
@@ -8,9 +9,12 @@ import { actionErrorMessage } from '../data/actions';
  */
 export function FinalizePanel({
   eligible,
+  opensIn,
   onFinalize,
 }: {
   eligible: boolean;
+  /** Seconds until the finalize gate opens; undefined without a chain clock (sample data). */
+  opensIn?: number;
   onFinalize: () => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
@@ -34,7 +38,11 @@ export function FinalizePanel({
         <span className="action-hint">
           {eligible
             ? 'This draft can be locked in - anyone may finalize it.'
-            : 'This argument is a draft: still editable, not yet tradeable.'}
+            : `This argument is a draft: still editable, not yet tradeable.${
+                opensIn !== undefined && opensIn > 0
+                  ? ` It can be finalized in ${formatDuration(opensIn)}.`
+                  : ''
+              }`}
         </span>
         {eligible && (
           <button type="button" className="btn btn-solid" onClick={finalize} disabled={busy}>

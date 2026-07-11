@@ -80,6 +80,14 @@ button {
   border-color: var(--pro);
 }
 
+/* The live countdown next to the phase chip; hover shows the full schedule. */
+.phase-clock {
+  font-size: 0.78rem;
+  color: var(--bark);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
 /* ── Wallet ──────────────────────────────────────────────────────────── */
 .wallet {
   position: relative;

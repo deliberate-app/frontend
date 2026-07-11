@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatImpact, impactsOf } from '../lib/impact';
+import { useNow } from '../lib/time';
 import type { Debate, Side } from '../types';
 import { ancestryOf, childrenOf, finalizable, thesisOf } from '../types';
 import { ArgumentCard } from './ArgumentCard';
@@ -72,6 +73,7 @@ const impactClassOf = (impact: number) => (impact > 0 ? 'impact-pos' : impact < 
 export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null }) {
   const thesis = thesisOf(debate);
   const [focusedId, setFocusedId] = useState(thesis.id);
+  const now = useNow();
 
   const byId = new Map(debate.nodes.map((n) => [n.id, n]));
   const focus = byId.get(focusedId) ?? thesis;
@@ -139,7 +141,12 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         {draft && tx && (
           <FinalizePanel
             key={focus.id}
-            eligible={finalizable(focus, debate)}
+            eligible={finalizable(focus, debate, now)}
+            opensIn={
+              debate.timing
+                ? Math.max(0, focus.finalizationTime - Math.max(now, debate.timing.chainTime))
+                : undefined
+            }
             onFinalize={() => tx.finalize(focus.id)}
           />
         )}
@@ -171,6 +178,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 debate={debate}
                 node={node}
                 impact={impacts?.get(node.id)}
+                now={now}
                 onFocus={setFocusedId}
               />
             ))
@@ -198,6 +206,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 debate={debate}
                 node={node}
                 impact={impacts?.get(node.id)}
+                now={now}
                 onFocus={setFocusedId}
               />
             ))
