@@ -1,7 +1,22 @@
 import { useState } from 'react';
-import type { Debate } from '../types';
+import type { ArgumentPosition } from '../data/actions';
+import type { Debate, Side } from '../types';
 import { ancestryOf, childrenOf, thesisOf } from '../types';
 import { ArgumentCard } from './ArgumentCard';
+import { Composer } from './Composer';
+import { InvestPanel } from './InvestPanel';
+import { PositionPanel } from './PositionPanel';
+
+/** The debate interactions available to the connected, joined account. */
+export interface DebateTx {
+  joined: boolean;
+  tokens: number;
+  addArgument(parentArgumentId: number, side: Side, initialApproval: number, text: string): Promise<void>;
+  invest(argumentId: number, side: Side, amount: number): Promise<void>;
+  position(argumentId: number): Promise<ArgumentPosition>;
+  redeem(argumentId: number): Promise<void>;
+  claimFees(argumentId: number): Promise<void>;
+}
 
 /**
  * The ancestry rail: the path from the thesis down to the focused claim,
@@ -47,7 +62,7 @@ function AncestryRail({
   );
 }
 
-export function DebateView({ debate }: { debate: Debate }) {
+export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null }) {
   const thesis = thesisOf(debate);
   const [focusedId, setFocusedId] = useState(thesis.id);
 
@@ -56,6 +71,10 @@ export function DebateView({ debate }: { debate: Debate }) {
   const pros = childrenOf(debate, focus.id, 'pro');
   const cons = childrenOf(debate, focus.id, 'con');
   const isThesis = focus.id === thesis.id;
+
+  const authoring = tx !== null && tx.joined && debate.phase === 'editing';
+  const rating = tx !== null && tx.joined && debate.phase === 'rating' && !isThesis;
+  const finished = tx !== null && debate.phase === 'finished' && !isThesis;
 
   return (
     <main className="debate">
@@ -71,6 +90,18 @@ export function DebateView({ debate }: { debate: Debate }) {
           <strong className="mono">{Math.round(focus.approval * 100)}%</strong> · weight{' '}
           <strong className="mono">{focus.weight} ⬡</strong>
         </p>
+        {rating && tx && (
+          <InvestPanel tokens={tx.tokens} onInvest={(side, amount) => tx.invest(focus.id, side, amount)} />
+        )}
+        {finished && tx && (
+          <PositionPanel
+            key={focus.id}
+            argumentId={focus.id}
+            load={tx.position}
+            onRedeem={tx.redeem}
+            onClaimFees={tx.claimFees}
+          />
+        )}
       </section>
 
       <div className="columns" key={focus.id}>
@@ -85,6 +116,14 @@ export function DebateView({ debate }: { debate: Debate }) {
               <ArgumentCard key={node.id} debate={debate} node={node} onFocus={setFocusedId} />
             ))
           )}
+          {authoring && tx && (
+            <Composer
+              key={`pro-${focus.id}`}
+              side="pro"
+              tokens={tx.tokens}
+              onAdd={(side, approval, text) => tx.addArgument(focus.id, side, approval, text)}
+            />
+          )}
         </section>
 
         <section className="column column-con" aria-label="Con arguments">
@@ -97,6 +136,14 @@ export function DebateView({ debate }: { debate: Debate }) {
             cons.map((node) => (
               <ArgumentCard key={node.id} debate={debate} node={node} onFocus={setFocusedId} />
             ))
+          )}
+          {authoring && tx && (
+            <Composer
+              key={`con-${focus.id}`}
+              side="con"
+              tokens={tx.tokens}
+              onAdd={(side, approval, text) => tx.addArgument(focus.id, side, approval, text)}
+            />
           )}
         </section>
       </div>

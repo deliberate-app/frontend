@@ -434,6 +434,154 @@ button {
   white-space: nowrap;
 }
 
+/* ── Actions ─────────────────────────────────────────────────────────── */
+.btn {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--card);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.btn:hover:enabled {
+  background: var(--canvas);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn-solid {
+  background: var(--ink);
+  color: var(--card);
+}
+
+.btn-solid:hover:enabled {
+  background: #384a33;
+}
+
+.btn-pro {
+  border-color: var(--pro);
+  color: var(--pro);
+}
+
+.btn-pro:hover:enabled {
+  background: var(--pro-wash);
+}
+
+.btn-con {
+  border-color: var(--con);
+  color: var(--con);
+}
+
+.btn-con:hover:enabled {
+  background: var(--con-wash);
+}
+
+.tokens {
+  font-size: 0.9rem;
+  color: var(--bark);
+  white-space: nowrap;
+}
+
+.action-panel {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--hairline);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.action-amount {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--bark);
+}
+
+.action-amount input {
+  width: 4.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  font: inherit;
+  font-family: var(--font-mono);
+}
+
+.action-hint {
+  font-size: 0.78rem;
+  color: var(--bark);
+}
+
+.action-error {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: var(--con);
+  overflow-wrap: anywhere;
+}
+
+.composer-open {
+  padding: 0.7rem 1rem;
+  border: 1px dashed var(--hairline);
+  border-radius: 0.75rem;
+  background: none;
+  color: var(--bark);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.composer-open:hover:enabled {
+  border-color: var(--bark);
+  color: var(--ink);
+}
+
+.composer-open:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+}
+
+.composer-text {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  resize: vertical;
+}
+
+.composer-approval {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--bark);
+}
+
+.composer-approval input {
+  flex: 1;
+  accent-color: var(--ink);
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 44rem) {
   .columns {

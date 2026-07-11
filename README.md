@@ -57,7 +57,14 @@ just ipfs-down   # stop it
 
 ## Wallets
 
-Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi-provider discovery via viem, so any announcing browser wallet (MetaMask, Rabby, Coinbase Wallet, …) appears in the connect menu. The connection currently identifies the account; transactions (joining, adding arguments, investing) are the next step.
+Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi-provider discovery via viem, so any announcing browser wallet (MetaMask, Rabby, Coinbase Wallet, …) appears in the connect menu. Once connected against an on-chain deployment, the app is fully interactive ([src/data/actions.ts](src/data/actions.ts)):
+
+- **Join** the debate from the header (the token balance replaces the button once joined).
+- **Author arguments** during Editing: a composer beneath each column publishes the text through the content pipeline, then commits the digest with `addArgument`.
+- **Rate arguments** during Rating: invest vote tokens into the focused argument's pro or con side.
+- **After the debate**: redeem your shares and claim creator fees from the focused argument.
+
+Every action is simulated before it is sent, so contract rejections (wrong phase, insufficient tokens, …) surface as readable messages without a signature prompt. The action layer is covered by a lifecycle test that drives a fresh deployment end to end against the local anvil (`just test` with the dev stack running).
 
 ## Design-review screenshots
 
