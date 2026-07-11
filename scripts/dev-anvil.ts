@@ -9,13 +9,13 @@
  * (pinned in docker-compose.yml) because nothing else needs IPFS on the host.
  */
 
-import { toHex, type Hex } from 'viem';
+import type { Hex } from 'viem';
 
-import { cidFromSha256Digest } from '../src/lib/cid';
+import { contentURIOf, publishText } from '../src/lib/ipfs';
 import { ensureAnvil } from './devstack/anvil';
 import { forgeBuild, loadArtifact, type Artifact } from './devstack/artifacts';
 import { anvilAccount, devChainClient, runDebateScript } from './devstack/debate';
-import { ensureKubo, pinText, IPFS_GATEWAY } from './devstack/ipfs';
+import { ensureKubo, IPFS_GATEWAY_URL, KUBO_API_URL } from './devstack/ipfs';
 import { climateDebate } from './seed/climateDebate';
 
 const RPC_URL = 'http://127.0.0.1:8545';
@@ -58,18 +58,9 @@ try {
     log('docker/kubo unavailable - argument content will show as raw digests');
   }
 
-  /** Hashes a text into its on-chain contentURI; pins it and asserts the CID matches the digest. */
-  const contentURI = async (text: string): Promise<Hex> => {
-    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
-    if (ipfsAvailable) {
-      const cid = await pinText(text);
-      const expected = cidFromSha256Digest(digest);
-      if (cid !== expected) {
-        throw new Error(`pinned CID ${cid} does not match the digest CID ${expected} for "${text}"`);
-      }
-    }
-    return toHex(digest);
-  };
+  /** Publishes (pins) the text and returns its on-chain contentURI; hash-only without kubo. */
+  const contentURI = async (text: string): Promise<Hex> =>
+    ipfsAvailable ? (await publishText(KUBO_API_URL, text)).digest : contentURIOf(text);
 
   const { debateId, personas } = await runDebateScript(climateDebate, {
     client,
@@ -82,7 +73,7 @@ try {
   const env = [
     `VITE_ARBORVOTE_ADDRESS=${arborVote}`,
     `VITE_RPC_URL=${RPC_URL}`,
-    ...(ipfsAvailable ? [`VITE_IPFS_GATEWAY=${IPFS_GATEWAY}`] : []),
+    ...(ipfsAvailable ? [`VITE_IPFS_GATEWAY=${IPFS_GATEWAY_URL}`, `VITE_IPFS_API=${KUBO_API_URL}`] : []),
   ];
   await Bun.write(`${frontendDir}.env.local`, env.join('\n') + '\n');
   log(`.env.local written for debate ${debateId}`);

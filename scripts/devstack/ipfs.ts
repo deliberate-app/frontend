@@ -1,12 +1,12 @@
-/** Runs the dockerized kubo node and pins argument texts via its HTTP RPC API. */
+/** Runs the dockerized kubo node the content pipeline publishes to and resolves from. */
 
-const KUBO_API = 'http://127.0.0.1:5001/api/v0';
+export const KUBO_API_URL = 'http://127.0.0.1:5001';
 
-export const IPFS_GATEWAY = 'http://127.0.0.1:8080';
+export const IPFS_GATEWAY_URL = 'http://127.0.0.1:8080';
 
-async function kuboUp(): Promise<boolean> {
+export async function kuboUp(): Promise<boolean> {
   try {
-    return (await fetch(`${KUBO_API}/id`, { method: 'POST' })).ok;
+    return (await fetch(`${KUBO_API_URL}/api/v0/id`, { method: 'POST', signal: AbortSignal.timeout(1000) })).ok;
   } catch {
     return false;
   }
@@ -33,22 +33,4 @@ export async function ensureKubo(composeDir: string): Promise<boolean> {
     await Bun.sleep(500);
   }
   return true;
-}
-
-/**
- * Adds and pins the text exactly the way the contract addresses it: as a raw-leaves
- * CIDv1 block whose multihash digest is the on-chain bytes32 contentURI.
- */
-export async function pinText(text: string): Promise<string> {
-  const form = new FormData();
-  form.append('file', new Blob([text]));
-  const response = await fetch(`${KUBO_API}/add?quiet=true&raw-leaves=true&cid-version=1&pin=true`, {
-    method: 'POST',
-    body: form,
-  });
-  if (!response.ok) {
-    throw new Error(`kubo add failed with status ${response.status}`);
-  }
-  const { Hash } = (await response.json()) as { Hash: string };
-  return Hash;
 }

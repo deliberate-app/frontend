@@ -9,6 +9,7 @@ Every card shows the argument's **market approval** (the pro share of its argume
 ```sh
 just install   # bun install
 just dev       # dev server with the bundled sample debate
+just test      # unit tests (bun test); includes a kubo round-trip when the node is up
 ```
 
 The sample debate is modeled on kialo's ["Should humans act to fight climate change?"](https://www.kialo.com/should-humans-act-to-fight-climate-change-4540).
@@ -28,25 +29,31 @@ Debate scripts are typed data (`DebateScript` in [scripts/devstack/debate.ts](sc
 Set both variables (in `.env.local` or the environment):
 
 ```sh
-VITE_ARBORVOTE_ADDRESS=0x…   # ArborVote proxy address
+VITE_ARBORVOTE_ADDRESS=0x…   # ArborVote contract address
 VITE_RPC_URL=https://…       # JSON-RPC endpoint
-VITE_IPFS_GATEWAY=https://ipfs.io   # optional, enables content resolution
+VITE_IPFS_GATEWAY=https://ipfs.io   # optional, enables content resolution (gateway is untrusted - reads are digest-verified)
+VITE_IPFS_API=https://…      # reserved for the upcoming authoring flow: kubo-compatible RPC API to publish content to
 ```
 
 The ABI is extracted from `contracts/out/ArborVote.sol/ArborVote.json` into `src/abi/ArborVote.abi.json`.
 
 ## Argument content and IPFS
 
-The contract stores each argument's content as a `bytes32` — the **sha-256 multihash digest of an IPFS raw-leaves block**. The frontend rebuilds the CIDv1 (`b` + base32 of `0x01 0x55 0x12 0x20 + digest`) and fetches the text from `VITE_IPFS_GATEWAY`. Content pinned with `ipfs add --raw-leaves --cid-version=1` resolves exactly. Without a gateway (or when the fetch fails), short ASCII payloads are decoded inline and anything else is shown as the raw digest.
+The contract stores each argument's content as a `bytes32` — the **sha-256 multihash digest of an IPFS raw-leaves block**. The content pipeline lives in [src/lib/ipfs.ts](src/lib/ipfs.ts):
 
-A local [kubo](https://github.com/ipfs/kubo) node runs via Docker for a reproducible setup (`docker-compose.yml`, image version pinned):
+- **Publish** (`publishText`): adds and pins the text on a kubo-compatible RPC API (`/api/v0/add?raw-leaves=true&cid-version=1&pin=true`) and returns the digest for on-chain use. The returned CID is asserted to wrap exactly the locally computed digest, so the on-chain reference and the pinned content cannot drift, and content above the single-block limit (256 KiB) is rejected up front — it could never be referenced by one digest. Publish first, then send the transaction: a failed transaction leaves only a harmless pinned text block. Today the publisher is the dev seeding tool; the upcoming authoring flow publishes to `VITE_IPFS_API` before sending `addArgument`.
+- **Resolve** (`fetchTextByDigest`): rebuilds the CIDv1 (`b` + base32 of `0x01 0x55 0x12 0x20 + digest`, [src/lib/cid.ts](src/lib/cid.ts)) and fetches the text from `VITE_IPFS_GATEWAY`. **The gateway is untrusted**: responses are size-capped while streaming and must hash back to the on-chain digest, otherwise they are discarded. Without a gateway (or when verification fails), short ASCII payloads are decoded inline and anything else is shown as the raw digest.
+
+A local [kubo](https://github.com/ipfs/kubo) node runs via Docker for a reproducible setup (`docker-compose.yml`, image version pinned). Its RPC API allowlists the dev app origins — never `*`, the Origin check is the unauthenticated API's CSRF defense ([ipfs/container-init.d](ipfs/container-init.d/010-rpc-cors.sh)) — so the authoring flow will work in development without infrastructure changes:
 
 ```sh
 just ipfs-up     # start the node (gateway on 127.0.0.1:8080, RPC on 127.0.0.1:5001)
 just ipfs-down   # stop it
 ```
 
-`dev-anvil.ts` starts the node and pins the seed content automatically when Docker is available, asserting that each pinned CID matches the on-chain digest.
+`dev-anvil.ts` starts the node, publishes the seed content through the same pipeline, and writes both `VITE_IPFS_GATEWAY` and `VITE_IPFS_API` into `.env.local`.
+
+**Production pinning strategy.** Argument texts are tiny immutable blocks whose digests are public on-chain, so availability has three legs: (1) at authoring time the client publishes to the deployment's `VITE_IPFS_API` — a kubo node or cluster the operator runs behind an origin-restricted, authenticated proxy; (2) any party can audit and re-pin content from the on-chain digests — the planned event indexer re-pins everything it sees, acting as the availability backstop; (3) the inline-decode fallback keeps short payloads readable with no IPFS at all. Because reads are digest-verified, *any* gateway — public or private — is safe to resolve through; a gateway can at worst withhold content, never forge it.
 
 ## Wallets
 

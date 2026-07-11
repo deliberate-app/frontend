@@ -17,6 +17,10 @@ dev:
 dev-anvil:
     bun scripts/dev-anvil.ts
 
+# Run the unit tests (includes a kubo round-trip when the node is up)
+test:
+    bun test
+
 # Type-check and build for production
 build:
     bun run build

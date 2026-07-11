@@ -1,6 +1,6 @@
 import { createPublicClient, http, hexToBytes, hexToString, type Address, type Hex } from 'viem';
 import abi from '../abi/ArborVote.abi.json';
-import { cidFromSha256Digest } from '../lib/cid';
+import { fetchTextByDigest } from '../lib/ipfs';
 import type { ArgumentNode, Debate, Phase } from '../types';
 import { climateDebate } from './climateDebate';
 
@@ -30,25 +30,8 @@ interface OnChainArgument {
 }
 
 /**
- * The contract stores argument content as a bytes32 URI holding the sha-256 multihash
- * digest of an IPFS raw-leaves block (a full CID does not fit in 32 bytes, its digest
- * does). Rebuilds the CID and fetches the text from the gateway.
- */
-async function fetchIpfsContent(contentURI: Hex, gateway: string): Promise<string | null> {
-  const cid = cidFromSha256Digest(hexToBytes(contentURI));
-  try {
-    const response = await fetch(`${gateway.replace(/\/$/, '')}/ipfs/${cid}`, {
-      signal: AbortSignal.timeout(8000),
-    });
-    return response.ok ? await response.text() : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Falls back for content that is not on IPFS: short ASCII payloads (as seeded by
- * DeployLocal.s.sol) are decoded, anything else is shown as the raw URI.
+ * Falls back for content that is not on IPFS: short ASCII payloads are decoded,
+ * anything else is shown as the raw URI.
  */
 function decodeInlineContent(contentURI: Hex): string {
   const text = hexToString(contentURI).replaceAll('\0', '');
@@ -58,7 +41,7 @@ function decodeInlineContent(contentURI: Hex): string {
 
 async function contentToText(contentURI: Hex, gateway: string | undefined): Promise<string> {
   if (gateway) {
-    const ipfsText = await fetchIpfsContent(contentURI, gateway);
+    const ipfsText = await fetchTextByDigest(gateway, hexToBytes(contentURI));
     if (ipfsText !== null) return ipfsText;
   }
   return decodeInlineContent(contentURI);

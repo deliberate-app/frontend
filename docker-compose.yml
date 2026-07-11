@@ -1,14 +1,16 @@
-# Local IPFS (kubo) node for resolving argument content.
+# Local IPFS (kubo) node for publishing and resolving argument content.
 # Pin the image version deliberately; bump it as part of a normal dependency update.
 services:
   ipfs:
     image: ipfs/kubo:v0.42.0
     container_name: arborvote-ipfs
     ports:
-      - "127.0.0.1:5001:5001" # RPC API (pinning)
+      - "127.0.0.1:5001:5001" # RPC API (publishing/pinning)
       - "127.0.0.1:8080:8080" # HTTP gateway (content resolution)
     volumes:
       - ipfs-data:/data/ipfs
+      # Init scripts run before the daemon starts (kubo's container-init.d mechanism).
+      - ./ipfs/container-init.d:/container-init.d
     healthcheck:
       test: ["CMD", "ipfs", "id"]
       interval: 2s
