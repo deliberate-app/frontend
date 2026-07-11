@@ -41,7 +41,17 @@ query instead of an RPC traversal of the tree, falling back to chain reads whene
 indexer is unreachable or has not caught up. `just dev-anvil` writes the variable
 automatically when the indexer repo is checked out. Transactions always go through the RPC.
 
-The ABI is extracted from `contracts/out/ArborVote.sol/ArborVote.json` into `src/abi/ArborVote.abi.json`.
+The ABI is synced from `contracts/out/ArborVote.sol/ArborVote.json` into `src/abi/ArborVote.abi.json`
+with `just sync-abi` after any contract interface change.
+
+## Base Sepolia
+
+`.env.base-sepolia.example` is a ready-made `.env.local` for the shared testnet deployment: copy
+it and fill in the ArborVote address (contracts README, "Deployment") and the hosted indexer's
+GraphQL endpoint (indexer README, "Hosted service"). The app is chain-agnostic at runtime - no
+code changes, wallets just need the Base Sepolia network (chain 84532). Caveat until a hosted
+kubo API exists: leave `VITE_IPFS_API` unset, and authored texts are committed digest-only,
+so other clients cannot resolve them - fine for trying the mechanics, not for real content.
 
 ## Argument content and IPFS
 
