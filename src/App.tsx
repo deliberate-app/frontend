@@ -26,6 +26,11 @@ const POKE_LABEL: Record<Phase, string> = {
   finished: 'Tally the debate',
 };
 
+// A just-created debate is mined, but the load-balanced RPC / hosted indexer can briefly
+// serve a node that has not seen its block yet - so the reader waits it out with a spinner.
+const SYNC_RETRY_MS = 2000;
+const SYNC_MAX_RETRIES = 15; // ~30 s, comfortably longer than the usual lag
+
 /** `#/debate/N` opens a debate; anything else is the browse home. */
 function routeFromHash(): number | null {
   const match = /^#\/debate\/(\d+)$/.exec(window.location.hash);
@@ -37,6 +42,8 @@ export default function App() {
   const [debate, setDebate] = useState<Debate | null>(null);
   const [debates, setDebates] = useState<DebateSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // True while waiting out the read lag of a debate we just created (spinner, not an error).
+  const [syncing, setSyncing] = useState(false);
   const [userState, setUserState] = useState<UserState | null>(null);
   // Browse filter/sort lives here, not in BrowseView, so it survives navigating
   // into a debate and back (BrowseView unmounts while a debate is open).
@@ -86,6 +93,11 @@ export default function App() {
   const debateIdRef = useRef(debateId);
   const actionsRef = useRef<DebateActions | null>(null);
   const loadSeq = useRef(0);
+  // The id of a debate we just created (its receipt is mined, so it definitely exists);
+  // its transient not-found reads are retried rather than surfaced as an error.
+  const awaitingCreateRef = useRef<number | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const loadAttemptRef = useRef(0);
   const refresh = useCallback(async () => {
     const seq = ++loadSeq.current;
     const target = debateIdRef.current;
@@ -113,9 +125,24 @@ export default function App() {
     if (debateResult.status === 'fulfilled') {
       setDebate(debateResult.value);
       setError(null);
+      setSyncing(false);
+      loadAttemptRef.current = 0;
+      if (awaitingCreateRef.current === target) awaitingCreateRef.current = null;
     } else {
       const cause = debateResult.reason as unknown;
-      setError(cause instanceof Error ? cause.message : String(cause));
+      const message = cause instanceof Error ? cause.message : String(cause);
+      // A debate we just created definitely exists; a not-found only means the read
+      // RPC / indexer lags the write, so keep a spinner and retry instead of erroring.
+      if (awaitingCreateRef.current === target && loadAttemptRef.current < SYNC_MAX_RETRIES) {
+        loadAttemptRef.current += 1;
+        setSyncing(true);
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = setTimeout(() => void refresh(), SYNC_RETRY_MS);
+      } else {
+        setError(message);
+        setSyncing(false);
+        awaitingCreateRef.current = null;
+      }
     }
     setUserState(stateResult.status === 'fulfilled' ? stateResult.value : null);
   }, []);
@@ -126,8 +153,16 @@ export default function App() {
     setDebate(null);
     setUserState(null);
     setError(null);
+    setSyncing(false);
+    loadAttemptRef.current = 0;
+    clearTimeout(retryTimerRef.current);
+    // Keep the just-created marker only while it matches the route we are landing on.
+    if (awaitingCreateRef.current !== debateId) awaitingCreateRef.current = null;
     void refresh();
   }, [debateId, refresh]);
+
+  // Cancel any pending sync retry when the app unmounts.
+  useEffect(() => () => clearTimeout(retryTimerRef.current), []);
 
   // A wallet connect/disconnect reloads too (it adds or removes the user's state).
   useEffect(() => {
@@ -222,7 +257,11 @@ export default function App() {
 
   const createDebate = async (thesis: string, timeUnitSeconds: number) => {
     if (!actions) throw new Error('Connect a wallet first.');
-    openDebate(await actions.createDebate(thesis, timeUnitSeconds));
+    const id = await actions.createDebate(thesis, timeUnitSeconds);
+    // The receipt is mined, so the debate exists; mark it so the reader waits out any
+    // RPC/indexer lag with a spinner instead of a not-found error.
+    awaitingCreateRef.current = id;
+    openDebate(id);
   };
   const createDisabledHint = !config
     ? 'Browsing the bundled sample debate - configure a deployment to create debates.'
@@ -292,7 +331,12 @@ export default function App() {
       ) : debate ? (
         <DebateView key={debate.id} debate={debate} tx={tx} />
       ) : (
-        !error && <p className="load-note">Loading debate…</p>
+        !error && (
+          <p className="load-note">
+            <span className="spinner" aria-hidden />
+            {syncing ? 'Creating your debate — waiting for it to sync…' : 'Loading debate…'}
+          </p>
+        )
       )}
     </>
   );
