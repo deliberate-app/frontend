@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Debate, DebateSummary, DebateTiming, Phase } from './types';
-import { availablePhasePoke, filterDebates } from './types';
+import { availablePhasePoke, editingOpen, filterDebates } from './types';
 
 const TIMING: DebateTiming = { editingEndTime: 700, ratingEndTime: 1000, chainTime: 0, loadedAt: 0 };
 
@@ -54,6 +54,30 @@ describe('availablePhasePoke', () => {
     expect(
       availablePhasePoke(debate('editing', { ...TIMING, chainTime: 701, loadedAt: 1000 }), 100),
     ).toEqual({ kind: 'advance', target: 'rating' });
+  });
+});
+
+describe('editingOpen', () => {
+  test('open while editing and the clock is within the window', () => {
+    expect(editingOpen(debate('editing', { ...TIMING, chainTime: 700 }))).toBe(true);
+  });
+
+  test('closed once the editing window passes, even while still stored as editing', () => {
+    expect(editingOpen(debate('editing', { ...TIMING, chainTime: 701 }))).toBe(false);
+  });
+
+  test('closed outside the editing phase', () => {
+    expect(editingOpen(debate('rating', { ...TIMING, chainTime: 0 }))).toBe(false);
+  });
+
+  test('open on sample data without a chain clock', () => {
+    expect(editingOpen(debate('editing'))).toBe(true);
+  });
+
+  test('closes live as the chain-time estimate advances between reloads', () => {
+    const stale = debate('editing', { ...TIMING, chainTime: 690, loadedAt: 100 });
+    expect(editingOpen(stale, 105)).toBe(true); // 690 + 5 = 695, within 700
+    expect(editingOpen(stale, 111)).toBe(false); // 690 + 11 = 701, past 700
   });
 });
 

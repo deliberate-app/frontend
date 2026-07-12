@@ -129,6 +129,19 @@ export function availablePhasePoke(debate: Debate, now?: number): PhasePoke | nu
   return null;
 }
 
+/**
+ * Whether new arguments can still be added: the debate is in editing and its editing window has not
+ * passed by the (live) clock. The window can close before the phase poke runs, and adding then reverts
+ * (the phase has, or is about to, advance) or - in the not-yet-poked limbo - creates an argument that
+ * can never finalize. Sample data without a clock is treated as open.
+ */
+export function editingOpen(debate: Debate, now?: number): boolean {
+  if (debate.phase !== 'editing') return false;
+  if (debate.timing === undefined) return true;
+  const time = now === undefined ? debate.timing.chainTime : liveChainTime(debate.timing, now);
+  return time <= debate.timing.editingEndTime;
+}
+
 export function thesisOf(debate: Debate): ArgumentNode {
   const thesis = debate.nodes.find((n) => n.parentId === null);
   if (!thesis) throw new Error(`Debate ${debate.id} has no thesis`);

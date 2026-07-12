@@ -772,6 +772,18 @@ button {
   margin-bottom: 0.6rem;
 }
 
+.editing-closed {
+  max-width: 46rem;
+  margin: 0 auto 0.6rem;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--con);
+  background: var(--con-wash);
+  border: 1px solid var(--hairline);
+  border-radius: 0.6rem;
+}
+
 /* ── Browse (home) ───────────────────────────────────────────────────── */
 .browse {
   max-width: 46rem;

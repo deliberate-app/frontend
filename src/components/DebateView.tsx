@@ -3,7 +3,7 @@ import type { ArgumentPosition } from '../data/actions';
 import { formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
 import type { AccountPosition, Debate, Side } from '../types';
-import { ancestryOf, childrenOf, thesisOf } from '../types';
+import { ancestryOf, childrenOf, editingOpen, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
@@ -109,8 +109,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const focusImpact = impacts?.get(focus.id);
   const totalStake = debate.nodes.reduce((sum, node) => sum + node.weight, 0);
 
-  // Replying requires a final parent, so no composer under a draft focus.
-  const authoring = tx !== null && tx.joined && debate.phase === 'editing' && focus.state === 'final';
+  // Editing affordances close when the on-chain editing window passes, even before anyone pokes the
+  // phase forward (see editingOpen). Replying also requires a final parent, so no composer under a draft.
+  const canAuthor = editingOpen(debate, now);
+  const authoring = tx !== null && tx.joined && canAuthor && focus.state === 'final';
+  const editingClosed = tx !== null && tx.joined && debate.phase === 'editing' && !canAuthor;
   const rating = tx !== null && tx.joined && debate.phase === 'rating' && !isThesis && focus.state === 'final';
   const finished = tx !== null && debate.phase === 'finished' && !isThesis;
   const draft = tx !== null && focus.state === 'created' && debate.phase !== 'finished';
@@ -215,6 +218,13 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           />
         )}
       </section>
+
+      {editingClosed && (
+        <p className="editing-closed">
+          The editing window has closed — no more arguments can be added. Advance the debate from the
+          header to continue.
+        </p>
+      )}
 
       <div className="columns" key={focus.id}>
         <section className="column column-pro" aria-label="Pro arguments">
