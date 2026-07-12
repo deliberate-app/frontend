@@ -73,25 +73,28 @@ export interface DebateSummary {
   creator?: string;
 }
 
-/** The browse view's filter settings. */
+/** How the browse list is ordered: newest first, or most-staked first. */
+export type DebateSort = 'recent' | 'stake';
+
+/** The browse view's filter and sort settings. */
 export interface DebateFilter {
   status: Phase | 'all';
-  minStake: number;
   /** Case-insensitive substring of the creator's address; empty matches all. */
   author: string;
+  sort: DebateSort;
 }
 
-/** Applies the browse filters; newest debates first. */
+/** Filters by status and author, then orders by the chosen sort (id breaks stake ties). */
 export function filterDebates(debates: DebateSummary[], filter: DebateFilter): DebateSummary[] {
   const author = filter.author.trim().toLowerCase();
-  return debates
-    .filter(
-      (debate) =>
-        (filter.status === 'all' || debate.phase === filter.status) &&
-        debate.stake >= filter.minStake &&
-        (author === '' || (debate.creator ?? '').toLowerCase().includes(author)),
-    )
-    .sort((a, b) => b.id - a.id);
+  const matched = debates.filter(
+    (debate) =>
+      (filter.status === 'all' || debate.phase === filter.status) &&
+      (author === '' || (debate.creator ?? '').toLowerCase().includes(author)),
+  );
+  return matched.sort(
+    filter.sort === 'stake' ? (a, b) => b.stake - a.stake || b.id - a.id : (a, b) => b.id - a.id,
+  );
 }
 
 /** A permissionless phase transition that is currently open for anyone to trigger. */

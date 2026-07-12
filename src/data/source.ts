@@ -81,6 +81,13 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         client.getBlock(),
       ]);
 
+      // A never-created debate reads back as all-zero: phase Uninitialized (0), no
+      // root argument. Reject it here rather than fabricate a thesis-less debate the
+      // view cannot render (e.g. a shared #/debate/N link to an id that does not exist).
+      if (!PHASE_BY_STATUS[currentPhase]) {
+        throw new Error(`Debate ${debateId} does not exist`);
+      }
+
       // The next block's timestamp is at least the head's and at least the wall clock
       // (idle chains have stale heads; time-warped dev chains run ahead of the wall).
       const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));

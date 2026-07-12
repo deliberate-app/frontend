@@ -80,7 +80,7 @@ describe('filterDebates', () => {
     creator: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     ...overrides,
   });
-  const all = { status: 'all' as const, minStake: 0, author: '' };
+  const all = { status: 'all' as const, author: '', sort: 'recent' as const };
 
   test('passes everything through unfiltered, newest first', () => {
     expect(filterDebates([summary(0), summary(2), summary(1)], all).map((d) => d.id)).toEqual([2, 1, 0]);
@@ -91,9 +91,13 @@ describe('filterDebates', () => {
     expect(filterDebates(debates, { ...all, status: 'rating' }).map((d) => d.id)).toEqual([0]);
   });
 
-  test('filters by minimum stake', () => {
-    const debates = [summary(0, { stake: 5 }), summary(1, { stake: 50 })];
-    expect(filterDebates(debates, { ...all, minStake: 10 }).map((d) => d.id)).toEqual([1]);
+  test('sorts by stake, highest first, breaking ties by newest', () => {
+    const debates = [
+      summary(0, { stake: 50 }),
+      summary(1, { stake: 5 }),
+      summary(2, { stake: 50 }),
+    ];
+    expect(filterDebates(debates, { ...all, sort: 'stake' }).map((d) => d.id)).toEqual([2, 0, 1]);
   });
 
   test('filters by author, case-insensitively on any address fragment', () => {
@@ -107,15 +111,14 @@ describe('filterDebates', () => {
     expect(filterDebates(debates, { ...all, author: '  ' }).map((d) => d.id)).toEqual([2, 1, 0]);
   });
 
-  test('combines all three filters', () => {
+  test('combines status and author filters with the stake sort', () => {
     const debates = [
-      summary(0, { phase: 'rating', stake: 100 }),
-      summary(1, { phase: 'rating', stake: 3 }),
+      summary(0, { phase: 'rating', stake: 40 }),
+      summary(1, { phase: 'rating', stake: 100 }),
       summary(2, { phase: 'editing', stake: 100 }),
     ];
-    expect(
-      filterDebates(debates, { status: 'rating', minStake: 10, author: '0xf39' }).map((d) => d.id),
-    ).toEqual([0]);
+    const result = filterDebates(debates, { status: 'rating', author: '0xf39', sort: 'stake' });
+    expect(result.map((d) => d.id)).toEqual([1, 0]);
   });
 });
 

@@ -752,10 +752,6 @@ button {
   background: var(--card);
 }
 
-.filter input[type='number'] {
-  width: 6rem;
-}
-
 .filter-author {
   flex: 1;
   min-width: 12rem;

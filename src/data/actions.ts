@@ -14,10 +14,12 @@ import {
   custom,
   defineChain,
   http,
+  parseEventLogs,
   type Abi,
   type Address,
   type EIP1193Provider,
   type Hex,
+  type TransactionReceipt,
 } from 'viem';
 
 import abi from '../abi/ArborVote.abi.json';
@@ -91,9 +93,12 @@ export async function connectDebateActions(
       args,
     })) as T;
 
-  // Returns the simulated call's return value (what the mined call will return).
-  const write = async (functionName: string, args: unknown[]): Promise<unknown> => {
-    const { request, result } = await publicClient.simulateContract({
+  // Simulates (surfacing reverts before any signature), sends, and waits for the
+  // receipt. Returns the receipt so callers can read the *mined* effects from the
+  // events - the simulation's return value reflects pre-transaction state and can
+  // be stale by the time the transaction lands.
+  const write = async (functionName: string, args: unknown[]): Promise<TransactionReceipt> => {
+    const { request } = await publicClient.simulateContract({
       account,
       address: config.address,
       abi: abi as Abi,
@@ -106,7 +111,7 @@ export async function connectDebateActions(
     if (receipt.status === 'reverted') {
       throw new Error('The transaction was mined but reverted - someone else probably got there first.');
     }
-    return result;
+    return receipt;
   };
 
   /** Publishes authored text through the content pipeline, digest-only without an IPFS API. */
@@ -118,7 +123,20 @@ export async function connectDebateActions(
 
     async createDebate(thesis, timeUnitSeconds) {
       const contentURI = await publish(thesis);
-      return Number(await write('createDebate', [contentURI, BigInt(timeUnitSeconds)]));
+      const receipt = await write('createDebate', [contentURI, BigInt(timeUnitSeconds)]);
+      // The counter-assigned id is only known once mined: a debate created by
+      // someone else between simulation and inclusion would shift it, so read it
+      // from the DebateCreated event rather than the simulation's return value.
+      const [created] = parseEventLogs({
+        abi: abi as Abi,
+        eventName: 'DebateCreated',
+        logs: receipt.logs,
+      });
+      const debateId = (created as { args?: { debateId?: bigint } } | undefined)?.args?.debateId;
+      if (debateId === undefined) {
+        throw new Error('The debate was created but its id could not be read from the transaction.');
+      }
+      return Number(debateId);
     },
 
     async userState(debateId) {

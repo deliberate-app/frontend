@@ -144,4 +144,10 @@ describe('indexerSource (against the local dev stack)', () => {
     expect(fromIndex.length).toBeGreaterThan(0);
     expect(fromIndex).toEqual(fromChain);
   }, 30_000);
+
+  test.skipIf(!stackUp)('rejects a nonexistent debate id instead of fabricating one', async () => {
+    const count = (await contractSource(address!, RPC_URL).list()).length;
+    // An id past the counter has never been created: the read is all-zero.
+    await expect(contractSource(address!, RPC_URL).load(count + 5)).rejects.toThrow('does not exist');
+  }, 30_000);
 });

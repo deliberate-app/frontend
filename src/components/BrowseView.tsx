@@ -103,6 +103,8 @@ function CreatePanel({
 export function BrowseView({
   debates,
   account,
+  filter,
+  onFilter,
   createDisabledHint,
   onOpen,
   onCreate,
@@ -110,11 +112,13 @@ export function BrowseView({
   debates: DebateSummary[];
   /** The connected account, enabling the "mine" author-filter shortcut. */
   account?: string;
+  /** Filter/sort state is owned by the parent so it survives navigating into a debate and back. */
+  filter: DebateFilter;
+  onFilter: (filter: DebateFilter) => void;
   createDisabledHint: string | null;
   onOpen: (debateId: number) => void;
   onCreate: (thesis: string, timeUnitSeconds: number) => Promise<void>;
 }) {
-  const [filter, setFilter] = useState<DebateFilter>({ status: 'all', minStake: 0, author: '' });
   const filtered = filterDebates(debates, filter);
 
   return (
@@ -126,7 +130,7 @@ export function BrowseView({
           Status
           <select
             value={filter.status}
-            onChange={(event) => setFilter({ ...filter, status: event.target.value as DebateFilter['status'] })}
+            onChange={(event) => onFilter({ ...filter, status: event.target.value as DebateFilter['status'] })}
           >
             <option value="all">All</option>
             {(Object.keys(PHASE_SHORT) as Phase[]).map((phase) => (
@@ -137,13 +141,14 @@ export function BrowseView({
           </select>
         </label>
         <label className="filter">
-          Min stake ⬡
-          <input
-            type="number"
-            min={0}
-            value={filter.minStake}
-            onChange={(event) => setFilter({ ...filter, minStake: Math.max(0, Number(event.target.value) || 0) })}
-          />
+          Sort by
+          <select
+            value={filter.sort}
+            onChange={(event) => onFilter({ ...filter, sort: event.target.value as DebateFilter['sort'] })}
+          >
+            <option value="recent">Newest</option>
+            <option value="stake">Most staked</option>
+          </select>
         </label>
         <label className="filter filter-author">
           Author
@@ -151,14 +156,14 @@ export function BrowseView({
             type="text"
             value={filter.author}
             placeholder="0x…"
-            onChange={(event) => setFilter({ ...filter, author: event.target.value })}
+            onChange={(event) => onFilter({ ...filter, author: event.target.value })}
           />
         </label>
         {account && (
           <button
             type="button"
             className="btn btn-small"
-            onClick={() => setFilter({ ...filter, author: filter.author === account ? '' : account })}
+            onClick={() => onFilter({ ...filter, author: filter.author === account ? '' : account })}
           >
             {filter.author === account ? 'All authors' : 'Mine'}
           </button>
@@ -168,7 +173,7 @@ export function BrowseView({
       {debates.length === 0 ? (
         <p className="column-empty">No debates yet - start the first one.</p>
       ) : filtered.length === 0 ? (
-        <p className="column-empty">No debates match the filters.</p>
+        <p className="column-empty">No debates match the filter.</p>
       ) : (
         <div className="debate-list">
           {filtered.map((debate) => (

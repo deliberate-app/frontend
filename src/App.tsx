@@ -12,7 +12,7 @@ import {
 import { contractConfig } from './data/config';
 import { defaultSource } from './data/source';
 import { useNow } from './lib/time';
-import type { Debate, DebateSummary, Phase } from './types';
+import type { Debate, DebateFilter, DebateSummary, Phase } from './types';
 import { availablePhasePoke, PHASE_LABEL } from './types';
 import { useWallet } from './wallet/useWallet';
 
@@ -38,6 +38,9 @@ export default function App() {
   const [debates, setDebates] = useState<DebateSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [userState, setUserState] = useState<UserState | null>(null);
+  // Browse filter/sort lives here, not in BrowseView, so it survives navigating
+  // into a debate and back (BrowseView unmounts while a debate is open).
+  const [filter, setFilter] = useState<DebateFilter>({ status: 'all', author: '', sort: 'recent' });
   const wallet = useWallet();
   const now = useNow();
 
@@ -62,7 +65,10 @@ export default function App() {
       .then((connected) => {
         if (!cancelled) setActions(connected);
       })
-      .catch(() => setActions(null));
+      .catch(() => {
+        // A superseded connect must not clobber the newer wallet's action layer.
+        if (!cancelled) setActions(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -70,14 +76,21 @@ export default function App() {
 
   // Reloads are awaited by the actions, so their buttons stay busy until the
   // view is fresh - releasing on the transaction receipt alone would leave a
-  // window where a stale gate invites a doomed second submission. They are
-  // also sequenced: a slow response must never overwrite a newer one.
+  // window where a stale gate invites a doomed second submission.
+  //
+  // refresh is a STABLE callback that reads the live route from a ref rather than
+  // closing over debateId: an action started on one debate can resolve (its wallet
+  // prompt sits open) after the user has navigated elsewhere, and its awaited
+  // refresh() must reload the CURRENT route, never write the old debate's data
+  // under the new one. loadSeq still drops out-of-order responses within a route.
+  const debateIdRef = useRef(debateId);
   const actionsRef = useRef<DebateActions | null>(null);
   const loadSeq = useRef(0);
   const refresh = useCallback(async () => {
     const seq = ++loadSeq.current;
+    const target = debateIdRef.current;
 
-    if (debateId === null) {
+    if (target === null) {
       try {
         const list = await source.list();
         if (seq !== loadSeq.current) return;
@@ -92,10 +105,11 @@ export default function App() {
 
     const connected = actionsRef.current;
     const [debateResult, stateResult] = await Promise.allSettled([
-      source.load(debateId),
-      connected ? connected.userState(debateId) : Promise.resolve(null),
+      source.load(target),
+      connected ? connected.userState(target) : Promise.resolve(null),
     ]);
-    if (seq !== loadSeq.current) return;
+    // Drop the response if a newer refresh started or the route changed underneath us.
+    if (seq !== loadSeq.current || debateIdRef.current !== target) return;
     if (debateResult.status === 'fulfilled') {
       setDebate(debateResult.value);
       setError(null);
@@ -104,15 +118,18 @@ export default function App() {
       setError(cause instanceof Error ? cause.message : String(cause));
     }
     setUserState(stateResult.status === 'fulfilled' ? stateResult.value : null);
-  }, [debateId]);
+  }, []);
 
-  // Route changes drop the previous view's data before the fresh load lands.
+  // Route changes drop the previous view's data and reload for the new route.
   useEffect(() => {
+    debateIdRef.current = debateId;
     setDebate(null);
     setUserState(null);
     setError(null);
-  }, [debateId]);
+    void refresh();
+  }, [debateId, refresh]);
 
+  // A wallet connect/disconnect reloads too (it adds or removes the user's state).
   useEffect(() => {
     actionsRef.current = actions;
     void refresh();
@@ -265,6 +282,8 @@ export default function App() {
           <BrowseView
             debates={debates}
             account={actions?.account}
+            filter={filter}
+            onFilter={setFilter}
             createDisabledHint={createDisabledHint}
             onOpen={openDebate}
             onCreate={createDebate}
