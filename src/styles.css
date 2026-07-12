@@ -741,6 +741,25 @@ button {
   accent-color: var(--ink);
 }
 
+.composer-deposit input[type='number'] {
+  flex: none;
+  width: 5.5rem;
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+}
+
+.composer-hint {
+  margin: -0.2rem 0 0;
+  font-size: 0.76rem;
+  color: var(--bark);
+}
+
+.composer-hint-error {
+  color: var(--con);
+}
+
 /* ── Browse (home) ───────────────────────────────────────────────────── */
 .browse {
   max-width: 46rem;

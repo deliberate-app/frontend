@@ -21,6 +21,8 @@ export interface AddStep {
   side: Side;
   /** The author's initial approval of the own argument in percent, 50..100. */
   approval: number;
+  /** The vote token deposit that seeds the market and sets the starting weight; defaults to the minimum (10). */
+  deposit?: number;
   text: string;
 }
 
@@ -192,15 +194,19 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
           throw new Error(`parent "${step.parent}" of "${step.key}" is not final - add a wait step first`);
         }
         await join(step.user);
+        const deposit = step.deposit ?? 10;
         const newId = (await act(step.user, 'addArgument', [
           debateId,
           parentId,
           await contentURI(step.text),
           step.side === 'pro',
           step.approval,
+          deposit,
         ])) as number;
         argumentIds.set(step.key, newId);
-        log(`${step.user} adds ${step.side} "${step.key}" (${step.approval}%) under "${step.parent}" -> id ${newId}`);
+        log(
+          `${step.user} adds ${step.side} "${step.key}" (${step.approval}%, ${deposit} ⬡) under "${step.parent}" -> id ${newId}`,
+        );
         break;
       }
       case 'stake': {

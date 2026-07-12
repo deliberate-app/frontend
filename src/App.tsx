@@ -232,8 +232,8 @@ export default function App() {
       account: actions.account,
       joined: userState.joined,
       tokens: userState.tokens,
-      addArgument: async (parentArgumentId, side, initialApproval, text) => {
-        await actions.addArgument(debateId, parentArgumentId, side, initialApproval, text);
+      addArgument: async (parentArgumentId, side, initialApproval, deposit, text) => {
+        await actions.addArgument(debateId, parentArgumentId, side, initialApproval, deposit, text);
         await refresh();
       },
       alterArgument: async (argumentId, text) => {

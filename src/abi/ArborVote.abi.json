@@ -38,6 +38,11 @@
     "name": "initialApproval",
     "type": "uint32",
     "internalType": "uint32"
+   },
+   {
+    "name": "deposit",
+    "type": "uint32",
+    "internalType": "uint32"
    }
   ],
   "outputs": [
@@ -544,6 +549,29 @@
     "name": "argumentId",
     "type": "uint16",
     "internalType": "uint16"
+   },
+   {
+    "name": "account",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "redeemArgumentSharesBatch",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "argumentIds",
+    "type": "uint16[]",
+    "internalType": "uint16[]"
    },
    {
     "name": "account",
@@ -1100,6 +1128,22 @@
     "name": "debateId",
     "type": "uint256",
     "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "DepositBelowMinimum",
+  "inputs": [
+   {
+    "name": "minimum",
+    "type": "uint32",
+    "internalType": "uint32"
+   },
+   {
+    "name": "actual",
+    "type": "uint32",
+    "internalType": "uint32"
    }
   ]
  },

@@ -75,8 +75,9 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.join(0);
     expect(await author.userState(0)).toEqual({ joined: true, tokens: 100 });
 
-    // Author an argument at 80% initial approval (market reserves 2 pro / 8 con).
-    await author.addArgument(0, 0, 'pro', 80, 'A machine-authored argument');
+    // Author an argument at 80% initial approval with the minimum 10-token deposit
+    // (market reserves 2 pro / 8 con).
+    await author.addArgument(0, 0, 'pro', 80, 10, 'A machine-authored argument');
     expect((await author.userState(0)).tokens).toBe(90);
 
     // Too early for either poke: advancePhase silently no-ops on-chain, so the
@@ -141,9 +142,9 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.createDebate('A movable thesis', timeUnit);
     await author.join(0);
 
-    // Two drafts directly under the thesis.
-    await author.addArgument(0, 0, 'pro', 60, 'first draft'); // argument 1
-    await author.addArgument(0, 0, 'con', 60, 'second draft'); // argument 2
+    // Two drafts directly under the thesis, each with the minimum 10-token deposit.
+    await author.addArgument(0, 0, 'pro', 60, 10, 'first draft'); // argument 1
+    await author.addArgument(0, 0, 'con', 60, 10, 'second draft'); // argument 2
 
     // Edit the first draft's text while it is still a Created draft.
     await author.alterArgument(0, 1, 'first draft, edited');

@@ -51,6 +51,7 @@ export interface DebateActions {
     parentArgumentId: number,
     side: Side,
     initialApproval: number,
+    deposit: number,
     text: string,
   ): Promise<void>;
   /** Edits a still-draft argument's text (creator only, Editing phase). */
@@ -172,7 +173,7 @@ export async function connectDebateActions(
       await write('join', [BigInt(debateId)]);
     },
 
-    async addArgument(debateId, parentArgumentId, side, initialApproval, text) {
+    async addArgument(debateId, parentArgumentId, side, initialApproval, deposit, text) {
       const contentURI = await publish(text);
       await write('addArgument', [
         BigInt(debateId),
@@ -180,6 +181,7 @@ export async function connectDebateActions(
         contentURI,
         side === 'pro',
         initialApproval,
+        deposit,
       ]);
     },
 

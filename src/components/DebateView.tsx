@@ -19,7 +19,13 @@ export interface DebateTx {
   account: string;
   joined: boolean;
   tokens: number;
-  addArgument(parentArgumentId: number, side: Side, initialApproval: number, text: string): Promise<void>;
+  addArgument(
+    parentArgumentId: number,
+    side: Side,
+    initialApproval: number,
+    deposit: number,
+    text: string,
+  ): Promise<void>;
   /** Edit a still-draft argument's text (creator only). */
   alterArgument(argumentId: number, text: string): Promise<void>;
   /** Move a still-draft argument beneath a finalized parent, re-seeding its rating (creator only). */
@@ -240,7 +246,9 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
               key={`pro-${focus.id}`}
               side="pro"
               tokens={tx.tokens}
-              onAdd={(side, approval, text) => tx.addArgument(focus.id, side, approval, text)}
+              onAdd={(side, approval, deposit, text) =>
+                tx.addArgument(focus.id, side, approval, deposit, text)
+              }
             />
           )}
         </section>
@@ -268,7 +276,9 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
               key={`con-${focus.id}`}
               side="con"
               tokens={tx.tokens}
-              onAdd={(side, approval, text) => tx.addArgument(focus.id, side, approval, text)}
+              onAdd={(side, approval, deposit, text) =>
+                tx.addArgument(focus.id, side, approval, deposit, text)
+              }
             />
           )}
         </section>
