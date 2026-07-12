@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { rpcUp } from '../../scripts/devstack/anvil';
 import type { AccountPosition, Debate, DebateSummary } from '../types';
 import {
@@ -6,9 +6,44 @@ import {
   indexerSource,
   nodeFromIndex,
   summaryFromIndex,
+  waitForIndexerBlock,
   withFallback,
   type DebateSource,
 } from './source';
+
+describe('waitForIndexerBlock', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  const stubProcessedBlock = (processed: number | null) => {
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          data: { chain_metadata: processed === null ? [] : [{ latest_processed_block: processed }] },
+        }),
+      )) as typeof fetch;
+  };
+
+  test('resolves true once the indexer has processed the block', async () => {
+    stubProcessedBlock(100);
+    expect(await waitForIndexerBlock('http://indexer', 100n)).toBe(true);
+    expect(await waitForIndexerBlock('http://indexer', 99n)).toBe(true);
+  });
+
+  test('bails (false) when the indexer is unreachable, rather than blocking', async () => {
+    globalThis.fetch = (async () => {
+      throw new Error('indexer down');
+    }) as typeof fetch;
+    expect(await waitForIndexerBlock('http://indexer', 100n, { timeoutMs: 5000, pollMs: 10 })).toBe(false);
+  });
+
+  test('bails (false) on timeout while the indexer stays behind', async () => {
+    stubProcessedBlock(50);
+    expect(await waitForIndexerBlock('http://indexer', 100n, { timeoutMs: 60, pollMs: 20 })).toBe(false);
+  });
+});
 
 describe('nodeFromIndex', () => {
   const row = {

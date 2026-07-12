@@ -385,6 +385,54 @@ const INDEXER_ARGUMENT_POSITION_QUERY = `query ArgumentPosition($positionId: Str
   Argument(where: { id: { _eq: $argumentId } }) { creator fees }
 }`;
 
+const CHAIN_METADATA_QUERY = `{ chain_metadata { latest_processed_block } }`;
+
+/** The highest block the indexer has folded into its entities, or null if it is unreachable. */
+async function latestProcessedBlock(indexerUrl: string): Promise<bigint | null> {
+  try {
+    const response = await fetch(indexerUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query: CHAIN_METADATA_QUERY }),
+    });
+    if (!response.ok) return null;
+    const { data } = (await response.json()) as {
+      data?: { chain_metadata?: Array<{ latest_processed_block: number | string }> };
+    };
+    const rows = data?.chain_metadata ?? [];
+    // One chain per indexer deployment; take the max defensively.
+    return rows.length === 0
+      ? null
+      : rows.reduce((max, row) => {
+          const value = BigInt(row.latest_processed_block);
+          return value > max ? value : max;
+        }, 0n);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Waits until the indexer has processed `blockNumber` - so a query issued afterwards reflects a
+ * transaction mined in it - then resolves. Bails (returning false) on the timeout, or immediately
+ * if the indexer is unreachable: the read layer's chain fallback is already fresh, so there is no
+ * point blocking. Returns whether the indexer caught up.
+ */
+export async function waitForIndexerBlock(
+  indexerUrl: string,
+  blockNumber: bigint,
+  { timeoutMs = 15_000, pollMs = 400 }: { timeoutMs?: number; pollMs?: number } = {},
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const processed = await latestProcessedBlock(indexerUrl);
+    if (processed === null) return false;
+    if (processed >= blockNumber) return true;
+    if (Date.now() >= deadline) return false;
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+}
+
 /**
  * Reads a debate from the indexer in one GraphQL query instead of RPC-traversing
  * the tree leaf by leaf. The chain clock still comes from the RPC head block -

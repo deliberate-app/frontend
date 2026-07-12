@@ -26,6 +26,7 @@ import abi from '../abi/ArborVote.abi.json';
 import { contentURIOf, publishText } from '../lib/ipfs';
 import type { Side } from '../types';
 import type { ContractConfig } from './config';
+import { waitForIndexerBlock } from './source';
 
 export interface UserState {
   joined: boolean;
@@ -99,7 +100,11 @@ export async function connectDebateActions(
   // receipt. Returns the receipt so callers can read the *mined* effects from the
   // events - the simulation's return value reflects pre-transaction state and can
   // be stale by the time the transaction lands.
-  const write = async (functionName: string, args: unknown[]): Promise<TransactionReceipt> => {
+  const write = async (
+    functionName: string,
+    args: unknown[],
+    opts: { settle?: boolean } = {},
+  ): Promise<TransactionReceipt> => {
     const { request } = await publicClient.simulateContract({
       account,
       address: config.address,
@@ -112,6 +117,13 @@ export async function connectDebateActions(
     // A mined transaction can still revert when another one beat it in a race.
     if (receipt.status === 'reverted') {
       throw new Error('The transaction was mined but reverted - someone else probably got there first.');
+    }
+    // Wait for the indexer to fold the transaction's block before returning, so the caller's
+    // follow-up read reflects it - the fix for post-write freshness across every action. A slow
+    // or unreachable indexer bails (the read layer's chain fallback is already fresh); join opts
+    // out via `settle: false` because it updates optimistically instead.
+    if (opts.settle !== false && config.indexerUrl) {
+      await waitForIndexerBlock(config.indexerUrl, receipt.blockNumber);
     }
     return receipt;
   };
@@ -142,7 +154,8 @@ export async function connectDebateActions(
     },
 
     async join(debateId) {
-      await write('join', [BigInt(debateId)]);
+      // Join reflects optimistically in the UI, so it need not wait on the indexer.
+      await write('join', [BigInt(debateId)], { settle: false });
     },
 
     async addArgument(debateId, parentArgumentId, side, initialApproval, deposit, text) {
