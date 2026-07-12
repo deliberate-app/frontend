@@ -229,10 +229,19 @@ export default function App() {
   const tx: DebateTx | null = useMemo(() => {
     if (!actions || !userState || debateId === null) return null;
     return {
+      account: actions.account,
       joined: userState.joined,
       tokens: userState.tokens,
       addArgument: async (parentArgumentId, side, initialApproval, text) => {
         await actions.addArgument(debateId, parentArgumentId, side, initialApproval, text);
+        await refresh();
+      },
+      alterArgument: async (argumentId, text) => {
+        await actions.alterArgument(debateId, argumentId, text);
+        await refresh();
+      },
+      moveArgument: async (argumentId, newParentArgumentId) => {
+        await actions.moveArgument(debateId, argumentId, newParentArgumentId);
         await refresh();
       },
       stake: async (argumentId, side, amount) => {

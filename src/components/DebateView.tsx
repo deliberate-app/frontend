@@ -7,6 +7,7 @@ import { ancestryOf, childrenOf, finalizable, liveChainTime, thesisOf } from '..
 import { AddressChip } from './AddressChip';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
+import { DraftControls, type MoveTarget } from './DraftControls';
 import { FinalizePanel } from './FinalizePanel';
 import { StakePanel } from './StakePanel';
 import { MiniTree } from './MiniTree';
@@ -14,15 +15,28 @@ import { PositionPanel } from './PositionPanel';
 
 /** The debate interactions available to the connected, joined account. */
 export interface DebateTx {
+  /** The connected account, for owner-only affordances (editing/moving a draft). */
+  account: string;
   joined: boolean;
   tokens: number;
   addArgument(parentArgumentId: number, side: Side, initialApproval: number, text: string): Promise<void>;
+  /** Edit a still-draft argument's text (creator only). */
+  alterArgument(argumentId: number, text: string): Promise<void>;
+  /** Move a still-draft argument beneath a finalized parent (creator only). */
+  moveArgument(argumentId: number, newParentArgumentId: number): Promise<void>;
   stake(argumentId: number, side: Side, amount: number): Promise<void>;
   position(argumentId: number): Promise<ArgumentPosition>;
   redeem(argumentId: number): Promise<void>;
   claimFees(argumentId: number): Promise<void>;
   /** Permissionless - available to any connected account, joined or not. */
   finalize(argumentId: number): Promise<void>;
+}
+
+/** A short label identifying an argument as a move target. */
+function moveTargetLabel(node: { parentId: number | null; side: Side | null; text: string }): string {
+  const kind = node.parentId === null ? 'Thesis' : node.side === 'pro' ? 'Pro' : 'Con';
+  const text = node.text.length > 60 ? `${node.text.slice(0, 57)}…` : node.text;
+  return `${kind}: ${text}`;
 }
 
 /**
@@ -92,6 +106,19 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const rating = tx !== null && tx.joined && debate.phase === 'rating' && !isThesis && focus.state === 'final';
   const finished = tx !== null && debate.phase === 'finished' && !isThesis;
   const draft = tx !== null && focus.state === 'created' && debate.phase !== 'finished';
+  // Editing/moving a draft is creator-only (the contract enforces it too).
+  const ownDraft =
+    draft &&
+    tx !== null &&
+    debate.phase === 'editing' &&
+    focus.creator !== undefined &&
+    focus.creator.toLowerCase() === tx.account.toLowerCase();
+  // A draft can move beneath any finalized argument except its current parent.
+  const moveTargets: MoveTarget[] = ownDraft
+    ? debate.nodes
+        .filter((node) => node.state === 'final' && node.id !== focus.parentId)
+        .map((node) => ({ id: node.id, label: moveTargetLabel(node) }))
+    : [];
 
   return (
     <main className="debate">
@@ -161,6 +188,15 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 : undefined
             }
             onFinalize={() => tx.finalize(focus.id)}
+          />
+        )}
+        {ownDraft && tx && (
+          <DraftControls
+            key={focus.id}
+            text={focus.text}
+            moveTargets={moveTargets}
+            onEdit={(text) => tx.alterArgument(focus.id, text)}
+            onMove={(newParentArgumentId) => tx.moveArgument(focus.id, newParentArgumentId)}
           />
         )}
         {rating && tx && (

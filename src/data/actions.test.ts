@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'bun:test';
-import type { Address, EIP1193Provider } from 'viem';
+import type { Abi, Address, EIP1193Provider, Hex } from 'viem';
 
 import { rpcUp } from '../../scripts/devstack/anvil';
 import { loadArtifact } from '../../scripts/devstack/artifacts';
 import { anvilAccount, devChainClient } from '../../scripts/devstack/debate';
+import abi from '../abi/ArborVote.abi.json';
+import { contentURIOf } from '../lib/ipfs';
 import { connectDebateActions } from './actions';
+import { contractSource } from './source';
 
 const RPC_URL = 'http://127.0.0.1:8545';
 const CONTRACTS_DIR = new URL('../../../contracts', import.meta.url).pathname;
@@ -109,5 +112,56 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     expect((await author.position(0, 1)).claimableFees).toBe(1);
     await author.claimFees(0, 1);
     expect((await author.userState(0)).tokens).toBe(91);
+  }, 30_000);
+
+  test.skipIf(!anvilAvailable)('edits and moves a draft argument through the action layer', async () => {
+    const client = devChainClient(RPC_URL);
+    const deployer = anvilAccount(0);
+    const deploy = async (sourceFile: string, name: string, args: unknown[]): Promise<Address> => {
+      const artifact = await loadArtifact(CONTRACTS_DIR, sourceFile, name);
+      const hash = await client.deployContract({
+        abi: artifact.abi,
+        bytecode: artifact.bytecode,
+        args,
+        account: deployer,
+      });
+      const receipt = await client.waitForTransactionReceipt({ hash });
+      if (!receipt.contractAddress) throw new Error('no contract address');
+      return receipt.contractAddress;
+    };
+    const poh = await deploy('MockProofOfHumanity.m.sol', 'MockProofOfHumanity', []);
+    const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
+
+    const config = { address, rpcUrl: RPC_URL };
+    const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
+    // The keeper finalizes permissionlessly (the move target must be Final).
+    const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
+
+    const timeUnit = 60;
+    await author.createDebate('A movable thesis', timeUnit);
+    await author.join(0);
+
+    // Two drafts directly under the thesis.
+    await author.addArgument(0, 0, 'pro', 60, 'first draft'); // argument 1
+    await author.addArgument(0, 0, 'con', 60, 'second draft'); // argument 2
+
+    // Edit the first draft's text while it is still a Created draft.
+    await author.alterArgument(0, 1, 'first draft, edited');
+    const edited = (await client.readContract({
+      address,
+      abi: abi as Abi,
+      functionName: 'getArgument',
+      args: [0n, 1],
+    })) as { contentURI: Hex };
+    expect(edited.contentURI).toBe(await contentURIOf('first draft, edited'));
+
+    // Finalize argument 1 so it can be a move target, then move argument 2 beneath it.
+    await client.increaseTime({ seconds: timeUnit + 1 });
+    await client.mine({ blocks: 1 });
+    await keeper.finalizeArgument(0, 1);
+    await author.moveArgument(0, 2, 1);
+
+    const debate = await contractSource(address, RPC_URL).load(0);
+    expect(debate.nodes.find((node) => node.id === 2)?.parentId).toBe(1);
   }, 30_000);
 });

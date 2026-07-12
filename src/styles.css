@@ -639,6 +639,13 @@ button {
   white-space: nowrap;
 }
 
+/* Owner-only draft edit/move affordances, under the finalize panel. */
+.draft-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
 .action-panel {
   margin-top: 1rem;
   padding-top: 0.9rem;
