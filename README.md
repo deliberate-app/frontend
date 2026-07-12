@@ -7,10 +7,17 @@ Every card shows the argument's **market approval** (the pro share of its argume
 ## Develop
 
 ```sh
-just install   # bun install
-just dev       # dev server with the bundled sample debate
-just test      # unit tests (bun test); includes a kubo round-trip when the node is up
+just install     # bun install
+just dev         # dev server with the bundled sample debate
+just dev-anvil   # local anvil chain: deploy + seed + serve (writes .env.local)
+just dev-testnet # the shared Base Sepolia testnet (loads .env.testnet)
+just test        # unit tests (bun test); includes a kubo round-trip when the node is up
 ```
+
+Each `dev-*` recipe selects an environment through Vite's env files: `dev-anvil` writes and uses
+`.env.local` (the local anvil deployment); `dev-testnet` runs `vite --mode testnet`, which loads
+`.env.testnet` (the shared testnet). Plain `dev` uses `.env`/`.env.local` and, with no address set,
+shows the bundled sample. Only the `.env.*.example` templates are committed.
 
 The sample debate is modeled on kialo's ["Should humans act to fight climate change?"](https://www.kialo.com/should-humans-act-to-fight-climate-change-4540).
 
@@ -46,12 +53,22 @@ with `just sync-abi` after any contract interface change.
 
 ## Base Sepolia
 
-`.env.base-sepolia.example` is a ready-made `.env.local` for the shared testnet deployment: copy
-it and fill in the ArborVote address (contracts README, "Deployment") and the hosted indexer's
-GraphQL endpoint (indexer README, "Hosted service"). The app is chain-agnostic at runtime - no
-code changes, wallets just need the Base Sepolia network (chain 84532). Caveat until a hosted
-kubo API exists: leave `VITE_IPFS_API` unset, and authored texts are committed digest-only,
-so other clients cannot resolve them - fine for trying the mechanics, not for real content.
+```sh
+cp .env.testnet.example .env.testnet   # then edit if needed
+just dev-testnet
+```
+
+`.env.testnet.example` carries the shared testnet config (the deployed ArborVote address and the
+hosted indexer's GraphQL endpoint). Copy it to `.env.testnet` (gitignored, so per-machine tweaks
+stay local) and run `just dev-testnet` — Vite's `--mode testnet` loads it, and its values override
+any local-anvil `.env.local`, so the two environments never bleed together. The app is
+chain-agnostic at runtime; wallets just need the Base Sepolia network (chain 84532).
+
+Content resolution needs a reachable IPFS node. The template defaults to digest-only (a public
+gateway can read pre-pinned content but authoring pins nothing), so authored texts won't resolve
+elsewhere. To author resolvable content from your machine, run `just ipfs-up` and point both
+`VITE_IPFS_GATEWAY` and `VITE_IPFS_API` at the local kubo in your `.env.testnet`; for a truly shared
+testnet, point them at a hosted pinning service instead.
 
 ## Argument content and IPFS
 

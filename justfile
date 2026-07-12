@@ -17,6 +17,10 @@ dev:
 dev-anvil:
     bun scripts/dev-anvil.ts
 
+# Start the dev server against the shared testnet (loads .env.testnet; copy .env.testnet.example first)
+dev-testnet:
+    bun run dev:testnet
+
 # Sync the app ABI from the contracts build artifact
 sync-abi:
     bun scripts/sync-abi.ts

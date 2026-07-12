@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:anvil": "bun scripts/dev-anvil.ts",
+    "dev:testnet": "vite --mode testnet",
     "test": "bun test",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
