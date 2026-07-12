@@ -212,13 +212,14 @@ export async function connectDebateActions(
     },
 
     async advancePhase(debateId) {
-      // Below its time gates the contract silently does nothing instead of
-      // reverting, so a successful receipt alone does not mean progress -
-      // without this check a fast local clock burns gas with no feedback.
-      const phaseOf = async () => (await read<[number]>('phases', [BigInt(debateId)]))[0];
-      const phaseBefore = await phaseOf();
-      await write('advancePhase', [BigInt(debateId)]);
-      if ((await phaseOf()) === phaseBefore) {
+      // Below its time gates the contract silently does nothing instead of reverting, so a
+      // successful receipt alone does not mean progress. Read that from the emitted event rather
+      // than a follow-up phase read: a load-balanced RPC can serve the read from a node that has
+      // not yet seen the mined block, which wrongly reads back the old phase and surfaces a
+      // spurious "did not advance" even though the transaction landed.
+      const receipt = await write('advancePhase', [BigInt(debateId)]);
+      const advanced = parseEventLogs({ abi: abi as Abi, eventName: 'PhaseAdvanced', logs: receipt.logs });
+      if (advanced.length === 0) {
         throw new Error('The debate did not advance: the chain clock has not passed the deadline yet.');
       }
     },
