@@ -1,8 +1,8 @@
 import { createPublicClient, getAddress, http, hexToBytes, hexToString, type Address, type Hex } from 'viem';
 import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
-import type { AccountPosition, ArgumentNode, Debate, DebateSummary, Phase } from '../types';
-import { shortDigest, thesisOf } from '../types';
+import type { AccountPosition, ArgumentNode, Debate, DebateSummary } from '../types';
+import { phaseOf, shortDigest, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
 import { climateDebate } from './climateDebate';
 import { contractConfig } from './config';
@@ -37,12 +37,11 @@ export const mockSource: DebateSource = {
   positions: async () => [],
 };
 
-const PHASE_BY_STATUS: Record<number, Phase> = {
-  1: 'editing',
-  2: 'rating',
-  3: 'tallying',
-  4: 'finished',
-};
+// Phase.Status on-chain: 0 Uninitialized … 4 Finished. Only these two boundaries are read raw - one to
+// reject a never-created debate, one to know the tally has run; the live phase between them is derived
+// from the time gates via phaseOf, matching the contract.
+const PHASE_UNINITIALIZED = 0;
+const PHASE_FINISHED = 4;
 
 interface OnChainArgument {
   contentURI: Hex;
@@ -105,7 +104,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
       // A never-created debate reads back as all-zero: phase Uninitialized (0), no
       // root argument. Reject it here rather than fabricate a thesis-less debate the
       // view cannot render (e.g. a shared #/debate/N link to an id that does not exist).
-      if (!PHASE_BY_STATUS[currentPhase]) {
+      if (currentPhase === PHASE_UNINITIALIZED) {
         throw new Error(`Debate ${debateId} does not exist`);
       }
 
@@ -176,11 +175,12 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         .filter((node) => node.rawState !== 0)
         .map(({ rawState: _rawState, ...node }) => node);
 
-      const phase = PHASE_BY_STATUS[currentPhase] ?? 'editing';
-      const approved =
-        phase === 'finished'
-          ? ((await client.readContract({ address, abi, functionName: 'outcome', args: [id] })) as boolean)
-          : undefined;
+      // Derive the live phase from the same clock the contract uses; only the terminal Finished latch is read raw.
+      const finished = currentPhase === PHASE_FINISHED;
+      const phase = phaseOf(Number(editingEndTime), Number(ratingEndTime), finished, chainTime);
+      const approved = finished
+        ? ((await client.readContract({ address, abi, functionName: 'outcome', args: [id] })) as boolean)
+        : undefined;
 
       return {
         id: debateId,
@@ -197,38 +197,42 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
     },
 
     async list(): Promise<DebateSummary[]> {
-      const count = Number(
-        await client.readContract({ address, abi, functionName: 'debatesCount', args: [] }),
-      );
+      const [count, latestBlock] = await Promise.all([
+        client.readContract({ address, abi, functionName: 'debatesCount', args: [] }).then(Number),
+        client.getBlock(),
+      ]);
+      // One clock for the whole list; each debate's phase is derived from its own gates, as the contract does.
+      const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
       return Promise.all(
         [...Array(count).keys()].map(async (debateId) => {
           const id = BigInt(debateId);
-          const [thesis, [currentPhase], [totalVotes, argumentsCount]] = await Promise.all([
-            client.readContract({
-              address,
-              abi,
-              functionName: 'getArgument',
-              args: [id, 0],
-            }) as Promise<OnChainArgument>,
-            client.readContract({
-              address,
-              abi,
-              functionName: 'phases',
-              args: [id],
-            }) as Promise<[number, bigint, bigint, bigint]>,
-            client.readContract({
-              address,
-              abi,
-              functionName: 'debates',
-              args: [id],
-            }) as Promise<[number, number]>,
-          ]);
+          const [thesis, [currentPhase, editingEndTime, ratingEndTime], [totalVotes, argumentsCount]] =
+            await Promise.all([
+              client.readContract({
+                address,
+                abi,
+                functionName: 'getArgument',
+                args: [id, 0],
+              }) as Promise<OnChainArgument>,
+              client.readContract({
+                address,
+                abi,
+                functionName: 'phases',
+                args: [id],
+              }) as Promise<[number, bigint, bigint, bigint]>,
+              client.readContract({
+                address,
+                abi,
+                functionName: 'debates',
+                args: [id],
+              }) as Promise<[number, number]>,
+            ]);
           const content = await resolveContent(thesis.contentURI, ipfsGateway);
           return {
             id: debateId,
             thesis: content.text,
             contentDigest: content.digest,
-            phase: PHASE_BY_STATUS[currentPhase] ?? 'editing',
+            phase: phaseOf(Number(editingEndTime), Number(ratingEndTime), currentPhase === PHASE_FINISHED, chainTime),
             stake: totalVotes,
             argumentsCount,
             creator: thesis.creator,
@@ -289,16 +293,9 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
   };
 }
 
-const PHASE_BY_NAME: Record<string, Phase> = {
-  EDITING: 'editing',
-  RATING: 'rating',
-  TALLYING: 'tallying',
-  FINISHED: 'finished',
-};
-
 /** Raw indexer rows; Hasura serializes the BigInt fields as strings. */
 export interface IndexedDebateRow {
-  phase: string;
+  finished: boolean;
   editingEndTime: string;
   ratingEndTime: string;
   approved: boolean | null;
@@ -348,7 +345,9 @@ export interface IndexedDebateSummaryRow {
   id: string;
   creator: string;
   contentURI: string;
-  phase: string;
+  finished: boolean;
+  editingEndTime: string;
+  ratingEndTime: string;
   totalVotes: string;
   argumentsCount: string;
 }
@@ -360,14 +359,18 @@ export interface IndexedPositionRow {
   conShares: string;
 }
 
-/** Maps an indexer row to a browse-list summary; the thesis text still needs resolving. */
+/**
+ * Maps an indexer row to a browse-list summary; the thesis text still needs resolving. The index stores no
+ * phase - only the `finished` latch and the time gates - so the live phase is derived from `chainTime`.
+ */
 export function summaryFromIndex(
   row: IndexedDebateSummaryRow,
+  chainTime: number,
 ): Omit<DebateSummary, 'thesis'> & { contentURI: Hex } {
   return {
     id: Number(row.id),
     contentURI: row.contentURI as Hex,
-    phase: PHASE_BY_NAME[row.phase] ?? 'editing',
+    phase: phaseOf(Number(row.editingEndTime), Number(row.ratingEndTime), row.finished, chainTime),
     stake: Number(row.totalVotes),
     argumentsCount: Number(row.argumentsCount),
     // The index stores addresses lowercased; checksum to match the chain reads.
@@ -376,14 +379,14 @@ export function summaryFromIndex(
 }
 
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
-  Debate(where: { id: { _eq: $debateId } }) { phase editingEndTime ratingEndTime approved }
+  Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
     argumentId parent_id isSupporting contentURI finalizationTime pro con votes creator
   }
 }`;
 
 const INDEXER_LIST_QUERY = `query DebateList {
-  Debate { id creator contentURI phase totalVotes argumentsCount }
+  Debate { id creator contentURI finished editingEndTime ratingEndTime totalVotes argumentsCount }
 }`;
 
 const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!) {
@@ -501,7 +504,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
 
       return {
         id: debateId,
-        phase: PHASE_BY_NAME[debate.phase] ?? 'editing',
+        phase: phaseOf(Number(debate.editingEndTime), Number(debate.ratingEndTime), debate.finished, chainTime),
         nodes,
         timing: {
           editingEndTime: Number(debate.editingEndTime),
@@ -514,10 +517,15 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
     },
 
     async list(): Promise<DebateSummary[]> {
-      const data = await graphql<{ Debate: IndexedDebateSummaryRow[] }>(INDEXER_LIST_QUERY);
+      // The index carries no notion of "now", so the phase is derived from one RPC-head clock for the whole list.
+      const [data, latestBlock] = await Promise.all([
+        graphql<{ Debate: IndexedDebateSummaryRow[] }>(INDEXER_LIST_QUERY),
+        client.getBlock(),
+      ]);
+      const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
       const summaries = await Promise.all(
         data.Debate.map(async (row) => {
-          const { contentURI, ...summary } = summaryFromIndex(row);
+          const { contentURI, ...summary } = summaryFromIndex(row, chainTime);
           const content = await resolveContent(contentURI, ipfsGateway);
           return { ...summary, thesis: content.text, contentDigest: content.digest };
         }),

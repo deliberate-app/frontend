@@ -5,8 +5,8 @@
  *
  * Budgets: every persona holds 100 vote tokens and each argument here stakes the
  * minimum 10-token deposit - alice authors 6, bob 10, carol 2, and dan 6 arguments. In the rating phase,
- * erika and frank join as pure raters, and the authors spend leftover budget. Finally the debate is
- * advanced into Tallying and tallied, so the seeded sample ends Finished with a visible outcome.
+ * erika and frank join as pure raters, and the authors spend leftover budget. Finally the debate reaches
+ * Tallying by the clock and erika tallies it, so the seeded sample ends Finished with a visible outcome.
  */
 
 import type { DebateScript } from '../devstack/debate';
@@ -51,11 +51,10 @@ export const climateDebate: DebateScript = {
     { kind: 'add', user: 'dan', key: 'off-grid-solar', parent: 'leapfrog', side: 'pro', approval: 65, text: 'Off-grid solar already powers tens of millions of homes across Africa and Asia.' },
     { kind: 'add', user: 'dan', key: 'storage-lags', parent: 'solar-cost-fall', side: 'con', approval: 60, text: "Cheap panels alone don't decarbonize grids; storage and transmission still lag." },
 
-    // Rating: editing ends after seven time units (two have passed), then participants price
-    // the arguments. Trading the thin constant-product markets produces uneven percentages,
-    // and con stakes push overrated arguments below 50%.
+    // Rating: editing ends after seven time units (two have passed), and the debate enters Rating by the
+    // clock alone - no poke. Participants then price the arguments; trading the thin constant-product markets
+    // produces uneven percentages, and con stakes push overrated arguments below 50%.
     { kind: 'wait', timeUnits: 5 },
-    { kind: 'advancePhase', user: 'erika' },
     { kind: 'stake', user: 'erika', argument: 'habitability', side: 'pro', amount: 5 },
     { kind: 'stake', user: 'erika', argument: 'jobs', side: 'pro', amount: 2 },
     { kind: 'stake', user: 'erika', argument: 'uncertain-projections', side: 'con', amount: 2 },
@@ -71,10 +70,9 @@ export const climateDebate: DebateScript = {
     { kind: 'stake', user: 'dan', argument: 'job-losses', side: 'con', amount: 6 },
     { kind: 'stake', user: 'dan', argument: 'mixed-causes', side: 'con', amount: 7 },
 
-    // Rating ends ten time units after creation; advance into Tallying and tally the tree so the
-    // seeded sample finishes with a computed outcome (the thesis confirmed or objected).
+    // Rating ends ten time units after creation; the clock enters Tallying on its own and erika tallies the
+    // tree so the seeded sample finishes with a computed outcome (the thesis confirmed or objected).
     { kind: 'wait', timeUnits: 4 },
-    { kind: 'advancePhase', user: 'erika' },
     { kind: 'tally', user: 'erika' },
   ],
 };

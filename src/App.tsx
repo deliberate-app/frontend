@@ -12,19 +12,12 @@ import {
 import { contractConfig } from './data/config';
 import { defaultSource } from './data/source';
 import { useNow } from './lib/time';
-import type { Debate, DebateFilter, DebateSummary, Phase } from './types';
+import type { Debate, DebateFilter, DebateSummary } from './types';
 import { availablePhasePoke, PHASE_LABEL } from './types';
 import { useWallet } from './wallet/useWallet';
 
 const source = defaultSource();
 const config = contractConfig();
-
-const POKE_LABEL: Record<Phase, string> = {
-  editing: 'Start editing',
-  rating: 'Start rating',
-  tallying: 'Start tallying',
-  finished: 'Tally the debate',
-};
 
 // A just-created debate is mined, but the load-balanced RPC / hosted indexer can briefly
 // serve a node that has not seen its block yet - so the reader waits it out with a spinner.
@@ -215,8 +208,8 @@ export default function App() {
     !userState.joined &&
     (debate?.phase === 'editing' || debate?.phase === 'rating');
 
-  // The phase poke is permissionless - any connected account can push the debate along.
-  // The ticking clock opens the gate live, without waiting for the next poll.
+  // Tallying is permissionless - any connected account can finish a debate once its rating window
+  // closes. The ticking clock opens the gate live, without waiting for the next poll.
   const poke = actions !== null && debate ? availablePhasePoke(debate, now) : null;
   const [poking, setPoking] = useState(false);
   const [pokeError, setPokeError] = useState<string | null>(null);
@@ -225,7 +218,7 @@ export default function App() {
     setPoking(true);
     setPokeError(null);
     try {
-      await (poke.kind === 'tally' ? actions.tallyTree(debateId) : actions.advancePhase(debateId));
+      await actions.tallyTree(debateId);
       await refresh();
     } catch (cause) {
       setPokeError(actionErrorMessage(cause));
@@ -313,7 +306,7 @@ export default function App() {
         {!browsing && debate && <PhaseClock debate={debate} now={now} />}
         {!browsing && poke && (
           <button type="button" className="btn" onClick={runPoke} disabled={poking}>
-            {poking ? 'Poking…' : POKE_LABEL[poke.target]}
+            {poking ? 'Tallying…' : 'Tally the debate'}
           </button>
         )}
         <span className="topbar-spacer" />
@@ -331,7 +324,7 @@ export default function App() {
       </header>
 
       {joinError && <p className="load-error">Could not join: {joinError}</p>}
-      {pokeError && <p className="load-error">Could not advance the debate: {pokeError}</p>}
+      {pokeError && <p className="load-error">Could not tally the debate: {pokeError}</p>}
       {error && (
         <p className="load-error">
           Could not load {browsing ? 'the debates' : 'the debate'}: {error}. Check

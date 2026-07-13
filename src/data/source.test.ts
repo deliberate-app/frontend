@@ -113,17 +113,20 @@ describe('nodeFromIndex', () => {
 });
 
 describe('summaryFromIndex', () => {
-  test('maps a debate row to a browse summary', () => {
-    expect(
-      summaryFromIndex({
-        id: '2',
-        creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-        contentURI: '0xabc2',
-        phase: 'RATING',
-        totalVotes: '291',
-        argumentsCount: '25',
-      }),
-    ).toEqual({
+  const row = {
+    id: '2',
+    creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+    contentURI: '0xabc2',
+    finished: false,
+    editingEndTime: '700',
+    ratingEndTime: '1000',
+    totalVotes: '291',
+    argumentsCount: '25',
+  };
+
+  test('maps a debate row to a browse summary, deriving the phase from the gates and the clock', () => {
+    // Chain time 800 is past editing (700) and within rating (1000): rating.
+    expect(summaryFromIndex(row, 800)).toEqual({
       id: 2,
       contentURI: '0xabc2',
       phase: 'rating',
@@ -131,6 +134,10 @@ describe('summaryFromIndex', () => {
       argumentsCount: 25,
       creator: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     });
+  });
+
+  test('lets the finished latch win over the clock', () => {
+    expect(summaryFromIndex({ ...row, finished: true }, 800).phase).toBe('finished');
   });
 });
 

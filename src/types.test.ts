@@ -9,51 +9,49 @@ function debate(phase: Phase, timing?: DebateTiming): Debate {
 }
 
 describe('availablePhasePoke', () => {
-  test('offers the tally during the Tallying phase, even without timing data', () => {
+  test('offers the tally in the Tallying phase without timing data (a sample debate)', () => {
     expect(availablePhasePoke(debate('tallying'))).toEqual({ kind: 'tally', target: 'finished' });
   });
 
-  test('is closed while the phase clock has not run out', () => {
+  test('is closed while the rating window has not run out', () => {
     expect(availablePhasePoke(debate('editing', { ...TIMING, chainTime: 700 }))).toBeNull();
     expect(availablePhasePoke(debate('rating', { ...TIMING, chainTime: 1000 }))).toBeNull();
   });
 
-  test('offers the advance once the phase clock has run out', () => {
-    expect(availablePhasePoke(debate('editing', { ...TIMING, chainTime: 701 }))).toEqual({
-      kind: 'advance',
-      target: 'rating',
-    });
+  test('opens the tally once the rating window has run out', () => {
     expect(availablePhasePoke(debate('rating', { ...TIMING, chainTime: 1001 }))).toEqual({
-      kind: 'advance',
-      target: 'tallying',
+      kind: 'tally',
+      target: 'finished',
     });
   });
 
-  test('skips straight to Tallying when a debate slept through its Rating window', () => {
+  test('opens the tally even from a stale editing snapshot once rating time has passed', () => {
+    // The earlier phases advance by the clock now, so a debate whose snapshot still reads editing but
+    // whose clock is already past the rating window is tally-ready - no intermediate poke.
     expect(availablePhasePoke(debate('editing', { ...TIMING, chainTime: 1001 }))).toEqual({
-      kind: 'advance',
-      target: 'tallying',
+      kind: 'tally',
+      target: 'finished',
     });
   });
 
-  test('is closed on finished debates and on sample data without a chain', () => {
+  test('is closed on finished debates and on sample data still in an earlier phase', () => {
     expect(availablePhasePoke(debate('finished', { ...TIMING, chainTime: 9999 }))).toBeNull();
     expect(availablePhasePoke(debate('editing'))).toBeNull();
     expect(availablePhasePoke(debate('rating'))).toBeNull();
   });
 
   test('opens live as the chain-time estimate advances between reloads', () => {
-    // Loaded at wall 50 with the chain clock estimated at 600 (a time-warped
-    // dev chain far ahead of the wall): 101 s of wall time later the gate opens.
-    const stale = debate('editing', { ...TIMING, chainTime: 600, loadedAt: 50 });
-    expect(availablePhasePoke(stale, 149)).toBeNull();
-    expect(availablePhasePoke(stale, 151)).toEqual({ kind: 'advance', target: 'rating' });
+    // Loaded at wall 50 with the chain clock estimated at 900 (a time-warped dev chain ahead of the
+    // wall): 101 s of wall time later the estimate passes the rating end (1000) and the tally opens.
+    const stale = debate('rating', { ...TIMING, chainTime: 900, loadedAt: 50 });
+    expect(availablePhasePoke(stale, 149)).toBeNull(); // 900 + 99 = 999
+    expect(availablePhasePoke(stale, 151)).toEqual({ kind: 'tally', target: 'finished' }); // 900 + 101 = 1001
   });
 
   test('never closes again on a wall clock running behind the load-time estimate', () => {
     expect(
-      availablePhasePoke(debate('editing', { ...TIMING, chainTime: 701, loadedAt: 1000 }), 100),
-    ).toEqual({ kind: 'advance', target: 'rating' });
+      availablePhasePoke(debate('rating', { ...TIMING, chainTime: 1001, loadedAt: 1000 }), 100),
+    ).toEqual({ kind: 'tally', target: 'finished' });
   });
 });
 

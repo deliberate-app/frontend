@@ -114,28 +114,38 @@ export function filterDebates(debates: DebateSummary[], filter: DebateFilter): D
   );
 }
 
-/** A permissionless phase transition that is currently open for anyone to trigger. */
-export interface PhasePoke {
-  /** `advance` maps to `advancePhase`, `tally` to `tallyTree` (the Finished transition). */
-  kind: 'advance' | 'tally';
-  target: Phase;
+/**
+ * Derives a debate's phase the way the contract does: Editing, Rating, and Tallying follow purely from
+ * the two time gates, and only the terminal Finished phase is a stored fact (set once the tally has run).
+ */
+export function phaseOf(editingEndTime: number, ratingEndTime: number, finished: boolean, time: number): Phase {
+  if (finished) return 'finished';
+  if (time > ratingEndTime) return 'tallying';
+  if (time > editingEndTime) return 'rating';
+  return 'editing';
 }
 
 /**
- * The phase poke currently open on the debate, if any. `now` (wall unix
- * seconds, typically a ticking clock) lets the gate open live between reloads
- * via the advancing chain-time estimate.
+ * The one debate transition anyone can trigger: the tally, which finishes the debate. The earlier
+ * Editing→Rating→Tallying transitions advance by the clock alone and need no transaction.
+ */
+export interface PhasePoke {
+  kind: 'tally';
+  target: 'finished';
+}
+
+/**
+ * Whether the tally is open: the (live) clock has passed the rating window but the debate has not
+ * finished yet. `now` (wall unix seconds, typically a ticking clock) lets the gate open live between
+ * reloads via the advancing chain-time estimate; sample data without a clock falls back to the phase.
  */
 export function availablePhasePoke(debate: Debate, now?: number): PhasePoke | null {
-  if (debate.phase === 'tallying') return { kind: 'tally', target: 'finished' };
-  if (!debate.timing) return null;
-  const { editingEndTime, ratingEndTime } = debate.timing;
+  if (debate.phase === 'finished') return null;
+  if (!debate.timing) {
+    return debate.phase === 'tallying' ? { kind: 'tally', target: 'finished' } : null;
+  }
   const time = now === undefined ? debate.timing.chainTime : liveChainTime(debate.timing, now);
-  const stuckInEditing = debate.phase === 'editing';
-  const stuckInRating = stuckInEditing || debate.phase === 'rating';
-  if (stuckInRating && time > ratingEndTime) return { kind: 'advance', target: 'tallying' };
-  if (stuckInEditing && time > editingEndTime) return { kind: 'advance', target: 'rating' };
-  return null;
+  return time > debate.timing.ratingEndTime ? { kind: 'tally', target: 'finished' } : null;
 }
 
 /**

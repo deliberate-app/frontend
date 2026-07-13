@@ -56,19 +56,6 @@
  },
  {
   "type": "function",
-  "name": "advancePhase",
-  "inputs": [
-   {
-    "name": "debateId",
-    "type": "uint256",
-    "internalType": "uint256"
-   }
-  ],
-  "outputs": [],
-  "stateMutability": "nonpayable"
- },
- {
-  "type": "function",
   "name": "alterArgument",
   "inputs": [
    {
@@ -926,25 +913,6 @@
     "type": "uint32",
     "indexed": false,
     "internalType": "uint32"
-   }
-  ],
-  "anonymous": false
- },
- {
-  "type": "event",
-  "name": "PhaseAdvanced",
-  "inputs": [
-   {
-    "name": "debateId",
-    "type": "uint256",
-    "indexed": true,
-    "internalType": "uint256"
-   },
-   {
-    "name": "newPhase",
-    "type": "uint8",
-    "indexed": false,
-    "internalType": "enum Phase.Status"
    }
   ],
   "anonymous": false

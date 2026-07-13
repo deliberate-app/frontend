@@ -63,7 +63,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const config = { address, rpcUrl: RPC_URL };
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
     const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
-    // The keeper never joins: the pokes (advance/tally) are permissionless.
+    // The keeper never joins: the tally is permissionless.
     const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
     // Reads come from the source layer (here the chain source; the app prefers the indexer).
     const reads = contractSource(address, RPC_URL);
@@ -82,15 +82,10 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.addArgument(0, 0, 'pro', 80, 10, 'A machine-authored argument');
     expect((await reads.userState(0, author.account)).tokens).toBe(90);
 
-    // Too early to advance: advancePhase silently no-ops on-chain, so the action verifies the effect.
-    expect((await reads.userState(0, keeper.account)).joined).toBe(false);
-    await expect(keeper.advancePhase(0)).rejects.toThrow('The debate did not advance');
-
-    // Time passes: the argument finalizes automatically once its window elapses, and the keeper
-    // advances the debate into Rating.
+    // Time passes: the argument finalizes automatically once its window elapses, and the debate enters
+    // Rating by the clock alone - no poke.
     await warp(timeUnit + 1);
     await warp(7 * timeUnit);
-    await keeper.advancePhase(0);
 
     // The rater disagrees: 20 tokens on con (fee 1, net 19) buy 8 + 19 - ceil(16/21) = 26 shares.
     await rater.join(0);
@@ -100,9 +95,8 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     expect(raterPosition.proShares).toBe(0);
     expect(raterPosition.claimableFees).toBe(0); // not the creator
 
-    // The keeper finishes the debate.
+    // The rating window closes by the clock; the keeper finishes the debate with the tally.
     await warp(10 * timeUnit);
-    await keeper.advancePhase(0);
     await keeper.tallyTree(0);
 
     // The correcting rater profits: 26 shares x 21/22 = 24 tokens back on 20 staked.
@@ -203,10 +197,10 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.addArgument(0, 0, 'pro', 50, 10, 'first argument'); // id 1
     await author.addArgument(0, 0, 'pro', 50, 10, 'second argument'); // id 2
 
-    // The arguments finalize automatically once their editing windows elapse.
+    // The arguments finalize automatically once their editing windows elapse, and the debate enters
+    // Rating by the clock.
     await warp(timeUnit + 1);
     await warp(7 * timeUnit);
-    await keeper.advancePhase(0);
 
     // The rater takes a con position in both arguments (22 con shares, 20 tokens each).
     await rater.join(0);
@@ -219,9 +213,8 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     expect(held.map((position) => position.argumentId).sort()).toEqual([1, 2]);
     expect(held.every((position) => position.conShares > 0)).toBe(true);
 
-    // Finish the debate, then redeem both positions in a single transaction.
+    // Finish the debate (the rating window closes by the clock), then redeem both positions in one transaction.
     await warp(10 * timeUnit);
-    await keeper.advancePhase(0);
     await keeper.tallyTree(0);
     await rater.redeemSharesBatch(
       0,
