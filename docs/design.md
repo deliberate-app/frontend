@@ -56,6 +56,9 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — a card without children reads "Undebated".** "No replies yet" was forum language;
+  the tree speaks of arguments beneath a claim. One quiet, domain-true word that doubles as an
+  invitation to argue; cards with children keep "n pro · n con →". (Principle 10, north star.)
 - **2026-07-15 — authored texts are capped at 250 characters, budget always visible.** Theses and
   arguments share one hard cap (`MAX_CONTENT_CHARS`): one sharp claim per box — depth belongs in
   the tree, not in paragraphs, and short cards keep the overview scannable (north star). The input

@@ -90,7 +90,7 @@ export function ArgumentCard({
           <LockIcon open={!locked} />
         </span>
         <span className="card-replies">
-          {replies.length > 0 ? `${replies.join(' · ')} →` : 'No replies yet'}
+          {replies.length > 0 ? `${replies.join(' · ')} →` : 'Undebated'}
         </span>
       </span>
     </button>
