@@ -208,3 +208,52 @@ export const climateDebate: Debate = {
   phase: 'rating',
   nodes: nodes.map((node) => ({ ...node, state: 'final', finalizationTime: 0 })),
 };
+
+/** Builds a compact finished sample debate, so the browse list and focus view show both verdicts. */
+function finishedDebate(
+  id: number,
+  approved: boolean,
+  theses: [string, string, string],
+  approvals: [number, number, number],
+  weights: [number, number, number],
+): Debate {
+  const [thesis, pro, con] = theses;
+  return {
+    id,
+    phase: 'finished',
+    approved,
+    nodes: (
+      [
+        { id: 0, parentId: null, side: null, text: thesis, approval: approvals[0], weight: weights[0] },
+        { id: 1, parentId: 0, side: 'pro', text: pro, approval: approvals[1], weight: weights[1] },
+        { id: 2, parentId: 0, side: 'con', text: con, approval: approvals[2], weight: weights[2] },
+      ] as const
+    ).map((node) => ({ ...node, state: 'final' as const, finalizationTime: 0 })),
+  };
+}
+
+/** A finished sample debate whose thesis was confirmed. */
+export const confirmedDebate: Debate = finishedDebate(
+  1,
+  true,
+  [
+    'Cities should release their transit data openly.',
+    'Open schedules let anyone build better route planners than the agency ever ships.',
+    'Publishing feeds costs money that could go into service instead.',
+  ],
+  [0.71, 0.82, 0.31],
+  [58, 34, 12],
+);
+
+/** A finished sample debate whose thesis was objected. */
+export const objectedDebate: Debate = finishedDebate(
+  2,
+  false,
+  [
+    'Voting should be mandatory.',
+    'Full turnout makes the result speak for everyone.',
+    'A forced ballot measures attendance, not conviction.',
+  ],
+  [0.38, 0.35, 0.78],
+  [64, 15, 41],
+);

@@ -13,7 +13,7 @@ import { fetchTextByDigest } from '../lib/ipfs';
 import type { AccountPosition, ArgumentNode, Debate, DebateSummary } from '../types';
 import { phaseOf, shortDigest, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
-import { climateDebate } from './climateDebate';
+import { climateDebate, confirmedDebate, objectedDebate } from './climateDebate';
 import { contractConfig } from './config';
 
 /** The `User.Role` enum value for a joined participant (Unassigned = 0, Participant = 1). */
@@ -30,17 +30,19 @@ export interface DebateSource {
   positions(debateId: number, account: string): Promise<AccountPosition[]>;
 }
 
+const sampleDebates = [climateDebate, confirmedDebate, objectedDebate];
+
 export const mockSource: DebateSource = {
-  load: async () => climateDebate,
-  list: async () => [
-    {
-      id: climateDebate.id,
-      thesis: thesisOf(climateDebate).text,
-      phase: climateDebate.phase,
-      stake: climateDebate.nodes.reduce((sum, node) => sum + node.weight, 0),
-      argumentsCount: climateDebate.nodes.length,
-    },
-  ],
+  load: async (debateId) => sampleDebates.find((debate) => debate.id === debateId) ?? climateDebate,
+  list: async () =>
+    sampleDebates.map((debate) => ({
+      id: debate.id,
+      thesis: thesisOf(debate).text,
+      phase: debate.phase,
+      approved: debate.approved,
+      stake: debate.nodes.reduce((sum, node) => sum + node.weight, 0),
+      argumentsCount: debate.nodes.length,
+    })),
   userState: async () => ({ joined: false, tokens: 0 }),
   argumentPosition: async () => ({ proShares: 0, conShares: 0, claimableFees: 0 }),
   positions: async () => [],

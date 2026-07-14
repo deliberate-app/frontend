@@ -10,14 +10,24 @@ await mkdir('screenshots', { recursive: true });
 
 const browser = await chromium.launch();
 
-// Desktop: the browse (home) view, then into the first debate
+// Desktop: the browse (home) view - three sample debates, including both finished verdicts
 const desktop = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await desktop.goto(url);
 await desktop.waitForLoadState('networkidle');
 await desktop.screenshot({ path: 'screenshots/desktop-browse.png' });
 
-// Desktop: thesis view
-await desktop.locator('.debate-open').first().click();
+// Desktop: a finished debate per verdict (confirmed thesis, objected thesis)
+await desktop.locator('.debate-open', { hasText: 'transit data' }).click();
+await desktop.waitForTimeout(300);
+await desktop.screenshot({ path: 'screenshots/desktop-finished-confirmed.png' });
+await desktop.goto(url);
+await desktop.locator('.debate-open', { hasText: 'mandatory' }).click();
+await desktop.waitForTimeout(300);
+await desktop.screenshot({ path: 'screenshots/desktop-finished-objected.png' });
+
+// Desktop: thesis view of the running sample debate
+await desktop.goto(url);
+await desktop.locator('.debate-open', { hasText: 'climate change' }).click();
 await desktop.waitForTimeout(300);
 await desktop.screenshot({ path: 'screenshots/desktop-thesis.png' });
 
@@ -37,12 +47,13 @@ if ((await desktop.locator('.card').count()) > 0) {
 const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await mobile.goto(url);
 await mobile.waitForLoadState('networkidle');
-await mobile.locator('.debate-open').first().click();
+await mobile.locator('.debate-open', { hasText: 'climate change' }).click();
 await mobile.waitForTimeout(300);
 await mobile.screenshot({ path: 'screenshots/mobile-thesis.png', fullPage: true });
 
 await browser.close();
 server.httpServer.close();
 console.log(
-  'Wrote screenshots/desktop-browse.png, desktop-thesis.png, desktop-drilldown.png, desktop-drilldown-deep.png (if deep enough), mobile-thesis.png',
+  'Wrote screenshots/desktop-browse.png, desktop-finished-{confirmed,objected}.png, desktop-thesis.png, ' +
+    'desktop-drilldown.png, desktop-drilldown-deep.png (if deep enough), mobile-thesis.png',
 );
