@@ -9,6 +9,13 @@ describe('formatDuration', () => {
     expect(formatDuration(32)).toBe('32s');
   });
 
+  test('drops a zero second unit', () => {
+    expect(formatDuration(86_400)).toBe('1d');
+    expect(formatDuration(12 * 3_600)).toBe('12h');
+    expect(formatDuration(30 * 60)).toBe('30m');
+    expect(formatDuration(0)).toBe('0s');
+  });
+
   test('clamps negative and fractional inputs', () => {
     expect(formatDuration(-5)).toBe('0s');
     expect(formatDuration(0)).toBe('0s');
