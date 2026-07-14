@@ -1,17 +1,7 @@
 import { formatApproval, formatImpact, IMPACT_HINT } from '../lib/impact';
-import { formatCountdown } from '../lib/time';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf, liveChainTime } from '../types';
-
-/** A small monochrome padlock: shackle open (ajar) while a draft can still change, closed once it locks in. */
-function LockIcon({ open }: { open: boolean }) {
-  return (
-    <svg className="lock-icon" viewBox="0 0 16 16" aria-hidden="true">
-      <rect className="lock-body" x="3" y="7" width="10" height="6.5" rx="1.5" />
-      <path className="lock-shackle" d={open ? 'M5.2 7V5a2.8 2.8 0 0 1 5.6 0' : 'M5.2 7V5a2.8 2.8 0 0 1 5.6 0V7'} />
-    </svg>
-  );
-}
+import { LockChip } from './LockChip';
 
 function ApprovalGauge({ approval, weight }: { approval: number; weight: number }) {
   // A diverging bar anchored at the neutral midpoint (50%): the fill grows right of centre for a backed
@@ -76,19 +66,7 @@ export function ArgumentCard({
             {formatImpact(impact)}
           </span>
         )}
-        <span
-          className={`card-lock ${locked ? 'card-lock-locked' : 'card-lock-draft'}`}
-          title={
-            locked
-              ? 'Locked in - final and tradeable'
-              : 'Draft: editable and movable until it locks in, then final automatically'
-          }
-        >
-          {!locked && finalizesIn !== null && (
-            <span className="card-lock-time">{formatCountdown(finalizesIn)}</span>
-          )}
-          <LockIcon open={!locked} />
-        </span>
+        <LockChip locked={locked} finalizesIn={finalizesIn} />
         <span className="card-replies">
           {replies.length > 0 ? `${replies.join(' · ')} →` : 'Undebated'}
         </span>

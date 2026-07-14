@@ -3,12 +3,13 @@ import type { ArgumentPosition } from '../data/actions';
 import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
 import type { AccountPosition, Debate, Side } from '../types';
-import { ancestryOf, childrenOf, editingOpen, thesisOf } from '../types';
+import { ancestryOf, childrenOf, editingOpen, liveChainTime, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { ContentText } from './ContentText';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
+import { LockChip } from './LockChip';
 import { StakePanel } from './StakePanel';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
@@ -111,6 +112,12 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const focusImpact = impacts.get(focus.id);
   const totalStake = debate.nodes.reduce((sum, node) => sum + node.weight, 0);
 
+  // The focused argument's lock state, mirroring the cards: a live countdown while a draft,
+  // locked once the clock passes its finalization time (or the data already says final).
+  const focusFinalizesIn =
+    focus.state === 'created' && debate.timing ? focus.finalizationTime - liveChainTime(debate.timing, now) : null;
+  const focusLocked = focus.state === 'final' || (focusFinalizesIn !== null && focusFinalizesIn <= 0);
+
   // Editing affordances close when the on-chain editing window passes, even before anyone pokes the
   // phase forward (see editingOpen). Replying also requires a final parent, so no composer under a draft.
   const canAuthor = editingOpen(debate, now);
@@ -196,7 +203,8 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 {' '}
                 · created by <AddressChip address={focus.creator} />
               </>
-            )}
+            )}{' '}
+            · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
           </p>
         )}
         {ownDraft && tx && (
