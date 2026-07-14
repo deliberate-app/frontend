@@ -14,6 +14,37 @@ const PHASE_SHORT: Record<Phase, string> = {
   finished: 'Finished',
 };
 
+/** A small cogwheel in the classic silhouette, inline SVG so it sizes and centers exactly. */
+function GearIcon() {
+  const toothHalf = (10 * Math.PI) / 180;
+  const step = Math.PI / 4;
+  const point = (radius: number, angle: number) =>
+    `${(8 + radius * Math.cos(angle)).toFixed(2)},${(8 + radius * Math.sin(angle)).toFixed(2)}`;
+  const outline = Array.from({ length: 8 }, (_, i) => {
+    const center = i * step;
+    return [
+      point(5.2, center - toothHalf),
+      point(7.2, center - toothHalf),
+      point(7.2, center + toothHalf),
+      point(5.2, center + toothHalf),
+    ].join(' L');
+  }).join(' L');
+  // The hub hole is a second, opposite-wound subpath cut out by the even-odd fill rule.
+  const hole = 'M10.2,8 A2.2,2.2 0 1 0 5.8,8 A2.2,2.2 0 1 0 10.2,8 Z';
+  return (
+    <svg className="gear-icon" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d={`M${outline} Z ${hole}`}
+        fill="currentColor"
+        fillRule="evenodd"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /**
  * The form starting a new debate: thesis plus a sensible default schedule, with deviations tucked
  * behind the cogwheel so the happy path stays one field and one button.
@@ -37,7 +68,7 @@ function CreatePanel({
     return (
       <button
         type="button"
-        className="composer-open"
+        className="composer-open create-open"
         onClick={() => setOpen(true)}
         disabled={disabledHint !== null}
         title={disabledHint ?? undefined}
@@ -73,21 +104,16 @@ function CreatePanel({
         maxLength={2000}
         required
       />
-      <div className="create-schedule-row">
-        <span className="create-schedule">
-          drafts lock in {formatDuration(schedule.timeUnit)} · editing{' '}
-          {formatDuration(schedule.editingDuration)} · rating {formatDuration(schedule.ratingDuration)}
-        </span>
-        <button
-          type="button"
-          className="gear-btn"
-          aria-label="Debate schedule settings"
-          title="Debate schedule settings"
-          onClick={() => setSettingsOpen(true)}
-        >
-          ⚙︎
-        </button>
-      </div>
+      <button
+        type="button"
+        className="schedule-chip"
+        title="Customize the debate schedule"
+        onClick={() => setSettingsOpen(true)}
+      >
+        locking {formatDuration(schedule.lockingDuration)} · editing {formatDuration(schedule.editingDuration)}{' '}
+        · rating {formatDuration(schedule.ratingDuration)}
+        <GearIcon />
+      </button>
       {settingsOpen && (
         <ScheduleSettings
           schedule={schedule}

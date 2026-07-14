@@ -105,7 +105,7 @@
     "internalType": "bytes32"
    },
    {
-    "name": "timeUnit",
+    "name": "lockingDuration",
     "type": "uint48",
     "internalType": "uint48"
    },
@@ -447,7 +447,7 @@
     "internalType": "uint48"
    },
    {
-    "name": "timeUnit",
+    "name": "lockingDuration",
     "type": "uint48",
     "internalType": "uint48"
    }
@@ -827,7 +827,7 @@
     "internalType": "bytes32"
    },
    {
-    "name": "timeUnit",
+    "name": "lockingDuration",
     "type": "uint48",
     "indexed": false,
     "internalType": "uint48"
@@ -1160,6 +1160,11 @@
  },
  {
   "type": "error",
+  "name": "LockingDurationZero",
+  "inputs": []
+ },
+ {
+  "type": "error",
   "name": "PhaseExceeded",
   "inputs": [
    {
@@ -1258,10 +1263,5 @@
     "internalType": "uint48"
    }
   ]
- },
- {
-  "type": "error",
-  "name": "TimeUnitZero",
-  "inputs": []
  }
 ]

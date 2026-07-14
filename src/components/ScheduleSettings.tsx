@@ -1,5 +1,4 @@
 import {
-  DEFAULT_SCHEDULE,
   SCHEDULE_PRESETS,
   sameSchedule,
   scheduleError,
@@ -61,6 +60,9 @@ function DurationField({
 /**
  * The cogwheel modal tuning a debate's schedule before creation: presets for the common cases, free
  * durations for everything else, with the contract's rules enforced and softer guidance surfaced.
+ * Edits apply live - the summary chip behind the modal updates as you change values - so there is
+ * nothing to accept: closing (the cross or the backdrop) is the only exit, and an invalid schedule
+ * keeps the create button disabled rather than trapping the modal open.
  */
 export function ScheduleSettings({
   schedule,
@@ -104,35 +106,26 @@ export function ScheduleSettings({
         </div>
 
         <DurationField
-          label="Drafts lock in"
-          hint="How long a new or edited argument stays editable and movable. Nobody can reply beneath it until it locks in, so 30 minutes or less keeps the tree growing."
-          value={schedule.timeUnit}
-          onChange={(timeUnit) => onChange({ ...schedule, timeUnit })}
+          label="Locking"
+          hint="Time until a new or edited argument locks in; replies beneath it wait that long."
+          value={schedule.lockingDuration}
+          onChange={(lockingDuration) => onChange({ ...schedule, lockingDuration })}
         />
         <DurationField
-          label="Editing phase"
-          hint="How long arguments can be added and revised. Every nesting level needs one draft window to lock in first, so this bounds the tree's depth."
+          label="Editing"
+          hint="Adding and revising arguments; each nesting level needs one locking window."
           value={schedule.editingDuration}
           onChange={(editingDuration) => onChange({ ...schedule, editingDuration })}
         />
         <DurationField
-          label="Rating phase"
-          hint="How long participants can read the debate and stake on over- and underrated arguments."
+          label="Rating"
+          hint="Reading the debate and staking on over- and underrated arguments."
           value={schedule.ratingDuration}
           onChange={(ratingDuration) => onChange({ ...schedule, ratingDuration })}
         />
 
         {error && <p className="action-error">{error}</p>}
         {warning && <p className="schedule-warning">{warning}</p>}
-
-        <div className="action-row">
-          <button type="button" className="btn" onClick={() => onChange({ ...DEFAULT_SCHEDULE })}>
-            Reset to default
-          </button>
-          <button type="button" className="btn btn-solid" onClick={onClose} disabled={error !== null}>
-            Done
-          </button>
-        </div>
       </div>
     </div>
   );

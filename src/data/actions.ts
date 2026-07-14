@@ -142,7 +142,7 @@ export async function connectDebateActions(
       const contentURI = await publish(thesis);
       const receipt = await write('createDebate', [
         contentURI,
-        BigInt(schedule.timeUnit),
+        BigInt(schedule.lockingDuration),
         BigInt(schedule.editingDuration),
         BigInt(schedule.ratingDuration),
       ]);

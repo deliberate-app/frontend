@@ -944,31 +944,47 @@ button {
   color: var(--bark);
 }
 
-.create-schedule-row {
-  display: flex;
+/* The schedule summary is itself the settings affordance: one clickable chip, gear at the end. */
+.schedule-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-}
-
-.create-schedule {
-  font-size: 0.8rem;
-  color: var(--bark);
-}
-
-.gear-btn {
-  border: none;
+  gap: 0.5rem;
+  align-self: flex-start;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
   background: none;
-  cursor: pointer;
   color: var(--bark);
-  font-size: 1.05rem;
+  font-size: 0.8rem;
   line-height: 1;
-  padding: 0.2rem 0.35rem;
-  border-radius: 0.4rem;
+  cursor: pointer;
 }
 
-.gear-btn:hover {
+.schedule-chip:hover {
+  border-color: var(--bark);
   color: var(--ink);
-  background: var(--hairline);
+}
+
+.gear-icon {
+  width: 1.2em;
+  height: 1.2em;
+  display: block;
+}
+
+/* The landing page's primary action: dashed like every composer, but assertive. */
+.create-open {
+  border: 1.5px dashed var(--ink);
+  color: var(--ink);
+  background: var(--card);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.85rem 1.1rem;
+}
+
+.create-open:hover:enabled {
+  border-style: solid;
+  background: var(--canvas);
+  color: var(--ink);
 }
 
 /* ── Schedule settings modal ─────────────────────────────────────────── */
