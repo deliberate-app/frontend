@@ -89,10 +89,17 @@ describe('filterDebates', () => {
     creator: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     ...overrides,
   });
-  const all = { status: 'all' as const, author: '', sort: 'recent' as const };
+  const all = { status: 'all' as const, thesis: '', author: '', sort: 'recent' as const };
 
   test('passes everything through unfiltered, newest first', () => {
     expect(filterDebates([summary(0), summary(2), summary(1)], all).map((d) => d.id)).toEqual([2, 1, 0]);
+  });
+
+  test('filters by thesis text, case-insensitively', () => {
+    const debates = [summary(0, { thesis: 'Cities should release their transit data openly.' }), summary(1)];
+    expect(filterDebates(debates, { ...all, thesis: 'TRANSIT data' }).map((d) => d.id)).toEqual([0]);
+    expect(filterDebates(debates, { ...all, thesis: '  ' }).map((d) => d.id)).toEqual([1, 0]);
+    expect(filterDebates(debates, { ...all, thesis: 'nowhere' })).toEqual([]);
   });
 
   test('filters by status', () => {
@@ -126,7 +133,7 @@ describe('filterDebates', () => {
       summary(1, { phase: 'rating', stake: 100 }),
       summary(2, { phase: 'editing', stake: 100 }),
     ];
-    const result = filterDebates(debates, { status: 'rating', author: '0xf39', sort: 'stake' });
+    const result = filterDebates(debates, { status: 'rating', thesis: '', author: '0xf39', sort: 'stake' });
     expect(result.map((d) => d.id)).toEqual([1, 0]);
   });
 });

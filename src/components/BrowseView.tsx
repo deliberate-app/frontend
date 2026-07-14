@@ -169,6 +169,15 @@ export function BrowseView({
       <CreatePanel disabledHint={createDisabledHint} onCreate={onCreate} />
 
       <div className="filters">
+        <label className="filter filter-thesis">
+          Search
+          <input
+            type="search"
+            value={filter.thesis}
+            placeholder="Thesis contains…"
+            onChange={(event) => onFilter({ ...filter, thesis: event.target.value })}
+          />
+        </label>
         <label className="filter">
           Status
           <select

@@ -45,7 +45,7 @@ export default function App() {
   const [userState, setUserState] = useState<UserState | null>(null);
   // Browse filter/sort lives here, not in BrowseView, so it survives navigating
   // into a debate and back (BrowseView unmounts while a debate is open).
-  const [filter, setFilter] = useState<DebateFilter>({ status: 'all', author: '', sort: 'recent' });
+  const [filter, setFilter] = useState<DebateFilter>({ status: 'all', thesis: '', author: '', sort: 'recent' });
   const wallet = useWallet();
   const now = useNow();
 

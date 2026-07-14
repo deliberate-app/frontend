@@ -98,17 +98,21 @@ export type DebateSort = 'recent' | 'stake';
 /** The browse view's filter and sort settings. */
 export interface DebateFilter {
   status: Phase | 'all';
+  /** Case-insensitive substring of the thesis text; empty matches all. */
+  thesis: string;
   /** Case-insensitive substring of the creator's address; empty matches all. */
   author: string;
   sort: DebateSort;
 }
 
-/** Filters by status and author, then orders by the chosen sort (id breaks stake ties). */
+/** Filters by status, thesis text, and author, then orders by the chosen sort (id breaks stake ties). */
 export function filterDebates(debates: DebateSummary[], filter: DebateFilter): DebateSummary[] {
+  const thesis = filter.thesis.trim().toLowerCase();
   const author = filter.author.trim().toLowerCase();
   const matched = debates.filter(
     (debate) =>
       (filter.status === 'all' || debate.phase === filter.status) &&
+      (thesis === '' || debate.thesis.toLowerCase().includes(thesis)) &&
       (author === '' || (debate.creator ?? '').toLowerCase().includes(author)),
   );
   return matched.sort(
