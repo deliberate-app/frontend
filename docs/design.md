@@ -56,6 +56,11 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — the mine shortcut is an in-field adornment.** First a separate "Mine" button
+  (displaced), then a native `datalist` suggestion (too hidden — only visible on focus); now a
+  small uppercase "mine" sits inside the Author field's right edge, filling it with the connected
+  address and clearing it when active (underlined). One affordance, always visible, on the value
+  it edits. (Principle 5.)
 - **2026-07-15 — the rating chip lost its green.** `.phase-rating` was the one phase styled in a
   stance color, reading as "pro" next to the verdict marks; every phase chip is neutral now — the
   word carries the state, green stays reserved for the pro stance. (Principle 2.)

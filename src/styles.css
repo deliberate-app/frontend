@@ -921,6 +921,41 @@ button {
 
 .filter-author input {
   font-family: var(--font-mono);
+  width: 100%;
+  padding-right: 3.2rem;
+}
+
+/* The mine shortcut sits inside the field it fills. */
+.author-field {
+  position: relative;
+  display: flex;
+}
+
+.author-mine {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  padding: 0.1rem 0.2rem;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bark);
+  cursor: pointer;
+}
+
+.author-mine:hover {
+  color: var(--ink);
+}
+
+.author-mine-active {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .btn-small {

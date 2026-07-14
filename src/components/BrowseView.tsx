@@ -204,22 +204,26 @@ export function BrowseView({
         </label>
         <label className="filter filter-author">
           Author
-          <input
-            type="text"
-            value={filter.author}
-            placeholder="0x…"
-            onChange={(event) => onFilter({ ...filter, author: event.target.value })}
-          />
+          <span className="author-field">
+            <input
+              type="text"
+              value={filter.author}
+              placeholder="0x…"
+              onChange={(event) => onFilter({ ...filter, author: event.target.value })}
+            />
+            {/* The mine shortcut lives inside the field it fills. */}
+            {account && (
+              <button
+                type="button"
+                className={`author-mine${filter.author === account ? ' author-mine-active' : ''}`}
+                title={filter.author === account ? 'Show all authors' : 'Only my debates'}
+                onClick={() => onFilter({ ...filter, author: filter.author === account ? '' : account })}
+              >
+                mine
+              </button>
+            )}
+          </span>
         </label>
-        {account && (
-          <button
-            type="button"
-            className="btn btn-small"
-            onClick={() => onFilter({ ...filter, author: filter.author === account ? '' : account })}
-          >
-            {filter.author === account ? 'All authors' : 'Mine'}
-          </button>
-        )}
       </div>
 
       {debates.length === 0 ? (
