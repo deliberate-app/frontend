@@ -5,6 +5,7 @@ import { rpcUp } from '../../scripts/devstack/anvil';
 import { loadArtifact } from '../../scripts/devstack/artifacts';
 import { anvilAccount, devChainClient } from '../../scripts/devstack/debate';
 import abi from '../abi/ArborVote.abi.json';
+import { classicSchedule } from '../lib/debateTiming';
 import { contentURIOf } from '../lib/ipfs';
 import { connectDebateActions } from './actions';
 import { contractSource } from './source';
@@ -70,7 +71,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
 
     // The author starts the debate through the action layer and gets its ID back.
     const timeUnit = 60;
-    expect(await author.createDebate('Test thesis', timeUnit)).toBe(0);
+    expect(await author.createDebate('Test thesis', classicSchedule(timeUnit))).toBe(0);
 
     // Join.
     expect((await reads.userState(0, author.account)).joined).toBe(false);
@@ -131,7 +132,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
 
     const timeUnit = 60;
-    await author.createDebate('A movable thesis', timeUnit);
+    await author.createDebate('A movable thesis', classicSchedule(timeUnit));
     await author.join(0);
 
     // A draft directly under the thesis, edited while still inside its editing window.
@@ -190,7 +191,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const reads = contractSource(address, RPC_URL);
 
     const timeUnit = 60;
-    await author.createDebate('Batch redeem thesis', timeUnit);
+    await author.createDebate('Batch redeem thesis', classicSchedule(timeUnit));
     await author.join(0);
 
     // Two arguments at 50% approval (reserves 5/5 each), the minimum deposit.

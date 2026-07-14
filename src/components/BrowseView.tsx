@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
+import { DEFAULT_SCHEDULE, scheduleError, type DebateSchedule } from '../lib/debateTiming';
 import { formatDuration } from '../lib/time';
 import type { DebateFilter, DebateSummary, Phase } from '../types';
 import { filterDebates } from '../types';
 import { AddressChip } from './AddressChip';
+import { ScheduleSettings } from './ScheduleSettings';
 
 const PHASE_SHORT: Record<Phase, string> = {
   editing: 'Editing',
@@ -12,26 +14,22 @@ const PHASE_SHORT: Record<Phase, string> = {
   finished: 'Finished',
 };
 
-const TIME_UNITS = [
-  { seconds: 30, label: '30 seconds (quick demo)' },
-  { seconds: 60, label: '1 minute' },
-  { seconds: 600, label: '10 minutes' },
-  { seconds: 3_600, label: '1 hour' },
-  { seconds: 86_400, label: '1 day' },
-];
-
-/** The form starting a new debate; the whole schedule derives from one time unit. */
+/**
+ * The form starting a new debate: thesis plus a sensible default schedule, with deviations tucked
+ * behind the cogwheel so the happy path stays one field and one button.
+ */
 function CreatePanel({
   disabledHint,
   onCreate,
 }: {
   /** Why creating is unavailable; null when it is possible. */
   disabledHint: string | null;
-  onCreate: (thesis: string, timeUnitSeconds: number) => Promise<void>;
+  onCreate: (thesis: string, schedule: DebateSchedule) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [thesis, setThesis] = useState('');
-  const [unit, setUnit] = useState(600);
+  const [schedule, setSchedule] = useState<DebateSchedule>(DEFAULT_SCHEDULE);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,12 +47,14 @@ function CreatePanel({
     );
   }
 
+  const invalidSchedule = scheduleError(schedule);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      await onCreate(thesis.trim(), unit);
+      await onCreate(thesis.trim(), schedule);
       // Success navigates away to the new debate; no local state to reset.
     } catch (cause) {
       setError(actionErrorMessage(cause));
@@ -73,21 +73,35 @@ function CreatePanel({
         maxLength={2000}
         required
       />
-      <label className="create-unit">
-        Time unit
-        <select value={unit} onChange={(event) => setUnit(Number(event.target.value))}>
-          {TIME_UNITS.map(({ seconds, label }) => (
-            <option key={seconds} value={seconds}>
-              {label}
-            </option>
-          ))}
-        </select>
+      <div className="create-schedule-row">
         <span className="create-schedule">
-          editing lasts {formatDuration(7 * unit)}, rating another {formatDuration(3 * unit)}
+          drafts lock in {formatDuration(schedule.timeUnit)} · editing{' '}
+          {formatDuration(schedule.editingDuration)} · rating {formatDuration(schedule.ratingDuration)}
         </span>
-      </label>
+        <button
+          type="button"
+          className="gear-btn"
+          aria-label="Debate schedule settings"
+          title="Debate schedule settings"
+          onClick={() => setSettingsOpen(true)}
+        >
+          ⚙︎
+        </button>
+      </div>
+      {settingsOpen && (
+        <ScheduleSettings
+          schedule={schedule}
+          onChange={setSchedule}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
       <div className="action-row">
-        <button type="submit" className="btn btn-solid" disabled={busy || thesis.trim().length === 0}>
+        <button
+          type="submit"
+          className="btn btn-solid"
+          disabled={busy || thesis.trim().length === 0 || invalidSchedule !== null}
+          title={invalidSchedule ?? undefined}
+        >
           {busy ? 'Creating…' : 'Create debate'}
         </button>
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
@@ -117,7 +131,7 @@ export function BrowseView({
   onFilter: (filter: DebateFilter) => void;
   createDisabledHint: string | null;
   onOpen: (debateId: number) => void;
-  onCreate: (thesis: string, timeUnitSeconds: number) => Promise<void>;
+  onCreate: (thesis: string, schedule: DebateSchedule) => Promise<void>;
 }) {
   const filtered = filterDebates(debates, filter);
 

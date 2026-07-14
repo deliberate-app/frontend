@@ -11,6 +11,7 @@ import {
 } from './data/actions';
 import { contractConfig } from './data/config';
 import { defaultSource } from './data/source';
+import type { DebateSchedule } from './lib/debateTiming';
 import { useNow } from './lib/time';
 import type { Debate, DebateFilter, DebateSummary } from './types';
 import { availablePhasePoke, PHASE_LABEL } from './types';
@@ -273,9 +274,9 @@ export default function App() {
     };
   }, [actions, userState, debateId, refresh]);
 
-  const createDebate = async (thesis: string, timeUnitSeconds: number) => {
+  const createDebate = async (thesis: string, schedule: DebateSchedule) => {
     if (!actions) throw new Error('Connect a wallet first.');
-    const id = await actions.createDebate(thesis, timeUnitSeconds);
+    const id = await actions.createDebate(thesis, schedule);
     // The receipt is mined, so the debate exists; mark it so the reader waits out any
     // RPC/indexer lag with a spinner instead of a not-found error.
     awaitingCreateRef.current = id;

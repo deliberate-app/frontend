@@ -23,6 +23,7 @@ import {
 } from 'viem';
 
 import abi from '../abi/ArborVote.abi.json';
+import type { DebateSchedule } from '../lib/debateTiming';
 import { contentURIOf, publishText } from '../lib/ipfs';
 import type { Side } from '../types';
 import type { ContractConfig } from './config';
@@ -42,8 +43,8 @@ export interface ArgumentPosition {
 
 export interface DebateActions {
   account: Address;
-  /** Creates a debate around a thesis and returns the new debate's ID. */
-  createDebate(thesis: string, timeUnitSeconds: number): Promise<number>;
+  /** Creates a debate around a thesis with the given schedule and returns the new debate's ID. */
+  createDebate(thesis: string, schedule: DebateSchedule): Promise<number>;
   join(debateId: number): Promise<void>;
   addArgument(
     debateId: number,
@@ -137,9 +138,14 @@ export async function connectDebateActions(
   return {
     account,
 
-    async createDebate(thesis, timeUnitSeconds) {
+    async createDebate(thesis, schedule) {
       const contentURI = await publish(thesis);
-      const receipt = await write('createDebate', [contentURI, BigInt(timeUnitSeconds)]);
+      const receipt = await write('createDebate', [
+        contentURI,
+        BigInt(schedule.timeUnit),
+        BigInt(schedule.editingDuration),
+        BigInt(schedule.ratingDuration),
+      ]);
       // The counter-assigned id is only known once mined: a debate created by
       // someone else between simulation and inclusion would shift it, so read it
       // from the DebateCreated event rather than the simulation's return value.

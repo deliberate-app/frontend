@@ -128,9 +128,13 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
     return result;
   };
 
+  // The script stays single-knob: the classic 7/3 split derives both phase durations from the
+  // time unit, matching the step timeline's `wait` semantics.
   const debateId = (await act(script.creator, 'createDebate', [
     await contentURI(script.thesis),
     script.timeUnitSeconds,
+    7 * script.timeUnitSeconds,
+    3 * script.timeUnitSeconds,
   ])) as bigint;
   argumentIds.set('thesis', 0);
   log(`${script.creator} creates debate ${debateId}: "${script.thesis}"`);

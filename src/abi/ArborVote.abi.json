@@ -108,6 +108,16 @@
     "name": "timeUnit",
     "type": "uint48",
     "internalType": "uint48"
+   },
+   {
+    "name": "editingDuration",
+    "type": "uint48",
+    "internalType": "uint48"
+   },
+   {
+    "name": "ratingDuration",
+    "type": "uint48",
+    "internalType": "uint48"
    }
   ],
   "outputs": [
@@ -1092,6 +1102,22 @@
     "name": "actual",
     "type": "uint32",
     "internalType": "uint32"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "DurationTooShort",
+  "inputs": [
+   {
+    "name": "minimum",
+    "type": "uint48",
+    "internalType": "uint48"
+   },
+   {
+    "name": "actual",
+    "type": "uint48",
+    "internalType": "uint48"
    }
   ]
  },
