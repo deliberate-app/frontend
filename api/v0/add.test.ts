@@ -10,12 +10,13 @@ async function cidOf(bytes: Uint8Array): Promise<string> {
   return cidFromSha256Digest(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
 }
 
-function addRequest(bytes: Uint8Array): Request {
+function addRequest(bytes: Uint8Array, origin?: string): Request {
   const form = new FormData();
   form.append('file', new Blob([bytes]));
   return new Request('http://localhost/api/v0/add?quiet=true&raw-leaves=true&cid-version=1&pin=true', {
     method: 'POST',
     body: form,
+    headers: origin === undefined ? {} : { origin },
   });
 }
 
@@ -91,5 +92,32 @@ describe('the /api/v0/add pin proxy', () => {
   test('answers 503 when no credential is configured', async () => {
     delete process.env.PINATA_JWT;
     expect((await handler(addRequest(new Uint8Array([1])))).status).toBe(503);
+  });
+
+  test('answers a local dev preflight and reflects the loopback origin', async () => {
+    const response = await handler(
+      new Request('http://localhost/api/v0/add', {
+        method: 'OPTIONS',
+        headers: { origin: 'http://localhost:5173', 'access-control-request-method': 'POST' },
+      }),
+    );
+    expect(response.status).toBe(204);
+    expect(response.headers.get('access-control-allow-origin')).toBe('http://localhost:5173');
+    expect(response.headers.get('access-control-allow-methods')).toBe('POST');
+  });
+
+  test('lets a local dev origin read the pin response', async () => {
+    const bytes = new TextEncoder().encode('An argument text.');
+    stubPinata({ status: 200, cid: await cidOf(bytes) });
+    const response = await handler(addRequest(bytes, 'http://127.0.0.1:5173'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5173');
+  });
+
+  test('does not open the proxy to foreign origins', async () => {
+    const bytes = new TextEncoder().encode('An argument text.');
+    stubPinata({ status: 200, cid: await cidOf(bytes) });
+    const response = await handler(addRequest(bytes, 'https://evil.example'));
+    expect(response.headers.get('access-control-allow-origin')).toBeNull();
   });
 });
