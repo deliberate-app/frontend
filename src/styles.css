@@ -19,6 +19,13 @@
   box-sizing: border-box;
 }
 
+/* The app column fills the viewport so the footer sits at the bottom even on short pages. */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   margin: 0;
   background: var(--canvas);
@@ -91,8 +98,9 @@ button {
   color: var(--bark);
 }
 
-/* The quiet global footer: project links under a hairline. */
+/* The quiet global footer: project links under a hairline, pinned to the page bottom. */
 .footer {
+  margin-top: auto;
   display: flex;
   align-items: center;
   gap: 1.25rem;
