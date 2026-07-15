@@ -187,10 +187,12 @@ export async function connectDebateActions(
     account,
 
     async createDebate(thesis, schedule, bounty) {
+      // Pin first: publishing is free and idempotent, while the approval costs a
+      // transaction - a pinning outage should abort before any on-chain step.
+      const contentURI = await publish(thesis);
       if (bounty && bounty.amount > 0n) {
         await approveIfNeeded(bounty.token, bounty.amount);
       }
-      const contentURI = await publish(thesis);
       const receipt = await write('createDebate', [
         contentURI,
         BigInt(schedule.lockingDuration),
