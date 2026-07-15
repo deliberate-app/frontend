@@ -7,11 +7,13 @@ import {
   zeroAddress,
   type Address,
   type Hex,
+  type PublicClient,
 } from 'viem';
 import abi from '../abi/ArborVote.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
-import type { AccountPosition, ArgumentNode, Debate, DebateSummary } from '../types';
-import { phaseOf, shortDigest, thesisOf } from '../types';
+import { tokenInfo } from '../lib/tokens';
+import type { AccountPosition, ArgumentNode, Debate, DebateBounty, DebateSummary } from '../types';
+import { CLAIM_WINDOW_SECONDS, phaseOf, shortDigest, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
 import { climateDebate, confirmedDebate, editingDebate, objectedDebate } from './climateDebate';
 import { contractConfig } from './config';
@@ -42,8 +44,9 @@ export const mockSource: DebateSource = {
       approved: debate.approved,
       stake: debate.nodes.reduce((sum, node) => sum + node.weight, 0),
       argumentsCount: debate.nodes.length,
+      bounty: debate.bounty,
     })),
-  userState: async () => ({ joined: false, tokens: 0 }),
+  userState: async () => ({ joined: false, tokens: 0, bountyClaimed: false }),
   argumentPosition: async () => ({ proShares: 0, conShares: 0, claimableFees: 0 }),
   positions: async () => [],
 };
@@ -91,6 +94,29 @@ async function resolveContent(contentURI: Hex, gateway: string | undefined): Pro
     if (ipfsText !== null) return { text: ipfsText };
   }
   return decodeInlineContent(contentURI);
+}
+
+/** Reads a debate's bounty from the chain; undefined when none is attached. */
+async function readBounty(client: PublicClient, address: Address, id: bigint): Promise<DebateBounty | undefined> {
+  const [token, pool, claimed, swept, claimEndTime] = (await client.readContract({
+    address,
+    abi,
+    functionName: 'bounty',
+    args: [id],
+  })) as [Address, bigint, bigint, boolean, bigint];
+  if (token === zeroAddress) {
+    return undefined;
+  }
+  const info = await tokenInfo(token, client);
+  return {
+    token: info.address,
+    symbol: info.symbol,
+    decimals: info.decimals,
+    pool,
+    claimed,
+    swept,
+    claimEndTime: Number(claimEndTime),
+  };
 }
 
 /** Reads a debate from a deployed ArborVote contract. */
@@ -188,9 +214,15 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
       // Derive the live phase from the same clock the contract uses; only the terminal Finished latch is read raw.
       const finished = currentPhase === PHASE_FINISHED;
       const phase = phaseOf(Number(editingEndTime), Number(ratingEndTime), finished, chainTime);
-      const approved = finished
-        ? ((await client.readContract({ address, abi, functionName: 'outcome', args: [id] })) as boolean)
-        : undefined;
+      const [approved, bounty, [, , participantsCount]] = await Promise.all([
+        finished
+          ? (client.readContract({ address, abi, functionName: 'outcome', args: [id] }) as Promise<boolean>)
+          : Promise.resolve(undefined),
+        readBounty(client, address, id),
+        client.readContract({ address, abi, functionName: 'debates', args: [id] }) as Promise<
+          [number, number, number]
+        >,
+      ]);
 
       return {
         id: debateId,
@@ -203,6 +235,8 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
           loadedAt: Math.floor(Date.now() / 1000),
         },
         approved,
+        bounty,
+        participantsCount: Number(participantsCount),
       };
     },
 
@@ -216,7 +250,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
       return Promise.all(
         [...Array(count).keys()].map(async (debateId) => {
           const id = BigInt(debateId);
-          const [thesis, [currentPhase, editingEndTime, ratingEndTime], [totalVotes, argumentsCount]] =
+          const [thesis, [currentPhase, editingEndTime, ratingEndTime], [totalVotes, argumentsCount], bounty] =
             await Promise.all([
               client.readContract({
                 address,
@@ -235,7 +269,8 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                 abi,
                 functionName: 'debates',
                 args: [id],
-              }) as Promise<[number, number]>,
+              }) as Promise<[number, number, number]>,
+              readBounty(client, address, id),
             ]);
           const content = await resolveContent(thesis.contentURI, ipfsGateway);
           // The outcome exists only once the debate is finished (the read reverts before the tally).
@@ -250,6 +285,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
             approved,
             stake: totalVotes,
             argumentsCount,
+            bounty,
             creator: thesis.creator,
           };
         }),
@@ -258,11 +294,13 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
 
     async userState(debateId: number, account: string): Promise<UserState> {
       const id = BigInt(debateId);
-      const [role, tokens] = (await Promise.all([
-        client.readContract({ address, abi, functionName: 'getUserRole', args: [id, account as Address] }),
-        client.readContract({ address, abi, functionName: 'getUserTokens', args: [id, account as Address] }),
-      ])) as [number, number];
-      return { joined: role === PARTICIPANT_ROLE, tokens };
+      const [role, tokens, bountyClaimed] = (await client.readContract({
+        address,
+        abi,
+        functionName: 'users',
+        args: [id, account as Address],
+      })) as [number, number, boolean];
+      return { joined: role === PARTICIPANT_ROLE, tokens, bountyClaimed };
     },
 
     async argumentPosition(debateId: number, argumentId: number, account: string): Promise<ArgumentPosition> {
@@ -282,7 +320,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         abi,
         functionName: 'debates',
         args: [id],
-      })) as [number, number];
+      })) as [number, number, number];
 
       // Argument ids are contiguous 1..argumentsCount-1 (id 0 is the market-less thesis).
       const ids = Array.from({ length: Math.max(0, Number(argumentsCount) - 1) }, (_, i) => i + 1);
@@ -308,12 +346,22 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
   };
 }
 
+/** The bounty columns shared by the indexer's debate rows. */
+export interface IndexedBountyColumns {
+  bountyToken: string | null;
+  bountyPool: string;
+  bountyClaimed: string;
+  bountySwept: boolean;
+  finishedAt: string | null;
+}
+
 /** Raw indexer rows; Hasura serializes the BigInt fields as strings. */
-export interface IndexedDebateRow {
+export interface IndexedDebateRow extends IndexedBountyColumns {
   finished: boolean;
   editingEndTime: string;
   ratingEndTime: string;
   approved: boolean | null;
+  participantsCount: string;
 }
 
 export interface IndexedArgumentRow {
@@ -356,7 +404,7 @@ export function nodeFromIndex(
 }
 
 /** A raw indexer debate row for the browse list. */
-export interface IndexedDebateSummaryRow {
+export interface IndexedDebateSummaryRow extends IndexedBountyColumns {
   id: string;
   creator: string;
   contentURI: string;
@@ -375,6 +423,30 @@ export interface IndexedPositionRow {
   conShares: string;
 }
 
+/** A bounty as the index stores it: the token by address only; its display identity resolves later. */
+export interface RawBounty {
+  token: string;
+  pool: bigint;
+  claimed: bigint;
+  swept: boolean;
+  claimEndTime: number;
+}
+
+/** The bounty columns of an indexer row as a raw bounty; undefined without a bounty token. */
+export function rawBountyOf(row: IndexedBountyColumns): RawBounty | undefined {
+  if (row.bountyToken === null) {
+    return undefined;
+  }
+  return {
+    token: getAddress(row.bountyToken),
+    pool: BigInt(row.bountyPool),
+    claimed: BigInt(row.bountyClaimed),
+    swept: row.bountySwept,
+    // The claim window is anchored at the tally; it mirrors the contract's CLAIM_WINDOW constant.
+    claimEndTime: row.finishedAt === null ? 0 : Number(row.finishedAt) + CLAIM_WINDOW_SECONDS,
+  };
+}
+
 /**
  * Maps an indexer row to a browse-list summary; the thesis text still needs resolving. The index stores no
  * phase - only the `finished` latch and the time gates - so the live phase is derived from `chainTime`.
@@ -382,10 +454,11 @@ export interface IndexedPositionRow {
 export function summaryFromIndex(
   row: IndexedDebateSummaryRow,
   chainTime: number,
-): Omit<DebateSummary, 'thesis'> & { contentURI: Hex } {
+): Omit<DebateSummary, 'thesis' | 'bounty'> & { contentURI: Hex; bountyRaw?: RawBounty } {
   return {
     id: Number(row.id),
     contentURI: row.contentURI as Hex,
+    bountyRaw: rawBountyOf(row),
     phase: phaseOf(Number(row.editingEndTime), Number(row.ratingEndTime), row.finished, chainTime),
     // The outcome exists only once the tally has run (null in the index before that).
     approved: row.approved ?? undefined,
@@ -397,14 +470,14 @@ export function summaryFromIndex(
 }
 
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
-  Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved }
+  Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
     argumentId parent_id isSupporting contentURI finalizationTime pro con votes creator
   }
 }`;
 
 const INDEXER_LIST_QUERY = `query DebateList {
-  Debate { id creator contentURI finished approved editingEndTime ratingEndTime totalVotes argumentsCount }
+  Debate { id creator contentURI finished approved editingEndTime ratingEndTime totalVotes argumentsCount participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
 }`;
 
 const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!) {
@@ -413,6 +486,7 @@ const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!)
 
 const INDEXER_USER_STATE_QUERY = `query UserState($participantId: String!) {
   Participant(where: { id: { _eq: $participantId } }) { tokens }
+  BountyClaim(where: { id: { _eq: $participantId } }) { amount }
 }`;
 
 const INDEXER_ARGUMENT_POSITION_QUERY = `query ArgumentPosition($positionId: String!, $argumentId: String!) {
@@ -476,6 +550,15 @@ export async function waitForIndexerBlock(
 export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: string): DebateSource {
   const client = createPublicClient({ transport: http(rpcUrl) });
 
+  /** Resolves a raw bounty's token identity (cached; one chain read per unknown token). */
+  const enrichBounty = async (raw: RawBounty | undefined): Promise<DebateBounty | undefined> => {
+    if (!raw) {
+      return undefined;
+    }
+    const info = await tokenInfo(raw.token, client);
+    return { ...raw, token: info.address, symbol: info.symbol, decimals: info.decimals };
+  };
+
   const graphql = async <T>(query: string, variables?: Record<string, string>): Promise<T> => {
     const response = await fetch(indexerUrl, {
       method: 'POST',
@@ -531,6 +614,8 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
           loadedAt: Math.floor(Date.now() / 1000),
         },
         approved: debate.approved ?? undefined,
+        bounty: await enrichBounty(rawBountyOf(debate)),
+        participantsCount: Number(debate.participantsCount),
       };
     },
 
@@ -543,9 +628,12 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
       const summaries = await Promise.all(
         data.Debate.map(async (row) => {
-          const { contentURI, ...summary } = summaryFromIndex(row, chainTime);
-          const content = await resolveContent(contentURI, ipfsGateway);
-          return { ...summary, thesis: content.text, contentDigest: content.digest };
+          const { contentURI, bountyRaw, ...summary } = summaryFromIndex(row, chainTime);
+          const [content, bounty] = await Promise.all([
+            resolveContent(contentURI, ipfsGateway),
+            enrichBounty(bountyRaw),
+          ]);
+          return { ...summary, thesis: content.text, contentDigest: content.digest, bounty };
         }),
       );
       // Debate entity IDs are strings, so Hasura cannot order them numerically.
@@ -553,12 +641,16 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
     },
 
     async userState(debateId: number, account: string): Promise<UserState> {
-      const data = await graphql<{ Participant: Array<{ tokens: string }> }>(INDEXER_USER_STATE_QUERY, {
-        participantId: `${debateId}_${account.toLowerCase()}`,
-      });
-      // A Participant row exists only once the account has joined the debate.
+      const data = await graphql<{ Participant: Array<{ tokens: string }>; BountyClaim: Array<{ amount: string }> }>(
+        INDEXER_USER_STATE_QUERY,
+        { participantId: `${debateId}_${account.toLowerCase()}` },
+      );
+      // A Participant row exists only once the account has joined; a BountyClaim row once it claimed.
       const [participant] = data.Participant;
-      return participant ? { joined: true, tokens: Number(participant.tokens) } : { joined: false, tokens: 0 };
+      const bountyClaimed = data.BountyClaim.length > 0;
+      return participant
+        ? { joined: true, tokens: Number(participant.tokens), bountyClaimed }
+        : { joined: false, tokens: 0, bountyClaimed };
     },
 
     async argumentPosition(debateId: number, argumentId: number, account: string): Promise<ArgumentPosition> {

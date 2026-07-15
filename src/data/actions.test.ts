@@ -76,7 +76,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     // Join.
     expect((await reads.userState(0, author.account)).joined).toBe(false);
     await author.join(0);
-    expect(await reads.userState(0, author.account)).toEqual({ joined: true, tokens: 100 });
+    expect(await reads.userState(0, author.account)).toEqual({ joined: true, tokens: 100, bountyClaimed: false });
 
     // Author an argument at 80% initial approval with the minimum 10-token deposit
     // (market reserves 2 pro / 8 con).

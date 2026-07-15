@@ -232,23 +232,47 @@ function finishedDebate(
   };
 }
 
-/** A finished sample debate whose thesis was confirmed. */
-export const confirmedDebate: Debate = finishedDebate(
-  1,
-  true,
-  [
-    'Cities should release their transit data openly.',
-    'Open schedules let anyone build better route planners than the agency ever ships.',
-    'Publishing feeds costs money that could go into service instead.',
-  ],
-  [0.71, 0.82, 0.31],
-  [58, 34, 12],
-);
+/** A finished sample debate whose thesis was confirmed, with a (fully settled) USDC bounty. */
+export const confirmedDebate: Debate = {
+  ...finishedDebate(
+    1,
+    true,
+    [
+      'Cities should release their transit data openly.',
+      'Open schedules let anyone build better route planners than the agency ever ships.',
+      'Publishing feeds costs money that could go into service instead.',
+    ],
+    [0.71, 0.82, 0.31],
+    [58, 34, 12],
+  ),
+  participantsCount: 12,
+  // Swept, so no clock-dependent claim countdown renders on sample data.
+  bounty: {
+    token: '0x036CBD53842c5426634e7929541eC2318f3dCF7e',
+    symbol: 'USDC',
+    decimals: 6,
+    pool: 250_000_000n,
+    claimed: 34_000_000n,
+    swept: true,
+    claimEndTime: 1,
+  },
+};
 
 /** A sample debate still in its editing phase; the newest argument is an unlocked draft. */
 export const editingDebate: Debate = {
   id: 3,
   phase: 'editing',
+  participantsCount: 3,
+  // A running bounty: fundable, nothing claimable yet.
+  bounty: {
+    token: '0x4200000000000000000000000000000000000006',
+    symbol: 'WETH',
+    decimals: 18,
+    pool: 500_000_000_000_000_000n,
+    claimed: 0n,
+    swept: false,
+    claimEndTime: 0,
+  },
   nodes: [
     {
       id: 0,

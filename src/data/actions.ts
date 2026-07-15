@@ -13,8 +13,10 @@ import {
   createWalletClient,
   custom,
   defineChain,
+  erc20Abi,
   http,
   parseEventLogs,
+  zeroAddress,
   type Abi,
   type Address,
   type EIP1193Provider,
@@ -32,6 +34,8 @@ import { waitForIndexerBlock } from './source';
 export interface UserState {
   joined: boolean;
   tokens: number;
+  /** Whether the account has claimed its bounty share (claims are one-shot). */
+  bountyClaimed: boolean;
 }
 
 export interface ArgumentPosition {
@@ -43,8 +47,12 @@ export interface ArgumentPosition {
 
 export interface DebateActions {
   account: Address;
-  /** Creates a debate around a thesis with the given schedule and returns the new debate's ID. */
-  createDebate(thesis: string, schedule: DebateSchedule): Promise<number>;
+  /**
+   * Creates a debate around a thesis with the given schedule - optionally attaching an ERC-20
+   * bounty, which first asks for a token approval when the allowance does not cover the amount -
+   * and returns the new debate's ID.
+   */
+  createDebate(thesis: string, schedule: DebateSchedule, bounty?: BountyFunding): Promise<number>;
   join(debateId: number): Promise<void>;
   addArgument(
     debateId: number,
@@ -76,6 +84,21 @@ export interface DebateActions {
    * The earlier Editing→Rating→Tallying transitions advance by the clock alone and need no transaction.
    */
   tallyTree(debateId: number): Promise<void>;
+  /** Tops up a finished-not-yet debate's bounty pool (approval asked first when needed). */
+  fundBounty(debateId: number, token: Address, amount: bigint): Promise<void>;
+  /**
+   * Settles the given argument positions (shares and accrued own-argument fees) and claims the
+   * account's bounty share in one transaction - one-shot, within the claim window.
+   */
+  claimBounty(debateId: number, argumentIds: number[]): Promise<void>;
+  /** Sweeps the unclaimed bounty remainder to the creator once the claim window is over. */
+  sweepBounty(debateId: number): Promise<void>;
+}
+
+/** A bounty attachment: the ERC-20 and the raw amount to pull from the creator. */
+export interface BountyFunding {
+  token: Address;
+  amount: bigint;
 }
 
 export async function connectDebateActions(
@@ -135,16 +158,46 @@ export async function connectDebateActions(
   const publish = async (text: string): Promise<Hex> =>
     config.ipfsApi ? (await publishText(config.ipfsApi, text)).digest : await contentURIOf(text);
 
+  /** Approves the contract for a token amount when the current allowance does not cover it. */
+  const approveIfNeeded = async (token: Address, amount: bigint): Promise<void> => {
+    const allowance = await publicClient.readContract({
+      address: token,
+      abi: erc20Abi,
+      functionName: 'allowance',
+      args: [account, config.address],
+    });
+    if (allowance >= amount) {
+      return;
+    }
+    const { request } = await publicClient.simulateContract({
+      account,
+      address: token,
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [config.address, amount],
+    });
+    const hash = await walletClient.writeContract(request);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status === 'reverted') {
+      throw new Error('The token approval was mined but reverted.');
+    }
+  };
+
   return {
     account,
 
-    async createDebate(thesis, schedule) {
+    async createDebate(thesis, schedule, bounty) {
+      if (bounty && bounty.amount > 0n) {
+        await approveIfNeeded(bounty.token, bounty.amount);
+      }
       const contentURI = await publish(thesis);
       const receipt = await write('createDebate', [
         contentURI,
         BigInt(schedule.lockingDuration),
         BigInt(schedule.editingDuration),
         BigInt(schedule.ratingDuration),
+        bounty?.token ?? zeroAddress,
+        bounty?.amount ?? 0n,
       ]);
       // The counter-assigned id is only known once mined: a debate created by
       // someone else between simulation and inclusion would shift it, so read it
@@ -201,6 +254,19 @@ export async function connectDebateActions(
 
     async claimFees(debateId, argumentId) {
       await write('claimFees', [BigInt(debateId), argumentId]);
+    },
+
+    async fundBounty(debateId, token, amount) {
+      await approveIfNeeded(token, amount);
+      await write('fundBounty', [BigInt(debateId), amount]);
+    },
+
+    async claimBounty(debateId, argumentIds) {
+      await write('claimBounty', [BigInt(debateId), argumentIds]);
+    },
+
+    async sweepBounty(debateId) {
+      await write('sweepBounty', [BigInt(debateId)]);
     },
 
     async tallyTree(debateId) {

@@ -135,6 +135,8 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
     script.timeUnitSeconds,
     7 * script.timeUnitSeconds,
     3 * script.timeUnitSeconds,
+    '0x0000000000000000000000000000000000000000', // no bounty in the seed script
+    0n,
   ])) as bigint;
   argumentIds.set('thesis', 0);
   log(`${script.creator} creates debate ${debateId}: "${script.thesis}"`);

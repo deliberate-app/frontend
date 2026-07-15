@@ -123,6 +123,12 @@ describe('summaryFromIndex', () => {
     ratingEndTime: '1000',
     totalVotes: '291',
     argumentsCount: '25',
+    participantsCount: '0',
+    finishedAt: null,
+    bountyToken: null,
+    bountyPool: '0',
+    bountyClaimed: '0',
+    bountySwept: false,
   };
 
   test('maps a debate row to a browse summary, deriving the phase from the gates and the clock', () => {
@@ -147,13 +153,35 @@ describe('summaryFromIndex', () => {
     expect(summaryFromIndex({ ...row, finished: true, approved: true }, 800).approved).toBe(true);
     expect(summaryFromIndex(row, 800).approved).toBeUndefined();
   });
+
+  test('maps the bounty columns to a raw bounty, anchoring the claim window at the tally', () => {
+    expect(summaryFromIndex(row, 800).bountyRaw).toBeUndefined();
+
+    const funded = {
+      ...row,
+      bountyToken: '0x036cbd53842c5426634e7929541ec2318f3dcf7e',
+      bountyPool: '250000000',
+      bountyClaimed: '34000000',
+      bountySwept: false,
+    };
+    const running = summaryFromIndex(funded, 800).bountyRaw;
+    expect(running?.token).toBe('0x036CbD53842c5426634e7929541eC2318f3dCF7e');
+    expect(running?.pool).toBe(250_000_000n);
+    expect(running?.claimed).toBe(34_000_000n);
+    // Unfinished: the claim window is unanchored.
+    expect(running?.claimEndTime).toBe(0);
+
+    const finished = summaryFromIndex({ ...funded, finished: true, finishedAt: '1000' }, 800).bountyRaw;
+    // CLAIM_WINDOW (7 days) after the tally.
+    expect(finished?.claimEndTime).toBe(1000 + 7 * 24 * 60 * 60);
+  });
 });
 
 describe('withFallback', () => {
   const debate = { id: 0, phase: 'rating', nodes: [] } as unknown as Debate;
   const summaries = [{ id: 0 }] as unknown as DebateSummary[];
   const positions: AccountPosition[] = [{ argumentId: 1, proShares: 3, conShares: 0 }];
-  const userState = { joined: true, tokens: 90 };
+  const userState = { joined: true, tokens: 90, bountyClaimed: false };
   const source = (result: Debate | Error): DebateSource => ({
     load: async () => {
       if (result instanceof Error) throw result;

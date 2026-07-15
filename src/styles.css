@@ -825,6 +825,39 @@ button {
   color: var(--con);
 }
 
+/* The bounty panel under the thesis: pool info plus top-up / claim / sweep, one quiet row. */
+.bounty-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0 0;
+}
+
+.bounty-topup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bounty-topup input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  width: 6.5rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  background: var(--card);
+}
+
+/* The fixed unit tag beside an amount input (e.g. the bounty token symbol). */
+.duration-unit-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--bark);
+}
+
 /* The character budget sits at the far end of the action row. */
 .char-budget {
   margin-left: auto;

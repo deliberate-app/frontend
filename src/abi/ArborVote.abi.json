@@ -79,6 +79,63 @@
  },
  {
   "type": "function",
+  "name": "bounty",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "token",
+    "type": "address",
+    "internalType": "contract IERC20"
+   },
+   {
+    "name": "pool",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "claimed",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "swept",
+    "type": "bool",
+    "internalType": "bool"
+   },
+   {
+    "name": "claimEndTime",
+    "type": "uint48",
+    "internalType": "uint48"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "claimBounty",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "argumentIds",
+    "type": "uint16[]",
+    "internalType": "uint16[]"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
   "name": "claimFees",
   "inputs": [
    {
@@ -118,6 +175,16 @@
     "name": "ratingDuration",
     "type": "uint48",
     "internalType": "uint48"
+   },
+   {
+    "name": "bountyToken",
+    "type": "address",
+    "internalType": "contract IERC20"
+   },
+   {
+    "name": "bountyAmount",
+    "type": "uint256",
+    "internalType": "uint256"
    }
   ],
   "outputs": [
@@ -149,6 +216,11 @@
     "name": "argumentsCount",
     "type": "uint16",
     "internalType": "uint16"
+   },
+   {
+    "name": "participantsCount",
+    "type": "uint32",
+    "internalType": "uint32"
    }
   ],
   "stateMutability": "view"
@@ -165,6 +237,24 @@
    }
   ],
   "stateMutability": "view"
+ },
+ {
+  "type": "function",
+  "name": "fundBounty",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "amount",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
  },
  {
   "type": "function",
@@ -604,6 +694,19 @@
  },
  {
   "type": "function",
+  "name": "sweepBounty",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
   "name": "tallyTree",
   "inputs": [
    {
@@ -640,6 +743,11 @@
     "name": "tokens",
     "type": "uint32",
     "internalType": "uint32"
+   },
+   {
+    "name": "bountyClaimed",
+    "type": "bool",
+    "internalType": "bool"
    }
   ],
   "stateMutability": "view"
@@ -800,6 +908,99 @@
     "type": "uint32",
     "indexed": false,
     "internalType": "uint32"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "BountyClaimed",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "indexed": true,
+    "internalType": "uint256"
+   },
+   {
+    "name": "account",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "excess",
+    "type": "uint32",
+    "indexed": false,
+    "internalType": "uint32"
+   },
+   {
+    "name": "amount",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "BountyFunded",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "indexed": true,
+    "internalType": "uint256"
+   },
+   {
+    "name": "funder",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "token",
+    "type": "address",
+    "indexed": true,
+    "internalType": "contract IERC20"
+   },
+   {
+    "name": "amount",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "pool",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "BountySwept",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "indexed": true,
+    "internalType": "uint256"
+   },
+   {
+    "name": "creator",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "amount",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
    }
   ],
   "anonymous": false
@@ -1069,12 +1270,70 @@
  },
  {
   "type": "error",
+  "name": "BountyAlreadyClaimed",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "BountyAlreadySwept",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "BountyAmountZero",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "BountyMissing",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "BountyNotWon",
+  "inputs": [
+   {
+    "name": "tokens",
+    "type": "uint32",
+    "internalType": "uint32"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "BountyTokenZero",
+  "inputs": []
+ },
+ {
+  "type": "error",
   "name": "ChildsUntallied",
   "inputs": [
    {
     "name": "untalliedChilds",
     "type": "uint16",
     "internalType": "uint16"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "ClaimWindowClosed",
+  "inputs": [
+   {
+    "name": "closedAt",
+    "type": "uint48",
+    "internalType": "uint48"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "ClaimWindowOpen",
+  "inputs": [
+   {
+    "name": "closesAt",
+    "type": "uint48",
+    "internalType": "uint48"
    }
   ]
  },
@@ -1240,6 +1499,17 @@
     "name": "value",
     "type": "uint256",
     "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "SafeERC20FailedOperation",
+  "inputs": [
+   {
+    "name": "token",
+    "type": "address",
+    "internalType": "address"
    }
   ]
  },

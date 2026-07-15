@@ -4,7 +4,9 @@ import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT }
 import { useNow } from '../lib/time';
 import type { AccountPosition, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, thesisOf } from '../types';
+import { formatTokenAmount } from '../lib/tokens';
 import { AddressChip } from './AddressChip';
+import { BountyPanel } from './BountyPanel';
 import { ContentText } from './ContentText';
 import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
@@ -40,6 +42,14 @@ export interface DebateTx {
   /** Redeems the account's shares across several arguments in one transaction. */
   redeemBatch(argumentIds: number[]): Promise<void>;
   claimFees(argumentId: number): Promise<void>;
+  /** Whether the account has claimed its bounty share (claims are one-shot). */
+  bountyClaimed: boolean;
+  /** Tops up the debate's bounty pool (any account, until the debate finishes). */
+  fundBounty(amount: bigint): Promise<void>;
+  /** Settles the given argument positions and claims the account's bounty share in one transaction. */
+  claimBounty(argumentIds: number[]): Promise<void>;
+  /** Sweeps the unclaimed bounty remainder to the creator once the claim window is over. */
+  sweepBounty(): Promise<void>;
 }
 
 /** A short label identifying an argument as a move target. */
@@ -148,6 +158,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
       {tx && tx.joined && debate.phase === 'finished' && (
         <RedeemAllPanel loadPositions={tx.loadPositions} onRedeemAll={tx.redeemBatch} />
       )}
+      {isThesis && <BountyPanel debate={debate} tx={tx} now={now} />}
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
         <p className="focus-kicker">
@@ -170,6 +181,13 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         {isThesis ? (
           <p className="focus-meta">
             Rated through its arguments · total stake <strong className="mono">{totalStake} ⬡</strong>
+            {debate.bounty && (
+              <>
+                {' '}
+                · bounty{' '}
+                <strong className="mono">{formatTokenAmount(debate.bounty.pool, debate.bounty)}</strong>
+              </>
+            )}
             {debate.phase !== 'finished' && focusImpact !== undefined && (
               <span title={NET_IMPACT_HINT}>
                 {' '}

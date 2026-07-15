@@ -3,9 +3,11 @@ import { actionErrorMessage } from '../data/actions';
 import { DEFAULT_SCHEDULE, scheduleError, type DebateSchedule } from '../lib/debateTiming';
 import { MAX_CONTENT_CHARS } from '../lib/ipfs';
 import { formatDuration } from '../lib/time';
+import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
 import type { DebateFilter, DebateSummary, Phase } from '../types';
 import { filterDebates } from '../types';
 import { AddressChip } from './AddressChip';
+import { BountySettings, type BountyDraft } from './BountySettings';
 import { CharBudget } from './CharBudget';
 import { ScheduleSettings } from './ScheduleSettings';
 
@@ -54,15 +56,20 @@ function GearIcon() {
 function CreatePanel({
   disabledHint,
   onCreate,
+  resolveToken,
 }: {
   /** Why creating is unavailable; null when it is possible. */
   disabledHint: string | null;
-  onCreate: (thesis: string, schedule: DebateSchedule) => Promise<void>;
+  onCreate: (thesis: string, schedule: DebateSchedule, bounty: BountyDraft | null) => Promise<void>;
+  /** Resolves a custom bounty token address to its identity; absent in sample mode. */
+  resolveToken?: (address: string) => Promise<TokenInfo>;
 }) {
   const [open, setOpen] = useState(false);
   const [thesis, setThesis] = useState('');
   const [schedule, setSchedule] = useState<DebateSchedule>(DEFAULT_SCHEDULE);
+  const [bounty, setBounty] = useState<BountyDraft | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [bountyOpen, setBountyOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,7 +94,7 @@ function CreatePanel({
     setBusy(true);
     setError(null);
     try {
-      await onCreate(thesis.trim(), schedule);
+      await onCreate(thesis.trim(), schedule, bounty);
       // Success navigates away to the new debate; no local state to reset.
     } catch (cause) {
       setError(actionErrorMessage(cause));
@@ -123,12 +130,34 @@ function CreatePanel({
           onClose={() => setSettingsOpen(false)}
         />
       )}
+      <button
+        type="button"
+        className="schedule-chip"
+        title="Attach an ERC-20 prize for the debate's net winners"
+        onClick={() => setBountyOpen(true)}
+      >
+        {bounty ? `bounty ${formatTokenAmount(bounty.amount, bounty.token)}` : 'no bounty'}
+        <GearIcon />
+      </button>
+      {bountyOpen && (
+        <BountySettings
+          bounty={bounty}
+          onChange={setBounty}
+          onClose={() => setBountyOpen(false)}
+          resolveToken={resolveToken}
+        />
+      )}
       <div className="action-row">
         <button
           type="submit"
           className="btn btn-solid"
           disabled={busy || thesis.trim().length === 0 || invalidSchedule !== null}
-          title={invalidSchedule ?? undefined}
+          title={
+            invalidSchedule ??
+            (bounty && bounty.amount > 0n
+              ? 'Funding the bounty may ask for two confirmations: the token approval, then the creation.'
+              : undefined)
+          }
         >
           {busy ? 'Creating…' : 'Create debate'}
         </button>
@@ -151,6 +180,7 @@ export function BrowseView({
   createDisabledHint,
   onOpen,
   onCreate,
+  resolveToken,
 }: {
   debates: DebateSummary[];
   /** The connected account, enabling the "mine" author-filter shortcut. */
@@ -160,13 +190,15 @@ export function BrowseView({
   onFilter: (filter: DebateFilter) => void;
   createDisabledHint: string | null;
   onOpen: (debateId: number) => void;
-  onCreate: (thesis: string, schedule: DebateSchedule) => Promise<void>;
+  onCreate: (thesis: string, schedule: DebateSchedule, bounty: BountyDraft | null) => Promise<void>;
+  /** Resolves a custom bounty token address to its identity; absent in sample mode. */
+  resolveToken?: (address: string) => Promise<TokenInfo>;
 }) {
   const filtered = filterDebates(debates, filter);
 
   return (
     <main className="browse">
-      <CreatePanel disabledHint={createDisabledHint} onCreate={onCreate} />
+      <CreatePanel disabledHint={createDisabledHint} onCreate={onCreate} resolveToken={resolveToken} />
 
       <div className="filters">
         <label className="filter filter-thesis">
@@ -239,6 +271,12 @@ export function BrowseView({
                 <span className="debate-meta">
                   {debate.argumentsCount} {debate.argumentsCount === 1 ? 'argument' : 'arguments'} ·{' '}
                   <span className="mono">{debate.stake} ⬡</span> staked
+                  {debate.bounty && (
+                    <>
+                      {' '}
+                      · <span className="mono">{formatTokenAmount(debate.bounty.pool, debate.bounty)}</span> bounty
+                    </>
+                  )}
                 </span>
               </button>
               <span className={`phase phase-${debate.phase}`}>{PHASE_SHORT[debate.phase]}</span>

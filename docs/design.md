@@ -56,6 +56,13 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — the bounty is a second chip with the same live modal.** The create form's bounty
+  affordance mirrors the schedule chip exactly: the chip is the value ("no bounty" / "bounty 50
+  USDC"), the modal edits live (preset token chips WETH · USDC · EURC, any ERC-20 by address, the
+  amount in human units). Elsewhere the bounty stays in the meta lines - browse rows and the thesis
+  meta show the pool in quiet mono; the only bold affordance is the finished-debate
+  "Redeem & claim bounty share" button, one transaction for settle-and-claim, mirroring the
+  contract's one-shot claim. (Principles 5-7, 10.)
 - **2026-07-15 — the mine shortcut is an in-field adornment.** First a separate "Mine" button
   (displaced), then a native `datalist` suggestion (too hidden — only visible on focus); now a
   small uppercase "mine" sits inside the Author field's right edge, filling it with the connected

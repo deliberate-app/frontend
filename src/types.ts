@@ -58,6 +58,25 @@ export function liveChainTime(timing: DebateTiming, now: number): number {
   return Math.max(now, timing.chainTime + Math.max(0, now - timing.loadedAt));
 }
 
+/** Mirrors the contract's `Parameters.CLAIM_WINDOW`: bounty claims close this long after the tally. */
+export const CLAIM_WINDOW_SECONDS = 7 * 24 * 60 * 60;
+
+/** A debate's ERC-20 bounty, with the token's display identity resolved. */
+export interface DebateBounty {
+  /** The checksummed token address. */
+  token: string;
+  symbol: string;
+  decimals: number;
+  /** The total amount funded, in raw token units. */
+  pool: bigint;
+  /** The total paid out to claimants so far, in raw token units. */
+  claimed: bigint;
+  /** Whether the creator has swept the unclaimed remainder. */
+  swept: boolean;
+  /** Unix seconds the claim window closes; 0 while the debate is unfinished. */
+  claimEndTime: number;
+}
+
 export interface Debate {
   id: number;
   phase: Phase;
@@ -66,6 +85,10 @@ export interface Debate {
   timing?: DebateTiming;
   /** Whether the debate confirmed the thesis. Only set once the phase is `finished`. */
   approved?: boolean;
+  /** The debate's bounty; absent when none is attached. */
+  bounty?: DebateBounty;
+  /** The number of joined accounts - the N in the bounty payout denominator. */
+  participantsCount?: number;
 }
 
 /** A debate as it appears in the browse list. */
@@ -81,6 +104,8 @@ export interface DebateSummary {
   /** Vote tokens committed to the debate's markets (deposits plus net stakes). */
   stake: number;
   argumentsCount: number;
+  /** The debate's bounty; absent when none is attached. */
+  bounty?: DebateBounty;
   /** The creator's checksummed address; absent for bundled sample data. */
   creator?: string;
 }
@@ -105,7 +130,7 @@ export interface DebateFilter {
   sort: DebateSort;
 }
 
-/** Filters by status, thesis text, and author, then orders by the chosen sort (id breaks stake ties). */
+/** Filters by status, thesis text, and author, then orders by the chosen sort (id breaks ties). */
 export function filterDebates(debates: DebateSummary[], filter: DebateFilter): DebateSummary[] {
   const thesis = filter.thesis.trim().toLowerCase();
   const author = filter.author.trim().toLowerCase();

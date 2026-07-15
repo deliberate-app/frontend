@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPublicClient, http, type Address } from 'viem';
+import { type BountyDraft } from './components/BountySettings';
 import { BrowseView } from './components/BrowseView';
 import { DebateView, type DebateTx } from './components/DebateView';
 import { PhaseClock } from './components/PhaseClock';
@@ -12,6 +14,7 @@ import {
 import { contractConfig } from './data/config';
 import { defaultSource } from './data/source';
 import type { DebateSchedule } from './lib/debateTiming';
+import { tokenInfo } from './lib/tokens';
 import { useNow } from './lib/time';
 import type { Debate, DebateFilter, DebateSummary } from './types';
 import { availablePhasePoke, PHASE_LABEL } from './types';
@@ -19,6 +22,10 @@ import { useWallet } from './wallet/useWallet';
 
 const source = defaultSource();
 const config = contractConfig();
+
+// One shared read client for resolving custom bounty tokens; absent in sample mode.
+const tokenClient = config ? createPublicClient({ transport: http(config.rpcUrl) }) : null;
+const resolveToken = tokenClient ? (address: string) => tokenInfo(address, tokenClient) : undefined;
 
 // A just-created debate is mined, but the load-balanced RPC / hosted indexer can briefly
 // serve a node that has not seen its block yet - so the reader waits it out with a spinner.
@@ -195,7 +202,7 @@ export default function App() {
       // Joining grants a fixed token allotment; reflect it immediately rather than waiting on the
       // indexer to catch up with the Joined event (the tree is unchanged, so no reload is needed).
       optimisticJoinRef.current = true;
-      setUserState({ joined: true, tokens: INITIAL_TOKENS });
+      setUserState({ joined: true, bountyClaimed: false, tokens: INITIAL_TOKENS });
     } catch (cause) {
       setJoinError(actionErrorMessage(cause));
     } finally {
@@ -271,12 +278,31 @@ export default function App() {
         await actions.claimFees(debateId, argumentId);
         await refresh();
       },
+      bountyClaimed: userState.bountyClaimed,
+      fundBounty: async (amount) => {
+        const token = debate?.bounty?.token;
+        if (!token) throw new Error('This debate has no bounty to top up.');
+        await actions.fundBounty(debateId, token as Address, amount);
+        await refresh();
+      },
+      claimBounty: async (argumentIds) => {
+        await actions.claimBounty(debateId, argumentIds);
+        await refresh();
+      },
+      sweepBounty: async () => {
+        await actions.sweepBounty(debateId);
+        await refresh();
+      },
     };
-  }, [actions, userState, debateId, refresh]);
+  }, [actions, userState, debateId, debate, refresh]);
 
-  const createDebate = async (thesis: string, schedule: DebateSchedule) => {
+  const createDebate = async (thesis: string, schedule: DebateSchedule, bounty: BountyDraft | null) => {
     if (!actions) throw new Error('Connect a wallet first.');
-    const id = await actions.createDebate(thesis, schedule);
+    const id = await actions.createDebate(
+      thesis,
+      schedule,
+      bounty ? { token: bounty.token.address, amount: bounty.amount } : undefined,
+    );
     // The receipt is mined, so the debate exists; mark it so the reader waits out any
     // RPC/indexer lag with a spinner instead of a not-found error.
     awaitingCreateRef.current = id;
@@ -345,6 +371,7 @@ export default function App() {
             createDisabledHint={createDisabledHint}
             onOpen={openDebate}
             onCreate={createDebate}
+            resolveToken={resolveToken}
           />
         )
       ) : debate ? (
