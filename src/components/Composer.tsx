@@ -34,7 +34,7 @@ export function Composer({
         disabled={!affordable}
         title={affordable ? undefined : `An argument costs at least ${MIN_DEPOSIT} vote tokens`}
       >
-        + Add {side} argument · from {MIN_DEPOSIT} ⬡
+        + Add {side} argument · min stake {MIN_DEPOSIT} ⬡
       </button>
     );
   }
@@ -96,7 +96,7 @@ export function Composer({
           ? 'A larger stake deepens the market and gives the argument more starting weight.'
           : deposit > tokens
             ? `You only have ${tokens} ⬡ in this debate.`
-            : `The minimum deposit is ${MIN_DEPOSIT} ⬡.`}
+            : `The minimum stake is ${MIN_DEPOSIT} ⬡.`}
       </p>
       <div className="action-row">
         <button type="submit" className="btn btn-solid" disabled={!canSubmit}>
