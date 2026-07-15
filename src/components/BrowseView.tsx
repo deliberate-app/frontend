@@ -232,6 +232,7 @@ export function BrowseView({
           >
             <option value="recent">Newest</option>
             <option value="stake">Most staked</option>
+            <option value="bounty">Highest bounty</option>
           </select>
         </label>
         <label className="filter filter-author">

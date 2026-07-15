@@ -117,8 +117,8 @@ export interface AccountPosition {
   conShares: number;
 }
 
-/** How the browse list is ordered: newest first, or most-staked first. */
-export type DebateSort = 'recent' | 'stake';
+/** How the browse list is ordered: newest first, most-staked first, or highest bounty first. */
+export type DebateSort = 'recent' | 'stake' | 'bounty';
 
 /** The browse view's filter and sort settings. */
 export interface DebateFilter {
@@ -128,6 +128,15 @@ export interface DebateFilter {
   /** Case-insensitive substring of the creator's address; empty matches all. */
   author: string;
   sort: DebateSort;
+}
+
+/**
+ * A bounty's size in whole tokens, for ordering: unit-normalized (pool over the token's decimals),
+ * NOT value-normalized - without a price oracle, 50 USDC ranks above 0.5 WETH. Bounty-less debates
+ * order last.
+ */
+export function bountyValueOf(debate: DebateSummary): number {
+  return debate.bounty ? Number(debate.bounty.pool) / 10 ** debate.bounty.decimals : -1;
 }
 
 /** Filters by status, thesis text, and author, then orders by the chosen sort (id breaks ties). */
@@ -141,7 +150,11 @@ export function filterDebates(debates: DebateSummary[], filter: DebateFilter): D
       (author === '' || (debate.creator ?? '').toLowerCase().includes(author)),
   );
   return matched.sort(
-    filter.sort === 'stake' ? (a, b) => b.stake - a.stake || b.id - a.id : (a, b) => b.id - a.id,
+    filter.sort === 'stake'
+      ? (a, b) => b.stake - a.stake || b.id - a.id
+      : filter.sort === 'bounty'
+        ? (a, b) => bountyValueOf(b) - bountyValueOf(a) || b.id - a.id
+        : (a, b) => b.id - a.id,
   );
 }
 

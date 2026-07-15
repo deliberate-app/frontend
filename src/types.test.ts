@@ -95,6 +95,25 @@ describe('filterDebates', () => {
     expect(filterDebates([summary(0), summary(2), summary(1)], all).map((d) => d.id)).toEqual([2, 1, 0]);
   });
 
+  test('sorts by highest bounty in whole tokens, bounty-less debates last', () => {
+    const bounty = (pool: bigint, decimals: number, symbol: string) => ({
+      token: '0x0000000000000000000000000000000000000001',
+      symbol,
+      decimals,
+      pool,
+      claimed: 0n,
+      swept: false,
+      claimEndTime: 0,
+    });
+    const debates = [
+      summary(0), // no bounty - sorts last
+      summary(1, { bounty: bounty(500_000_000_000_000_000n, 18, 'WETH') }), // 0.5 in whole tokens
+      summary(2, { bounty: bounty(50_000_000n, 6, 'USDC') }), // 50 in whole tokens
+    ];
+    // Unit-normalized, not value-normalized: 50 USDC ranks above 0.5 WETH without an oracle.
+    expect(filterDebates(debates, { ...all, sort: 'bounty' }).map((d) => d.id)).toEqual([2, 1, 0]);
+  });
+
   test('filters by thesis text, case-insensitively', () => {
     const debates = [summary(0, { thesis: 'Cities should release their transit data openly.' }), summary(1)];
     expect(filterDebates(debates, { ...all, thesis: 'TRANSIT data' }).map((d) => d.id)).toEqual([0]);

@@ -56,6 +56,10 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-15 — "Highest bounty" ranks in whole tokens, not value.** The sort normalizes each pool
+  by its token's decimals and orders bounty-less debates last. Without a price oracle this is
+  unit-honest, not value-honest — 50 USDC ranks above 0.5 WETH — which is stated here rather than
+  faked with hardcoded prices. (Principle 10.)
 - **2026-07-15 — the bounty is a second chip with the same live modal.** The create form's bounty
   affordance mirrors the schedule chip exactly: the chip is the value ("no bounty" / "bounty 50
   USDC"), the modal edits live (preset token chips WETH · USDC · EURC, any ERC-20 by address, the
