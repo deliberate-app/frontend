@@ -26,11 +26,11 @@ describe('publishText', () => {
   });
 
   test.skipIf(!kuboAvailable)('pins content that resolves by its on-chain digest (live kubo)', async () => {
-    const text = 'ArborVote IPFS pipeline round-trip vector';
+    const text = 'Deliberate IPFS pipeline round-trip vector';
 
     const { digest } = await publishText(KUBO_API_URL, text);
 
-    expect(digest).toBe('0xe1315523fad469bcff9695321db9eedf20b2fedf827165eb443c1d1ce32bd1b0');
+    expect(digest).toBe('0x6d198ae501fde3ace9ed12bc3398260bb12aea01f62c7b160080f8de2ac8b2d6');
 
     const roundTrip = await fetchTextByDigest(IPFS_GATEWAY_URL, hexToBytes(digest));
     expect(roundTrip).toBe(text);

@@ -13,7 +13,7 @@ install:
 dev:
     bun run dev
 
-# Start anvil, deploy and seed ArborVote from the debate script, then run the dev server against it
+# Start anvil, deploy and seed Deliberate from the debate script, then run the dev server against it
 dev-anvil:
     bun scripts/dev-anvil.ts
 
@@ -49,5 +49,5 @@ ipfs-down:
 # The deployment vars are blanked so a stale .env.local (dev-anvil) or .env cannot pull the
 # build into contract mode against a dead chain - the tool always shoots the sample debate.
 screenshots:
-    VITE_ARBORVOTE_ADDRESS= VITE_RPC_URL= VITE_INDEXER_URL= bun run build
+    VITE_DELIBERATE_ADDRESS= VITE_RPC_URL= VITE_INDEXER_URL= bun run build
     bun scripts/screenshot.mjs

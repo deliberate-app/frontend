@@ -26,7 +26,7 @@ import {
   type WalletClient,
 } from 'viem';
 
-import abi from '../abi/ArborVote.abi.json';
+import abi from '../abi/Deliberate.abi.json';
 import type { DebateSchedule } from '../lib/debateTiming';
 import { contentURIOf, publishText } from '../lib/ipfs';
 import type { Side } from '../types';

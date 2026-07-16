@@ -1,6 +1,6 @@
-# ArborVote Frontend
+# Deliberate Frontend
 
-A kialo-style viewer for ArborVote debates: the thesis (or any focused argument) on top, its pro and con arguments in two columns, click any card to drill down the tree. The ancestry rail above the focused claim shows the path back to the thesis, with each connector colored by that step's polarity. Above it, a clickable mini tree-view maps the debate around the focus — the thesis in black, pros green, cons red, the current path filled — expanding rows as you drill down and collapsing them as you climb back up.
+A kialo-style viewer for Deliberate debates: the thesis (or any focused argument) on top, its pro and con arguments in two columns, click any card to drill down the tree. The ancestry rail above the focused claim shows the path back to the thesis, with each connector colored by that step's polarity. Above it, a clickable mini tree-view maps the debate around the focus — the thesis in black, pros green, cons red, the current path filled — expanding rows as you drill down and collapsing them as you climb back up.
 
 Every card shows the argument's **market approval** (the pro share of its argument market) and its **weight** (vote tokens staked).
 
@@ -27,7 +27,7 @@ The sample debate is modeled on kialo's ["Should humans act to fight climate cha
 just dev-anvil
 ```
 
-One typed tool ([scripts/dev-anvil.ts](scripts/dev-anvil.ts)) runs the whole stack: it starts anvil (if not already running), builds and deploys ArborVote plus a mock Proof of Humanity, replays the seed **debate script** ([scripts/seed/climateDebate.ts](scripts/seed/climateDebate.ts)) as its four personas — each acting from its own account, joining before its first action — pins the argument texts to IPFS, writes `.env.local`, and starts the dev server. To interact from a wallet, add the network `http://127.0.0.1:8545` (chain id `31337`) and import one of the persona accounts printed by the tool.
+One typed tool ([scripts/dev-anvil.ts](scripts/dev-anvil.ts)) runs the whole stack: it starts anvil (if not already running), builds and deploys Deliberate plus a mock Proof of Humanity, replays the seed **debate script** ([scripts/seed/climateDebate.ts](scripts/seed/climateDebate.ts)) as its four personas — each acting from its own account, joining before its first action — pins the argument texts to IPFS, writes `.env.local`, and starts the dev server. To interact from a wallet, add the network `http://127.0.0.1:8545` (chain id `31337`) and import one of the persona accounts printed by the tool.
 
 Debate scripts are typed data (`DebateScript` in [scripts/devstack/debate.ts](scripts/devstack/debate.ts)): personas plus `add`/`wait`/`stake`/`advancePhase` steps with symbolic argument keys. Editing one file changes the seeded texts, their on-chain digests, and what gets pinned — they cannot drift apart.
 
@@ -36,7 +36,7 @@ Debate scripts are typed data (`DebateScript` in [scripts/devstack/debate.ts](sc
 Set both variables (in `.env.local` or the environment):
 
 ```sh
-VITE_ARBORVOTE_ADDRESS=0x…   # ArborVote contract address
+VITE_DELIBERATE_ADDRESS=0x…   # Deliberate contract address
 VITE_RPC_URL=https://…       # JSON-RPC endpoint
 VITE_IPFS_GATEWAY=https://ipfs.io   # optional, enables content resolution (gateway is untrusted - reads are digest-verified)
 VITE_IPFS_API=https://…      # optional, kubo-compatible RPC API the authoring flow publishes content to
@@ -48,7 +48,7 @@ query instead of an RPC traversal of the tree, falling back to chain reads whene
 indexer is unreachable or has not caught up. `just dev-anvil` writes the variable
 automatically when the indexer repo is checked out. Transactions always go through the RPC.
 
-The ABI is synced from `contracts/out/ArborVote.sol/ArborVote.json` into `src/abi/ArborVote.abi.json`
+The ABI is synced from `contracts/out/Deliberate.sol/Deliberate.json` into `src/abi/Deliberate.abi.json`
 with `just sync-abi` after any contract interface change.
 
 ## Base Sepolia
@@ -58,7 +58,7 @@ cp .env.testnet.example .env.testnet   # then edit if needed
 just dev-testnet
 ```
 
-`.env.testnet.example` carries the shared testnet config (the deployed ArborVote address and the
+`.env.testnet.example` carries the shared testnet config (the deployed Deliberate address and the
 hosted indexer's GraphQL endpoint). Copy it to `.env.testnet` (gitignored, so per-machine tweaks
 stay local) and run `just dev-testnet` — Vite's `--mode testnet` loads it, and its values override
 any local-anvil `.env.local`, so the two environments never bleed together. The app is
@@ -103,7 +103,7 @@ the 256 KiB cap bounds abuse, and the client-side digest check bounds damage.
 Project environment variables (Settings → Environment Variables):
 
 ```sh
-VITE_ARBORVOTE_ADDRESS=0x…   # the live deployment (contracts/broadcast/…/runWithMockRegistry-latest.json)
+VITE_DELIBERATE_ADDRESS=0x…   # the live deployment (contracts/broadcast/…/runWithMockRegistry-latest.json)
 VITE_RPC_URL=https://sepolia.base.org
 VITE_INDEXER_URL=https://…   # the hosted indexer endpoint; the dev tier mints a new URL per deploy
 VITE_IPFS_GATEWAY=https://ipfs.io

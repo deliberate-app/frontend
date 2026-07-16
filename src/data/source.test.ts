@@ -235,7 +235,7 @@ const INDEXER_URL = 'http://localhost:8090/v1/graphql';
 // Read the deployment straight from .env.local - bun skips env files under NODE_ENV=test.
 const envFile = Bun.file(new URL('../../.env.local', import.meta.url).pathname);
 const address = (await envFile.exists())
-  ? ((await envFile.text()).match(/^VITE_ARBORVOTE_ADDRESS=(0x[0-9a-fA-F]{40})$/m)?.[1] as
+  ? ((await envFile.text()).match(/^VITE_DELIBERATE_ADDRESS=(0x[0-9a-fA-F]{40})$/m)?.[1] as
       | `0x${string}`
       | undefined)
   : undefined;

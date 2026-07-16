@@ -1,6 +1,6 @@
 # Design notes
 
-Design system for the ArborVote debate viewer (first pass, 2026-07-10). Layout skeleton is
+Design system for the Deliberate debate viewer (first pass, 2026-07-10). Layout skeleton is
 brief-pinned to kialo.com (focused claim, pro/con columns, drill-down); distinctiveness is
 spent on the rail, the type, and the market-as-ledger presentation.
 

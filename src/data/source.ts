@@ -9,7 +9,7 @@ import {
   type Hex,
   type PublicClient,
 } from 'viem';
-import abi from '../abi/ArborVote.abi.json';
+import abi from '../abi/Deliberate.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
 import { tokenInfo } from '../lib/tokens';
 import type { AccountPosition, ArgumentNode, Debate, DebateBounty, DebateSummary } from '../types';
@@ -119,7 +119,7 @@ async function readBounty(client: PublicClient, address: Address, id: bigint): P
   };
 }
 
-/** Reads a debate from a deployed ArborVote contract. */
+/** Reads a debate from a deployed Deliberate contract. */
 export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: string): DebateSource {
   const client = createPublicClient({ transport: http(rpcUrl) });
 

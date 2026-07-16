@@ -5,7 +5,7 @@ import type { Abi, Address, EIP1193Provider, Hex } from 'viem';
 import { rpcUp } from '../../scripts/devstack/anvil';
 import { loadArtifact } from '../../scripts/devstack/artifacts';
 import { anvilAccount, devChainClient } from '../../scripts/devstack/debate';
-import abi from '../abi/ArborVote.abi.json';
+import abi from '../abi/Deliberate.abi.json';
 import { classicSchedule } from '../lib/debateTiming';
 import { contentURIOf } from '../lib/ipfs';
 import { connectDebateActions, ensureWalletChain } from './actions';
@@ -54,7 +54,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     };
 
     const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
-    const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
+    const address = await deploy('Deliberate.sol', 'Deliberate', [poh]);
 
     const warp = async (seconds: number) => {
       await client.increaseTime({ seconds });
@@ -127,7 +127,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       return receipt.contractAddress;
     };
     const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
-    const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
+    const address = await deploy('Deliberate.sol', 'Deliberate', [poh]);
 
     const config = { address, rpcUrl: RPC_URL };
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
@@ -177,7 +177,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       return receipt.contractAddress;
     };
     const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
-    const address = await deploy('ArborVote.sol', 'ArborVote', [poh]);
+    const address = await deploy('Deliberate.sol', 'Deliberate', [poh]);
 
     const warp = async (seconds: number) => {
       await client.increaseTime({ seconds });

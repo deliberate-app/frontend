@@ -320,7 +320,7 @@ export default function App() {
     <>
       <header className="topbar">
         <a className="wordmark" href="#/">
-          ArborVote
+          delibe<span className="wordmark-rate">rate</span>
         </a>
         {!browsing && (
           <a className="back" href="#/">
@@ -355,7 +355,7 @@ export default function App() {
       {error && (
         <p className="load-error">
           Could not load {browsing ? 'the debates' : 'the debate'}: {error}. Check
-          VITE_ARBORVOTE_ADDRESS and VITE_RPC_URL, or unset them to browse the sample debate.
+          VITE_DELIBERATE_ADDRESS and VITE_RPC_URL, or unset them to browse the sample debate.
         </p>
       )}
 
@@ -386,10 +386,10 @@ export default function App() {
       )}
 
       <footer className="footer">
-        <a href="https://github.com/arborvote" target="_blank" rel="noopener noreferrer">
+        <a href="https://github.com/deliberate-app" target="_blank" rel="noopener noreferrer">
           GitHub
         </a>
-        <a href="https://arborvote.github.io/docs/" target="_blank" rel="noopener noreferrer">
+        <a href="https://deliberate-app.github.io/docs/" target="_blank" rel="noopener noreferrer">
           Documentation
         </a>
       </footer>
