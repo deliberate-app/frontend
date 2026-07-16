@@ -158,14 +158,15 @@ button {
   overflow: hidden;
 }
 
-/* An account address: shortened, full on hover, copied on click. */
+/* An account address: shortened, full on hover, copied on click. One size and voice
+   everywhere it appears (browse rows, the focus card header). */
 .address {
   border: none;
   background: none;
   padding: 0;
   font-family: var(--font-mono);
-  font-size: inherit;
-  color: inherit;
+  font-size: 0.8rem;
+  color: var(--bark);
   text-transform: none;
   cursor: copy;
   text-decoration: underline dotted;
@@ -412,11 +413,6 @@ button {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.35rem;
-}
-
-.focus-kicker-row .address {
-  font-size: 0.8rem;
-  color: var(--bark);
 }
 
 .focus-kicker {
