@@ -60,8 +60,12 @@ button {
   background: var(--card);
 }
 
-/* The brand's weight step: the mechanism (rate) emphasized inside the word. */
+/* The brand lockup: the tree mark plus the weight step - the mechanism (rate)
+   emphasized inside the word. */
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-family: var(--font-display);
   font-weight: 490;
   font-size: 1.25rem;
@@ -70,6 +74,12 @@ button {
   text-decoration: none;
   /* Air between the wordmark and the back link, on top of the topbar's own gap. */
   margin-right: 0.75rem;
+}
+
+.wordmark-tree {
+  width: 1.2em;
+  height: 1.2em;
+  flex: none;
 }
 
 .wordmark-rate {

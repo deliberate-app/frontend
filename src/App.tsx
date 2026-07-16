@@ -320,7 +320,15 @@ export default function App() {
     <>
       <header className="topbar">
         <a className="wordmark" href="#/">
-          delibe<span className="wordmark-rate">rate</span>
+          <svg className="wordmark-tree" viewBox="0 0 96 96" aria-hidden="true">
+            <rect x="43" y="46" width="10" height="38" rx="4" fill="#7a7568" />
+            <circle cx="48" cy="34" r="24" fill="#31703f" />
+            <circle cx="29" cy="45" r="16" fill="#31703f" />
+            <circle cx="67" cy="45" r="16" fill="#31703f" />
+          </svg>
+          <span>
+            delibe<span className="wordmark-rate">rate</span>
+          </span>
         </a>
         {!browsing && (
           <a className="back" href="#/">
