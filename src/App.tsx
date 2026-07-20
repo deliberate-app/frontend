@@ -320,11 +320,20 @@ export default function App() {
     <>
       <header className="topbar">
         <a className="wordmark" href="#/">
-          <svg className="wordmark-tree" viewBox="0 0 96 96" aria-hidden="true">
-            <rect x="43" y="46" width="10" height="38" rx="4" fill="#7a7568" />
-            <circle cx="48" cy="34" r="24" fill="#31703f" />
-            <circle cx="29" cy="45" r="16" fill="#31703f" />
-            <circle cx="67" cy="45" r="16" fill="#31703f" />
+          <svg className="wordmark-mark" viewBox="0 0 96 96" aria-hidden="true">
+            <g
+              transform="translate(-15.12 -15.12) scale(1.3151)"
+              fill="none"
+              strokeWidth="9"
+              strokeLinecap="butt"
+            >
+              <path d="M49 16 H32 a16 16 0 0 0 -16 16 V64 a16 16 0 0 0 16 16 H49" stroke="#31703f" />
+              <path d="M48 80 H64 a16 16 0 0 0 16 -16 V32 a16 16 0 0 0 -16 -16 H48" stroke="#a5432c" />
+            </g>
+            <g transform="translate(-15.12 -15.12) scale(1.3151)" fill="#22301f">
+              <rect x="33" y="41" width="30" height="5" rx="2.5" />
+              <rect x="33" y="52" width="20" height="5" rx="2.5" />
+            </g>
           </svg>
           <span>
             delibe<span className="wordmark-rate">rate</span>
