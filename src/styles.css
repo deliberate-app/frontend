@@ -60,16 +60,17 @@ button {
   background: var(--card);
 }
 
-/* The brand lockup: the tree mark plus the weight step - the mechanism (rate)
-   emphasized inside the word. Pinned to Fraunces' display cut (opsz 144): optical
-   sizing would swap in the chunkier text cut at topbar size, off-brand from the kit. */
+/* The brand lockup: the mark plus the weight step - the mechanism (rate)
+   emphasized inside the word. Both cuts are pinned so no size renders differently:
+   delibe toward Fraunces' display end (opsz 75), rate near the round text cut
+   (opsz 25) so the emphasis is a step in weight and in cut. */
 .wordmark {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   font-family: var(--font-display);
-  font-weight: 490;
-  font-variation-settings: 'opsz' 144;
+  font-weight: 500;
+  font-variation-settings: 'opsz' 75;
   font-size: 1.25rem;
   letter-spacing: -0.01em;
   color: inherit;
@@ -85,7 +86,8 @@ button {
 }
 
 .wordmark-rate {
-  font-weight: 740;
+  font-weight: 750;
+  font-variation-settings: 'opsz' 25;
 }
 
 .back {
