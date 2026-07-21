@@ -14,7 +14,7 @@ const node = (partial: Partial<ArgumentNode> & { id: number }): ArgumentNode => 
 });
 
 const thesis = node({ id: 0, parentId: null, side: null, approval: 0.5, weight: 0 });
-const debate = (nodes: ArgumentNode[]): Debate => ({ id: 0, phase: 'rating', nodes: [thesis, ...nodes] });
+const debate = (nodes: ArgumentNode[]): Debate => ({ id: 0, phase: 'rating', feePercentage: 5, nodes: [thesis, ...nodes] });
 
 describe('impactsOf', () => {
   test('a supporting argument adds half its approval; the thesis nets it', () => {

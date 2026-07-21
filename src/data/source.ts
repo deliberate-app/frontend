@@ -214,19 +214,20 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
       // Derive the live phase from the same clock the contract uses; only the terminal Finished latch is read raw.
       const finished = currentPhase === PHASE_FINISHED;
       const phase = phaseOf(Number(editingEndTime), Number(ratingEndTime), finished, chainTime);
-      const [approved, bounty, [, , participantsCount]] = await Promise.all([
+      const [approved, bounty, [, , participantsCount, feePercentage]] = await Promise.all([
         finished
           ? (client.readContract({ address, abi, functionName: 'outcome', args: [id] }) as Promise<boolean>)
           : Promise.resolve(undefined),
         readBounty(client, address, id),
         client.readContract({ address, abi, functionName: 'debates', args: [id] }) as Promise<
-          [number, number, number]
+          [number, number, number, number]
         >,
       ]);
 
       return {
         id: debateId,
         phase,
+        feePercentage: Number(feePercentage),
         nodes,
         timing: {
           editingEndTime: Number(editingEndTime),
@@ -362,6 +363,7 @@ export interface IndexedDebateRow extends IndexedBountyColumns {
   ratingEndTime: string;
   approved: boolean | null;
   participantsCount: string;
+  feePercentage: string;
 }
 
 export interface IndexedArgumentRow {
@@ -470,7 +472,7 @@ export function summaryFromIndex(
 }
 
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
-  Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
+  Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved participantsCount feePercentage finishedAt bountyToken bountyPool bountyClaimed bountySwept }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
     argumentId parent_id isSupporting contentURI finalizationTime pro con votes creator
   }
@@ -606,6 +608,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       return {
         id: debateId,
         phase: phaseOf(Number(debate.editingEndTime), Number(debate.ratingEndTime), debate.finished, chainTime),
+        feePercentage: Number(debate.feePercentage),
         nodes,
         timing: {
           editingEndTime: Number(debate.editingEndTime),

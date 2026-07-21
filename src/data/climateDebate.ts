@@ -206,6 +206,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
 export const climateDebate: Debate = {
   id: 0,
   phase: 'rating',
+  feePercentage: 5,
   nodes: nodes.map((node) => ({ ...node, state: 'final', finalizationTime: 0 })),
 };
 
@@ -221,6 +222,7 @@ function finishedDebate(
   return {
     id,
     phase: 'finished',
+    feePercentage: 5,
     approved,
     nodes: (
       [
@@ -262,6 +264,7 @@ export const confirmedDebate: Debate = {
 export const editingDebate: Debate = {
   id: 3,
   phase: 'editing',
+  feePercentage: 5,
   participantsCount: 3,
   // A running bounty: fundable, nothing claimable yet.
   bounty: {

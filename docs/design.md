@@ -61,6 +61,14 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-21 — the market fee is a third settings chip, defaulting to 1%.** The contract made the
+  fee a per-debate creator parameter (contracts ADR-0010); the create form exposes it as `fee 1% ⚙`
+  beside the schedule and bounty chips — same live modal pattern, one field, hard-blocked only at
+  the contract's own bound (integer 0–99). The default is 1%, not the old flat 5%: the debate-4
+  forensics showed 5% eating the whole thin-market upside, and 1% is where the replayed trade turns
+  profitable. The stake panel's fee hint now quotes the debate's actual fee ("no market fee" at
+  zero) instead of a hardcoded 5%. (Principles 5, 6, 9, 10.)
+
 - **2026-07-15 — the author signs the card header, not the meta line.** The focus card's kicker row
   is now `THESIS / PRO ARGUMENT … ← → author badge`: identity sits with the claim's label (as posts
   carry their author up top elsewhere), and the meta line goes back to being a quiet row of figures.

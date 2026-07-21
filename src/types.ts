@@ -83,6 +83,8 @@ export interface DebateBounty {
 export interface Debate {
   id: number;
   phase: Phase;
+  /** The market fee in percent (0-99), chosen by the debate's creator; accrues to an argument's creator on every stake. */
+  feePercentage: number;
   nodes: ArgumentNode[];
   /** Absent for bundled sample data, which has no chain to poke. */
   timing?: DebateTiming;

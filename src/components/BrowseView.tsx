@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
 import { DEFAULT_SCHEDULE, scheduleError, type DebateSchedule } from '../lib/debateTiming';
+import { DEFAULT_FEE_PERCENT, feeError } from '../lib/fees';
 import { MAX_CONTENT_CHARS } from '../lib/ipfs';
 import { formatDuration } from '../lib/time';
 import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
@@ -10,6 +11,7 @@ import { AddressChip } from './AddressChip';
 import { VerdictMark } from './VerdictMark';
 import { BountySettings, type BountyDraft } from './BountySettings';
 import { CharBudget } from './CharBudget';
+import { FeeSettings } from './FeeSettings';
 import { ScheduleSettings } from './ScheduleSettings';
 
 const PHASE_SHORT: Record<Phase, string> = {
@@ -61,15 +63,22 @@ function CreatePanel({
 }: {
   /** Why creating is unavailable; null when it is possible. */
   disabledHint: string | null;
-  onCreate: (thesis: string, schedule: DebateSchedule, bounty: BountyDraft | null) => Promise<void>;
+  onCreate: (
+    thesis: string,
+    schedule: DebateSchedule,
+    feePercentage: number,
+    bounty: BountyDraft | null,
+  ) => Promise<void>;
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
 }) {
   const [open, setOpen] = useState(false);
   const [thesis, setThesis] = useState('');
   const [schedule, setSchedule] = useState<DebateSchedule>(DEFAULT_SCHEDULE);
+  const [fee, setFee] = useState(DEFAULT_FEE_PERCENT);
   const [bounty, setBounty] = useState<BountyDraft | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feeOpen, setFeeOpen] = useState(false);
   const [bountyOpen, setBountyOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,13 +98,14 @@ function CreatePanel({
   }
 
   const invalidSchedule = scheduleError(schedule);
+  const invalidFee = feeError(fee);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      await onCreate(thesis.trim(), schedule, bounty);
+      await onCreate(thesis.trim(), schedule, fee, bounty);
       // Success navigates away to the new debate; no local state to reset.
     } catch (cause) {
       setError(actionErrorMessage(cause));
@@ -129,6 +139,15 @@ function CreatePanel({
         <button
           type="button"
           className="schedule-chip"
+          title="The market fee, accrued to an argument's creator on every stake"
+          onClick={() => setFeeOpen(true)}
+        >
+          fee {fee}%
+          <GearIcon />
+        </button>
+        <button
+          type="button"
+          className="schedule-chip"
           title="Attach an ERC-20 prize for the debate's net winners"
           onClick={() => setBountyOpen(true)}
         >
@@ -143,6 +162,7 @@ function CreatePanel({
           onClose={() => setSettingsOpen(false)}
         />
       )}
+      {feeOpen && <FeeSettings feePercentage={fee} onChange={setFee} onClose={() => setFeeOpen(false)} />}
       {bountyOpen && (
         <BountySettings
           bounty={bounty}
@@ -155,9 +175,10 @@ function CreatePanel({
         <button
           type="submit"
           className="btn btn-solid"
-          disabled={busy || thesis.trim().length === 0 || invalidSchedule !== null}
+          disabled={busy || thesis.trim().length === 0 || invalidSchedule !== null || invalidFee !== null}
           title={
             invalidSchedule ??
+            invalidFee ??
             (bounty && bounty.amount > 0n
               ? 'Funding the bounty may ask for two confirmations: the token approval, then the creation.'
               : undefined)
@@ -194,7 +215,12 @@ export function BrowseView({
   onFilter: (filter: DebateFilter) => void;
   createDisabledHint: string | null;
   onOpen: (debateId: number) => void;
-  onCreate: (thesis: string, schedule: DebateSchedule, bounty: BountyDraft | null) => Promise<void>;
+  onCreate: (
+    thesis: string,
+    schedule: DebateSchedule,
+    feePercentage: number,
+    bounty: BountyDraft | null,
+  ) => Promise<void>;
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
 }) {

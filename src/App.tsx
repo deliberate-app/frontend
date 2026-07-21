@@ -298,11 +298,17 @@ export default function App() {
     };
   }, [actions, userState, debateId, debate, refresh]);
 
-  const createDebate = async (thesis: string, schedule: DebateSchedule, bounty: BountyDraft | null) => {
+  const createDebate = async (
+    thesis: string,
+    schedule: DebateSchedule,
+    feePercentage: number,
+    bounty: BountyDraft | null,
+  ) => {
     if (!actions) throw new Error('Connect a wallet first.');
     const id = await actions.createDebate(
       thesis,
       schedule,
+      feePercentage,
       bounty ? { token: bounty.token.address, amount: bounty.amount } : undefined,
     );
     // The receipt is mined, so the debate exists; mark it so the reader waits out any

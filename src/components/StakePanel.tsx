@@ -9,9 +9,12 @@ import type { Side } from '../types';
  */
 export function StakePanel({
   tokens,
+  feePercentage,
   onStake,
 }: {
   tokens: number;
+  /** The debate's market fee in percent, creator-chosen at creation. */
+  feePercentage: number;
   onStake: (side: Side, amount: number) => Promise<void>;
 }) {
   const [amount, setAmount] = useState(5);
@@ -63,8 +66,8 @@ export function StakePanel({
           {busy === 'con' ? 'Staking…' : 'Overrated ↓'}
         </button>
         <span className="action-hint">
-          You profit if the rating corrects your way once the debate ends · 5% fee to the
-          argument's creator
+          You profit if the rating corrects your way once the debate ends
+          {feePercentage > 0 ? ` · ${feePercentage}% fee to the argument's creator` : ' · no market fee'}
         </span>
       </div>
       {error && <p className="action-error">{error}</p>}

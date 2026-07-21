@@ -5,7 +5,7 @@ import { availablePhasePoke, editingOpen, filterDebates, livePhaseOf } from './t
 const TIMING: DebateTiming = { editingEndTime: 700, ratingEndTime: 1000, chainTime: 0, loadedAt: 0 };
 
 function debate(phase: Phase, timing?: DebateTiming): Debate {
-  return { id: 0, phase, nodes: [], timing };
+  return { id: 0, phase, feePercentage: 5, nodes: [], timing };
 }
 
 describe('availablePhasePoke', () => {

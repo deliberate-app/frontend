@@ -54,7 +54,12 @@ export interface DebateActions {
    * bounty, which first asks for a token approval when the allowance does not cover the amount -
    * and returns the new debate's ID.
    */
-  createDebate(thesis: string, schedule: DebateSchedule, bounty?: BountyFunding): Promise<number>;
+  createDebate(
+    thesis: string,
+    schedule: DebateSchedule,
+    feePercentage: number,
+    bounty?: BountyFunding,
+  ): Promise<number>;
   join(debateId: number): Promise<void>;
   addArgument(
     debateId: number,
@@ -244,7 +249,7 @@ export async function connectDebateActions(
   return {
     account,
 
-    async createDebate(thesis, schedule, bounty) {
+    async createDebate(thesis, schedule, feePercentage, bounty) {
       // Pin first: publishing is free and idempotent, while the approval costs a
       // transaction - a pinning outage should abort before any on-chain step.
       const contentURI = await publish(thesis);
@@ -256,6 +261,7 @@ export async function connectDebateActions(
         BigInt(schedule.lockingDuration),
         BigInt(schedule.editingDuration),
         BigInt(schedule.ratingDuration),
+        feePercentage,
         bounty?.token ?? zeroAddress,
         bounty?.amount ?? 0n,
       ]);

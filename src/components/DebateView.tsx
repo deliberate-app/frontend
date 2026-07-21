@@ -236,7 +236,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           />
         )}
         {rating && tx && (
-          <StakePanel tokens={tx.tokens} onStake={(side, amount) => tx.stake(focus.id, side, amount)} />
+          <StakePanel
+            tokens={tx.tokens}
+            feePercentage={debate.feePercentage}
+            onStake={(side, amount) => tx.stake(focus.id, side, amount)}
+          />
         )}
         {finished && tx && (
           <PositionPanel
