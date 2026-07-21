@@ -24,7 +24,7 @@ export function LockChip({
       className={`card-lock ${locked ? 'card-lock-locked' : 'card-lock-draft'}`}
       title={
         locked
-          ? 'Locked in - final and tradeable'
+          ? 'Locked in - final: no more edits or moves'
           : 'Draft: editable and movable until it locks in, then final automatically'
       }
     >

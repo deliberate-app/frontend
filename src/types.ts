@@ -2,7 +2,7 @@ export type Side = 'pro' | 'con';
 
 export type Phase = 'editing' | 'rating' | 'tallying' | 'finished';
 
-/** A created argument is still editable and has no tradeable market yet; a final one is locked in. */
+/** A created argument is a draft, still editable and movable; a final one is locked in. */
 export type ArgumentState = 'created' | 'final';
 
 /** Shortens a content digest to `0x2a3a…0683` - the first and last 4 hex digits. */
@@ -24,7 +24,10 @@ export interface ArgumentNode {
   weight: number;
   /** Derived from the clock: `final` once `finalizationTime` has passed, `created` (draft) before. */
   state: ArgumentState;
-  /** Chain time (unix seconds) from which the argument is final: locked in, tradeable, and tallied. */
+  /**
+   * Chain time (unix seconds) from which the argument is final: locked against edits and moves,
+   * stakeable once the rating phase runs, and counted by the tally.
+   */
   finalizationTime: number;
   /**
    * The creator's checksummed address (the thesis' creator created the debate).
