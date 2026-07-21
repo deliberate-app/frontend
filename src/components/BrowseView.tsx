@@ -114,16 +114,28 @@ function CreatePanel({
         maxLength={MAX_CONTENT_CHARS}
         required
       />
-      <button
-        type="button"
-        className="schedule-chip"
-        title="Customize the debate schedule"
-        onClick={() => setSettingsOpen(true)}
-      >
-        locking {formatDuration(schedule.lockingDuration)} · editing {formatDuration(schedule.editingDuration)}{' '}
-        · rating {formatDuration(schedule.ratingDuration)}
-        <GearIcon />
-      </button>
+      {/* Schedule and bounty are the two pre-creation settings; they sit side by side. */}
+      <div className="composer-config">
+        <button
+          type="button"
+          className="schedule-chip"
+          title="Customize the debate schedule"
+          onClick={() => setSettingsOpen(true)}
+        >
+          locking {formatDuration(schedule.lockingDuration)} · editing {formatDuration(schedule.editingDuration)}{' '}
+          · rating {formatDuration(schedule.ratingDuration)}
+          <GearIcon />
+        </button>
+        <button
+          type="button"
+          className="schedule-chip"
+          title="Attach an ERC-20 prize for the debate's net winners"
+          onClick={() => setBountyOpen(true)}
+        >
+          {bounty ? `bounty ${formatTokenAmount(bounty.amount, bounty.token)}` : 'no bounty'}
+          <GearIcon />
+        </button>
+      </div>
       {settingsOpen && (
         <ScheduleSettings
           schedule={schedule}
@@ -131,15 +143,6 @@ function CreatePanel({
           onClose={() => setSettingsOpen(false)}
         />
       )}
-      <button
-        type="button"
-        className="schedule-chip"
-        title="Attach an ERC-20 prize for the debate's net winners"
-        onClick={() => setBountyOpen(true)}
-      >
-        {bounty ? `bounty ${formatTokenAmount(bounty.amount, bounty.token)}` : 'no bounty'}
-        <GearIcon />
-      </button>
       {bountyOpen && (
         <BountySettings
           bounty={bounty}

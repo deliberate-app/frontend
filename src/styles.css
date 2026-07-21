@@ -1133,6 +1133,14 @@ button {
 }
 
 /* The schedule summary is itself the settings affordance: one clickable chip, gear at the end. */
+/* The schedule and bounty chips share one row, wrapping when the width runs out. */
+.composer-config {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .schedule-chip {
   display: inline-flex;
   align-items: center;
