@@ -340,13 +340,26 @@ export function actionErrorMessage(error: unknown): string {
   if (error instanceof BaseError) {
     const revert = error.walk((cause) => cause instanceof ContractFunctionRevertedError);
     if (revert instanceof ContractFunctionRevertedError) {
-      // Custom errors carry a descriptive name; a plain Error(string) revert - most ERC-20s, e.g. a
-      // bounty token's "ERC20: insufficient allowance" - decodes to the name "Error" with the real
-      // message in `reason`. Show the most specific text so failures aren't flattened to "Error".
       const name = revert.data?.errorName;
-      const detail = name && name !== 'Error' ? name : (revert.reason ?? name);
-      if (detail) {
-        return `The contract rejected this: ${detail}`;
+      // A Deliberate custom error decodes by name against the ABI - show it with its arguments
+      // (e.g. "DurationTooShort(minimum: 300, actual: 250)") so the cause is legible. Error(string)
+      // and Panic(uint256) decode to the reserved names "Error"/"Panic" and carry their text below.
+      if (name && name !== 'Error' && name !== 'Panic') {
+        const inputs = (revert.data?.abiItem as { inputs?: readonly { name?: string }[] } | undefined)?.inputs ?? [];
+        const args = (revert.data?.args ?? []) as readonly unknown[];
+        const body = args.length
+          ? `${name}(${args.map((value, i) => `${inputs[i]?.name ?? `arg${i}`}: ${String(value)}`).join(', ')})`
+          : name;
+        return `The contract rejected this: ${body}`;
+      }
+      // A plain revert (a require string, or a bounty token's own "ERC20: ..." message bubbled up).
+      if (revert.reason) {
+        return `The contract rejected this: ${revert.reason}`;
+      }
+      // A selector in no ABI (a foreign contract's custom error): surface the raw bytes and its
+      // 4-byte selector so it can be decoded off-app (e.g. openchain.xyz / 4byte.directory).
+      if (revert.raw) {
+        return `The contract reverted with unrecognized error data ${revert.raw} (selector ${revert.raw.slice(0, 10)}).`;
       }
     }
     return error.shortMessage;
