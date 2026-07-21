@@ -20,7 +20,12 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 1. **Monochrome stroke iconography.** Icons are inline SVGs drawn with `currentColor` strokes (the
    card padlock, the schedule cogwheel), sized in `em` so they scale with their text. No emoji and no
-   symbol-font glyphs — font fallback renders them inconsistently and off-center.
+   symbol-font glyphs — font fallback renders them inconsistently and off-center. Strokes end **round**
+   by default (`stroke-linecap`/`stroke-linejoin: round`) and carry **weight**: a symbol's meaningful
+   lines — the verdict check and cross, the docs' market plus/minus and tree glyphs — are drawn heavier
+   than the thin structural hairlines (card outlines, connectors), so a glyph reads as a glyph, at the
+   weight the logo bars and arrows set. The lone exception is the brand mark's contour, whose two halves
+   meet flush at butt caps by design (`brandkit/README.md`).
 2. **Stance colors are reserved.** Green (`--pro`) and rust (`--con`) mean pro/con stance,
    nothing else; all other UI stays in the ink/bark neutrals. Color must always carry meaning.
 3. **Live figures never jitter.** Numbers that tick (countdowns, balances) use the mono font with
