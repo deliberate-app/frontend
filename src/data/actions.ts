@@ -224,6 +224,21 @@ export async function connectDebateActions(
     if (receipt.status === 'reverted') {
       throw new Error('The token approval was mined but reverted.');
     }
+    // A load-balanced RPC can serve the next read from a replica still behind the approval's block,
+    // so the follow-up transaction's simulate would see the old (too-low) allowance and revert with
+    // the token's "insufficient allowance". Wait until the raised allowance is observable (bounded).
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const settled = await publicClient.readContract({
+        address: token,
+        abi: erc20Abi,
+        functionName: 'allowance',
+        args: [account, config.address],
+      });
+      if (settled >= amount) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
   };
 
   return {
@@ -324,8 +339,15 @@ export async function connectDebateActions(
 export function actionErrorMessage(error: unknown): string {
   if (error instanceof BaseError) {
     const revert = error.walk((cause) => cause instanceof ContractFunctionRevertedError);
-    if (revert instanceof ContractFunctionRevertedError && revert.data?.errorName) {
-      return `The contract rejected this: ${revert.data.errorName}`;
+    if (revert instanceof ContractFunctionRevertedError) {
+      // Custom errors carry a descriptive name; a plain Error(string) revert - most ERC-20s, e.g. a
+      // bounty token's "ERC20: insufficient allowance" - decodes to the name "Error" with the real
+      // message in `reason`. Show the most specific text so failures aren't flattened to "Error".
+      const name = revert.data?.errorName;
+      const detail = name && name !== 'Error' ? name : (revert.reason ?? name);
+      if (detail) {
+        return `The contract rejected this: ${detail}`;
+      }
     }
     return error.shortMessage;
   }
