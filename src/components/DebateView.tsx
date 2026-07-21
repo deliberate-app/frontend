@@ -2,8 +2,8 @@ import { useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
-import type { AccountPosition, Debate, Side } from '../types';
-import { ancestryOf, childrenOf, editingOpen, liveChainTime, thesisOf } from '../types';
+import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
+import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
@@ -122,31 +122,38 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const focusImpact = impacts.get(focus.id);
   const totalStake = debate.nodes.reduce((sum, node) => sum + node.weight, 0);
 
+  // An argument is locked once the data says final or the live clock has passed its finalization
+  // time - the same rule the cards' padlocks follow.
+  const lockedNow = (node: ArgumentNode) =>
+    node.state === 'final' ||
+    (debate.timing !== undefined && node.finalizationTime <= liveChainTime(debate.timing, now));
+
   // The focused argument's lock state, mirroring the cards: a live countdown while a draft,
   // locked once the clock passes its finalization time (or the data already says final).
   const focusFinalizesIn =
     focus.state === 'created' && debate.timing ? focus.finalizationTime - liveChainTime(debate.timing, now) : null;
-  const focusLocked = focus.state === 'final' || (focusFinalizesIn !== null && focusFinalizesIn <= 0);
+  const focusLocked = lockedNow(focus);
 
-  // Editing affordances close when the on-chain editing window passes, even before anyone pokes the
-  // phase forward (see editingOpen). Replying also requires a final parent, so no composer under a draft.
+  // Phase gates follow the live clock (see livePhaseOf), so the rating affordances open the moment
+  // the editing window passes - the poll only catches up on data, never on time. Replying and
+  // staking both additionally need a locked-in argument, which finalizes by the same clock.
+  const phase = livePhaseOf(debate, now);
   const canAuthor = editingOpen(debate, now);
-  const authoring = tx !== null && tx.joined && canAuthor && focus.state === 'final';
-  const editingClosed = tx !== null && tx.joined && debate.phase === 'editing' && !canAuthor;
-  const rating = tx !== null && tx.joined && debate.phase === 'rating' && !isThesis && focus.state === 'final';
-  const finished = tx !== null && debate.phase === 'finished' && !isThesis;
-  const draft = tx !== null && focus.state === 'created' && debate.phase !== 'finished';
+  const authoring = tx !== null && tx.joined && canAuthor && focusLocked;
+  const rating = tx !== null && tx.joined && phase === 'rating' && !isThesis && focusLocked;
+  const finished = tx !== null && phase === 'finished' && !isThesis;
+  const draft = tx !== null && !focusLocked && phase !== 'finished';
   // Editing/moving a draft is creator-only (the contract enforces it too).
   const ownDraft =
     draft &&
     tx !== null &&
-    debate.phase === 'editing' &&
+    phase === 'editing' &&
     focus.creator !== undefined &&
     focus.creator.toLowerCase() === tx.account.toLowerCase();
   // A draft can move beneath any finalized argument except its current parent.
   const moveTargets: MoveTarget[] = ownDraft
     ? debate.nodes
-        .filter((node) => node.state === 'final' && node.id !== focus.parentId)
+        .filter((node) => lockedNow(node) && node.id !== focus.parentId)
         .map((node) => ({ id: node.id, label: moveTargetLabel(node) }))
     : [];
 
@@ -155,7 +162,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
       <MiniTree debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
       <AncestryRail debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
 
-      {tx && tx.joined && debate.phase === 'finished' && (
+      {tx && tx.joined && phase === 'finished' && (
         <RedeemAllPanel loadPositions={tx.loadPositions} onRedeemAll={tx.redeemBatch} />
       )}
       {isThesis && <BountyPanel debate={debate} tx={tx} now={now} />}
@@ -170,7 +177,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         <h1 className="focus-text">
           <ContentText text={focus.text} digest={focus.contentDigest} />
         </h1>
-        {isThesis && debate.phase === 'finished' && debate.approved !== undefined && (
+        {isThesis && phase === 'finished' && debate.approved !== undefined && (
           <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
             {debate.approved ? 'Thesis confirmed ' : 'Thesis objected '}
             <VerdictMark approved={debate.approved} />
@@ -185,7 +192,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         {isThesis ? (
           <p className="focus-meta">
             Rated through its arguments · total stake <strong className="mono">{totalStake} ⬡</strong>
-            {debate.phase !== 'finished' && focusImpact !== undefined && (
+            {phase !== 'finished' && focusImpact !== undefined && (
               <span title={NET_IMPACT_HINT}>
                 {' '}
                 · net sway{' '}
@@ -241,13 +248,6 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           />
         )}
       </section>
-
-      {editingClosed && (
-        <p className="editing-closed">
-          The editing window has closed — no more arguments can be added. Advance the debate from the
-          header to continue.
-        </p>
-      )}
 
       <div
         className="columns"

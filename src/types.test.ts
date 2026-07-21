@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Debate, DebateSummary, DebateTiming, Phase } from './types';
-import { availablePhasePoke, editingOpen, filterDebates } from './types';
+import { availablePhasePoke, editingOpen, filterDebates, livePhaseOf } from './types';
 
 const TIMING: DebateTiming = { editingEndTime: 700, ratingEndTime: 1000, chainTime: 0, loadedAt: 0 };
 
@@ -76,6 +76,37 @@ describe('editingOpen', () => {
     const stale = debate('editing', { ...TIMING, chainTime: 690, loadedAt: 100 });
     expect(editingOpen(stale, 105)).toBe(true); // 690 + 5 = 695, within 700
     expect(editingOpen(stale, 111)).toBe(false); // 690 + 11 = 701, past 700
+  });
+});
+
+describe('livePhaseOf', () => {
+  test('keeps the stored phase on sample data without a chain clock', () => {
+    expect(livePhaseOf(debate('editing'))).toBe('editing');
+    expect(livePhaseOf(debate('rating'))).toBe('rating');
+  });
+
+  test('re-derives a stale snapshot from the clock, past both windows if need be', () => {
+    expect(livePhaseOf(debate('editing', { ...TIMING, chainTime: 701 }))).toBe('rating');
+    expect(livePhaseOf(debate('editing', { ...TIMING, chainTime: 1001 }))).toBe('tallying');
+  });
+
+  test('flips live as the chain-time estimate advances between polls', () => {
+    const stale = debate('editing', { ...TIMING, chainTime: 690, loadedAt: 100 });
+    expect(livePhaseOf(stale, 105)).toBe('editing'); // 690 + 5 = 695, within 700
+    expect(livePhaseOf(stale, 111)).toBe('rating'); // 690 + 11 = 701, past 700
+    expect(livePhaseOf(stale, 411)).toBe('tallying'); // 690 + 311 = 1001, past 1000
+  });
+
+  test('never finishes by the clock alone - the tally is a transaction', () => {
+    expect(livePhaseOf(debate('rating', { ...TIMING, chainTime: 9999 }))).toBe('tallying');
+  });
+
+  test('finished is terminal, whatever the clock says', () => {
+    expect(livePhaseOf(debate('finished', { ...TIMING, chainTime: 0 }), 0)).toBe('finished');
+  });
+
+  test('never regresses on a wall clock running behind the load-time estimate', () => {
+    expect(livePhaseOf(debate('rating', { ...TIMING, chainTime: 701, loadedAt: 1000 }), 100)).toBe('rating');
   });
 });
 

@@ -967,18 +967,6 @@ button {
   margin-bottom: 0.6rem;
 }
 
-.editing-closed {
-  max-width: 46rem;
-  margin: 0 auto 0.6rem;
-  padding: 0.6rem 1rem;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--con);
-  background: var(--con-wash);
-  border: 1px solid var(--hairline);
-  border-radius: 0.6rem;
-}
-
 /* Placeholder for content that could not be resolved from IPFS: the shortened digest, click to copy.
    Inherits the surrounding size (large in the focus heading) but stays muted and monospace. */
 .content-missing {

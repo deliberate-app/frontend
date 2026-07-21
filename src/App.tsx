@@ -17,7 +17,7 @@ import type { DebateSchedule } from './lib/debateTiming';
 import { tokenInfo } from './lib/tokens';
 import { useNow } from './lib/time';
 import type { Debate, DebateFilter, DebateSummary } from './types';
-import { availablePhasePoke, PHASE_LABEL } from './types';
+import { availablePhasePoke, livePhaseOf, PHASE_LABEL } from './types';
 import { useWallet } from './wallet/useWallet';
 
 const source = defaultSource();
@@ -210,11 +210,14 @@ export default function App() {
     }
   };
 
+  // The phase by the live clock (the snapshot only refreshes on the poll; time moves on its own).
+  const phase = debate === null ? undefined : livePhaseOf(debate, now);
+
   const joinable =
     actions !== null &&
     userState !== null &&
     !userState.joined &&
-    (debate?.phase === 'editing' || debate?.phase === 'rating');
+    (phase === 'editing' || phase === 'rating');
 
   // Tallying is permissionless - any connected account can finish a debate once its rating window
   // closes. The ticking clock opens the gate live, without waiting for the next poll.
@@ -237,7 +240,6 @@ export default function App() {
 
   // A failed poke's message is obsolete once the debate moved on regardless -
   // typically because another keeper won the race it lost.
-  const phase = debate?.phase;
   useEffect(() => {
     setPokeError(null);
   }, [phase]);
@@ -344,8 +346,8 @@ export default function App() {
             ‹ All debates
           </a>
         )}
-        {!browsing && debate && (
-          <span className={`phase phase-${debate.phase}`}>{PHASE_LABEL[debate.phase]}</span>
+        {!browsing && debate && phase && (
+          <span className={`phase phase-${phase}`}>{PHASE_LABEL[phase]}</span>
         )}
         {!browsing && debate && <PhaseClock debate={debate} now={now} />}
         {!browsing && poke && (

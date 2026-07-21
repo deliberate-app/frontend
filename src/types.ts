@@ -173,6 +173,18 @@ export function phaseOf(editingEndTime: number, ratingEndTime: number, finished:
 }
 
 /**
+ * The debate's phase by the (live) clock: the fetch-time snapshot re-derived the way the contract
+ * computes it, so Editing→Rating→Tallying flip on their own the moment a window passes instead of
+ * waiting for the next poll. Finished stays a stored fact (the tally ran), and sample data without
+ * a chain clock keeps its stored phase.
+ */
+export function livePhaseOf(debate: Debate, now?: number): Phase {
+  if (debate.timing === undefined || debate.phase === 'finished') return debate.phase;
+  const time = now === undefined ? debate.timing.chainTime : liveChainTime(debate.timing, now);
+  return phaseOf(debate.timing.editingEndTime, debate.timing.ratingEndTime, false, time);
+}
+
+/**
  * The one debate transition anyone can trigger: the tally, which finishes the debate. The earlier
  * Editing→Rating→Tallying transitions advance by the clock alone and need no transaction.
  */
