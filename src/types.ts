@@ -18,7 +18,7 @@ export interface ArgumentNode {
   text: string;
   /** The on-chain content digest (`0x…`), set only when the content could not be resolved from IPFS. */
   contentDigest?: string;
-  /** The argument market's current pro share, 0..1. */
+  /** The rating market's current pro share, 0..1. */
   approval: number;
   /** Vote tokens staked on this argument's market. */
   weight: number;
