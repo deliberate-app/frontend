@@ -90,9 +90,9 @@ try {
   };
 
   const mockPoh = await deploy(await loadArtifact(contractsDir, 'MockIdentityRegistry.m.sol', 'MockIdentityRegistry'), []);
-  const arborVoteArtifact = await loadArtifact(contractsDir, 'Deliberate.sol', 'Deliberate');
-  const arborVote = await deploy(arborVoteArtifact, [mockPoh]);
-  log(`Deliberate deployed at ${arborVote} (mock Proof of Humanity at ${mockPoh})`);
+  const deliberateArtifact = await loadArtifact(contractsDir, 'Deliberate.sol', 'Deliberate');
+  const deliberate = await deploy(deliberateArtifact, [mockPoh]);
+  log(`Deliberate deployed at ${deliberate} (mock Proof of Humanity at ${mockPoh})`);
 
   const ipfsAvailable = await ensureKubo(frontendDir);
   if (!ipfsAvailable) {
@@ -105,14 +105,14 @@ try {
 
   const { debateId, personas } = await runDebateScript(climateDebate, {
     client,
-    arborVote,
-    abi: arborVoteArtifact.abi,
+    deliberate,
+    abi: deliberateArtifact.abi,
     contentURI,
     log,
   });
 
   const indexerNotified = await upsertIndexerEnv({
-    ENVIO_DELIBERATE_ADDRESS: arborVote,
+    ENVIO_DELIBERATE_ADDRESS: deliberate,
     ...(ipfsAvailable ? { ENVIO_PIN_IPFS_API: KUBO_API_URL } : {}),
   });
   if (indexerNotified) {
@@ -120,7 +120,7 @@ try {
   }
 
   const env = [
-    `VITE_DELIBERATE_ADDRESS=${arborVote}`,
+    `VITE_DELIBERATE_ADDRESS=${deliberate}`,
     `VITE_RPC_URL=${RPC_URL}`,
     ...(ipfsAvailable ? [`VITE_IPFS_GATEWAY=${IPFS_GATEWAY_URL}`, `VITE_IPFS_API=${KUBO_API_URL}`] : []),
     // The app reads from the index when it is up and falls back to the chain when not.

@@ -3,7 +3,7 @@
 services:
   ipfs:
     image: ipfs/kubo:v0.42.0
-    container_name: arborvote-ipfs
+    container_name: deliberate-ipfs
     ports:
       - "127.0.0.1:5001:5001" # RPC API (publishing/pinning)
       - "127.0.0.1:8080:8080" # HTTP gateway (content resolution)

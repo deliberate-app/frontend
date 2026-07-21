@@ -85,7 +85,7 @@ export type DevChainClient = ReturnType<typeof devChainClient>;
 
 export interface DebateRunnerOptions {
   client: DevChainClient;
-  arborVote: Address;
+  deliberate: Address;
   abi: Abi;
   /** Maps an argument text to its on-chain bytes32 contentURI (hashing plus optional pinning). */
   contentURI: (text: string) => Promise<Hex>;
@@ -99,7 +99,7 @@ export interface DebateRunResult {
 }
 
 export async function runDebateScript(script: DebateScript, options: DebateRunnerOptions): Promise<DebateRunResult> {
-  const { client, arborVote, abi, contentURI, log } = options;
+  const { client, deliberate, abi, contentURI, log } = options;
 
   const personas = new Map<string, HDAccount>();
   const joined = new Set<string>();
@@ -118,7 +118,7 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
   const act = async (user: string, functionName: string, args: unknown[]): Promise<unknown> => {
     const { request, result } = await client.simulateContract({
       account: account(user),
-      address: arborVote,
+      address: deliberate,
       abi,
       functionName,
       args,
@@ -152,7 +152,7 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
 
   const getArgument = async (argumentId: number): Promise<{ state: number; finalizationTime: number }> =>
     (await client.readContract({
-      address: arborVote,
+      address: deliberate,
       abi,
       functionName: 'getArgument',
       args: [debateId, argumentId],
