@@ -5,6 +5,7 @@ import { useNow } from '../lib/time';
 import type { AccountPosition, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
+import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ContentText } from './ContentText';
 import { ArgumentCard } from './ArgumentCard';
@@ -171,7 +172,8 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
         </h1>
         {isThesis && debate.phase === 'finished' && debate.approved !== undefined && (
           <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
-            {debate.approved ? 'Thesis confirmed ✓' : 'Thesis objected ✗'}
+            {debate.approved ? 'Thesis confirmed ' : 'Thesis objected '}
+            <VerdictMark approved={debate.approved} />
             {focusImpact !== undefined && (
               <span title={NET_IMPACT_HINT}>
                 {' '}

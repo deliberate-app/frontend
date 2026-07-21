@@ -7,6 +7,7 @@ import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
 import type { DebateFilter, DebateSummary, Phase } from '../types';
 import { filterDebates } from '../types';
 import { AddressChip } from './AddressChip';
+import { VerdictMark } from './VerdictMark';
 import { BountySettings, type BountyDraft } from './BountySettings';
 import { CharBudget } from './CharBudget';
 import { ScheduleSettings } from './ScheduleSettings';
@@ -288,7 +289,7 @@ export function BrowseView({
                   debate.approved === undefined ? undefined : debate.approved ? 'Thesis confirmed' : 'Thesis objected'
                 }
               >
-                {debate.approved === undefined ? '' : debate.approved ? '✓' : '✗'}
+                {debate.approved === undefined ? null : <VerdictMark approved={debate.approved} />}
               </span>
               {debate.creator && <AddressChip address={debate.creator} />}
             </div>

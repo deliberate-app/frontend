@@ -655,6 +655,13 @@ button {
   color: var(--con);
 }
 
+/* The verdict mark (check / cross): sized to the line and dropped onto the text baseline. */
+.verdict-glyph {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.14em;
+}
+
 /* The browse-list outcome mark: the focus verdict's checkmark/cross, reduced to one glyph.
    The slot is fixed-width and always present, so the phase chips align across rows. */
 .verdict-mark {
