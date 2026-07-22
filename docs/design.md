@@ -61,6 +61,17 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-22 — the winnable pot is the rater-attention beacon; the curve lives in a detail
+  modal.** Every argument card carries a quiet `pot n ⬡` (the larger correction prize; both
+  directions on hover), and the focus meta shows the split (`pot ↑1 ↓104 ⬡`) as a chip opening the
+  market detail: the constant-product curve as a parametric plot (con shares right — "bad
+  argument", pro shares up — "good argument", the market as a point on `pro·con = k`), reserves,
+  pool, fee, and the per-direction pot. The pot is the reserves — mechanism-exact bounds on what
+  correcting the market can free — surfacing the attention signal the design already pays
+  (deposit + mispricing) instead of adding a purchasable one (per-argument bounties were analyzed
+  and rejected: contracts incentives.md §9). Stance colors mark the two directions; the plot stays
+  ink. (Principles 1, 2, 5, 10; north star: detail on demand, cards stay scannable.)
+
 - **2026-07-21 — the market fee is a third settings chip, defaulting to 1%.** The contract made the
   fee a per-debate creator parameter (contracts ADR-0010); the create form exposes it as `fee 1% ⚙`
   beside the schedule and bounty chips — same live modal pattern, one field, hard-blocked only at

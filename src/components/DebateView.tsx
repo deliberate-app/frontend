@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
+import { potHint, winnablePot } from '../lib/market';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesisOf } from '../types';
@@ -12,6 +13,7 @@ import { ArgumentCard } from './ArgumentCard';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
 import { LockChip } from './LockChip';
+import { MarketDetail } from './MarketDetail';
 import { StakePanel } from './StakePanel';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
@@ -108,6 +110,8 @@ const impactClassOf = (impact: number) => (impact > 0 ? 'impact-pos' : impact < 
 export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null }) {
   const thesis = thesisOf(debate);
   const [focusedId, setFocusedId] = useState(thesis.id);
+  // The focused argument's market detail (the curve modal), opened from the pot chip.
+  const [marketOpen, setMarketOpen] = useState(false);
   const now = useNow();
 
   const byId = new Map(debate.nodes.map((n) => [n.id, n]));
@@ -133,6 +137,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const focusFinalizesIn =
     focus.state === 'created' && debate.timing ? focus.finalizationTime - liveChainTime(debate.timing, now) : null;
   const focusLocked = lockedNow(focus);
+  const focusPot = winnablePot(focus);
 
   // Phase gates follow the live clock (see livePhaseOf), so the rating affordances open the moment
   // the editing window passes - the poll only catches up on data, never on time. Replying and
@@ -220,8 +225,21 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
               </span>
             )}{' '}
+            ·{' '}
+            <button
+              type="button"
+              className="market-chip"
+              title={`${potHint(focusPot)} Opens the market's curve.`}
+              onClick={() => setMarketOpen(true)}
+            >
+              pot <strong className="mono market-pro">↑{focusPot.underrated}</strong>{' '}
+              <strong className="mono market-con">↓{focusPot.overrated}</strong> ⬡
+            </button>{' '}
             · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
           </p>
+        )}
+        {marketOpen && !isThesis && (
+          <MarketDetail node={focus} feePercentage={debate.feePercentage} onClose={() => setMarketOpen(false)} />
         )}
         {ownDraft && tx && (
           <DraftControls

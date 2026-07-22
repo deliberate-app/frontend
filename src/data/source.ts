@@ -198,6 +198,8 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                 // Approval is the pro-share price of the argument's constant-product market:
                 // the scarcer the pro reserve, the higher the approval.
                 approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
+                proReserve: argument.pro,
+                conReserve: argument.con,
                 weight: argument.votes,
                 // Final-ness is by time: an argument locks in automatically once its editing window elapses.
                 state: chainTime >= Number(argument.finalizationTime) ? ('final' as const) : ('created' as const),
@@ -397,6 +399,8 @@ export function nodeFromIndex(
     side: row.isSupporting === null ? null : row.isSupporting ? 'pro' : 'con',
     contentURI: row.contentURI as Hex,
     approval: marketSize === 0 ? 0.5 : con / marketSize,
+    proReserve: Number(row.pro),
+    conReserve: con,
     weight: Number(row.votes),
     state: chainTime >= finalizationTime ? 'final' : 'created',
     finalizationTime,

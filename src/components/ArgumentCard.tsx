@@ -1,4 +1,5 @@
 import { formatApproval, formatImpact, IMPACT_HINT } from '../lib/impact';
+import { potHint, winnablePot } from '../lib/market';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf, liveChainTime } from '../types';
 import { LockChip } from './LockChip';
@@ -48,6 +49,7 @@ export function ArgumentCard({
       : null;
   // Final once the argument is locked in, or once the live clock has passed its finalization time.
   const locked = node.state === 'final' || (finalizesIn !== null && finalizesIn <= 0);
+  const pot = winnablePot(node);
   const replies = [
     pros > 0 ? `${pros} pro` : null,
     cons > 0 ? `${cons} con` : null,
@@ -66,6 +68,10 @@ export function ArgumentCard({
             {formatImpact(impact)}
           </span>
         )}
+        {/* The rater-attention beacon: the larger correction prize, both directions on hover. */}
+        <span className="card-pot mono" title={potHint(pot)}>
+          pot {Math.max(pot.underrated, pot.overrated)} ⬡
+        </span>
         <LockChip locked={locked} finalizesIn={finalizesIn} />
         <span className="card-replies">
           {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays

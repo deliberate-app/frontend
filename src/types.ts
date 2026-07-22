@@ -20,6 +20,10 @@ export interface ArgumentNode {
   contentDigest?: string;
   /** The rating market's current pro share, 0..1. */
   approval: number;
+  /** The market's pro share reserve; absent for bundled sample data (see `reservesOf`). */
+  proReserve?: number;
+  /** The market's con share reserve; absent for bundled sample data (see `reservesOf`). */
+  conReserve?: number;
   /** Vote tokens staked on this argument's market. */
   weight: number;
   /** Derived from the clock: `final` once `finalizationTime` has passed, `created` (draft) before. */

@@ -79,6 +79,8 @@ describe('nodeFromIndex', () => {
       side: 'pro',
       contentURI: '0xabc1',
       approval: 1 / 22,
+      proReserve: 21,
+      conReserve: 1,
       weight: 29,
       state: 'final', // chain time 100 is past the finalization time 90
       finalizationTime: 90,

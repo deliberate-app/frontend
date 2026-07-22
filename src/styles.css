@@ -1121,6 +1121,82 @@ button {
 }
 
 /* The schedule summary is itself the settings affordance: one clickable chip, gear at the end. */
+/* The winnable pot: the rater-attention beacon - the correction prize a market still holds. */
+.card-pot {
+  color: var(--bark);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.market-pro {
+  color: var(--pro);
+}
+
+.market-con {
+  color: var(--con);
+}
+
+/* The pot chip in the focus meta: reads as meta text, opens the market detail. */
+.market-chip {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.market-chip:hover {
+  text-decoration: underline dotted;
+}
+
+/* The market detail's parametric constant-product curve. */
+.market-plot {
+  display: block;
+  width: min(260px, 100%);
+  margin: 0 auto;
+}
+
+.market-axis {
+  stroke: var(--hairline);
+  stroke-width: 1.5;
+}
+
+.market-diagonal {
+  stroke: var(--hairline);
+  stroke-dasharray: 4 4;
+}
+
+.market-curve {
+  stroke: var(--ink);
+  stroke-width: 1.75;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.market-point {
+  fill: var(--ink);
+}
+
+.market-label {
+  font-size: 10px;
+  fill: var(--bark);
+}
+
+.market-label-pro {
+  fill: var(--pro);
+}
+
+.market-label-con {
+  fill: var(--con);
+}
+
+.market-readout {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--bark);
+}
+
 /* The schedule and bounty chips share one row, wrapping when the width runs out. */
 .composer-config {
   display: flex;
