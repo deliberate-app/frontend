@@ -58,10 +58,14 @@ export function PositionPanel({
       <div className="action-row">
         {hasShares && (
           <>
-            <span className="action-hint">
+            <span
+              className="action-hint"
+              title="A good-argument share pays the argument's final rating, a bad-argument share its complement."
+            >
               Your shares:{' '}
               <strong className="mono">
-                {position.proShares} on underrated · {position.conShares} on overrated
+                {position.proShares} <span className="market-pro">good-argument</span> ·{' '}
+                {position.conShares} <span className="market-con">bad-argument</span>
               </strong>
             </span>
             <button type="button" className="btn btn-solid" onClick={() => run(onRedeem)} disabled={busy}>

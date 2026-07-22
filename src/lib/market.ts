@@ -1,6 +1,6 @@
 import type { ArgumentNode } from '../types';
 
-/** An argument market's share reserves; approval (the pro-share price) is `con / (pro + con)`. */
+/** An argument market's share reserves; approval (the good-argument share price) is `con / (pro + con)`. */
 export interface MarketReserves {
   pro: number;
   con: number;
@@ -22,21 +22,22 @@ export function reservesOf(node: ArgumentNode): MarketReserves {
 }
 
 /**
- * The winnable pot: what a corrector can extract from this market, per direction, before fees.
- * Buying pro ("underrated") frees at most the pro reserve - as the stake grows, the shares freed
- * beyond the tokens paid approach the reserve, each redeeming at up to one token - and buying con
- * ("overrated") at most the con reserve. This is the honest rater-attention beacon: the prize is
- * the seeded deposit plus whatever mispricing others left behind, extractable only by being right.
+ * The market's upside: what a corrector can gain from it, per direction, before fees. Buying
+ * good-argument shares ("underrated") frees at most the pro reserve - as the stake grows, the
+ * shares freed beyond the tokens paid approach the reserve, each redeeming at up to one token -
+ * and buying bad-argument shares ("overrated") at most the con reserve. This is the honest
+ * rater-attention beacon: the prize is the seeded deposit plus whatever mispricing others left
+ * behind, extractable only by being right.
  */
-export function winnablePot(node: ArgumentNode): { underrated: number; overrated: number } {
+export function upsideOf(node: ArgumentNode): { underrated: number; overrated: number } {
   const { pro, con } = reservesOf(node);
   return { underrated: pro, overrated: con };
 }
 
-/** The shared tooltip explaining an argument's pot figures. */
-export function potHint(pot: { underrated: number; overrated: number }): string {
+/** The shared tooltip explaining an argument's upside figures. */
+export function upsideHint(upside: { underrated: number; overrated: number }): string {
   return (
-    `Winnable by correcting this market: up to ${pot.underrated} ⬡ if it proves underrated, ` +
-    `up to ${pot.overrated} ⬡ if overrated (before fees).`
+    `The most correcting this market can gain: up to ${upside.underrated} ⬡ if it proves underrated, ` +
+    `up to ${upside.overrated} ⬡ if overrated (before fees).`
   );
 }

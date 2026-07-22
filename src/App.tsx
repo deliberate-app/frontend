@@ -16,7 +16,7 @@ import { defaultSource } from './data/source';
 import type { DebateSchedule } from './lib/debateTiming';
 import { tokenInfo } from './lib/tokens';
 import { useNow } from './lib/time';
-import type { Debate, DebateFilter, DebateSummary } from './types';
+import type { AccountPosition, Debate, DebateFilter, DebateSummary } from './types';
 import { availablePhasePoke, livePhaseOf, PHASE_LABEL } from './types';
 import { useWallet } from './wallet/useWallet';
 
@@ -298,6 +298,45 @@ export default function App() {
     };
   }, [actions, userState, debateId, debate, refresh]);
 
+  // The finished debate's one-click settle, living in the top bar next to the Finished label:
+  // redeem the account's shares across every argument it still holds a position in, one
+  // transaction. The refresh after redeeming rebuilds `tx`, which re-runs the loader and finds
+  // nothing left - the button retires itself.
+  const [redeemable, setRedeemable] = useState<AccountPosition[] | null>(null);
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!tx || !tx.joined || phase !== 'finished') {
+      setRedeemable(null);
+      return;
+    }
+    let cancelled = false;
+    tx.loadPositions()
+      .then((positions) => {
+        if (!cancelled) {
+          setRedeemable(positions.filter((position) => position.proShares > 0 || position.conShares > 0));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRedeemable(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tx, phase]);
+  const redeemAll = async () => {
+    if (!tx || !redeemable || redeemable.length === 0) return;
+    setRedeeming(true);
+    setRedeemError(null);
+    try {
+      await tx.redeemBatch(redeemable.map((position) => position.argumentId));
+    } catch (cause) {
+      setRedeemError(actionErrorMessage(cause));
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
   const createDebate = async (
     thesis: string,
     schedule: DebateSchedule,
@@ -355,6 +394,17 @@ export default function App() {
         {!browsing && debate && phase && (
           <span className={`phase phase-${phase}`}>{PHASE_LABEL[phase]}</span>
         )}
+        {!browsing && redeemable && redeemable.length > 0 && (
+          <button
+            type="button"
+            className="btn"
+            title={`Redeems your shares across ${redeemable.length} argument${redeemable.length === 1 ? '' : 's'} in one transaction.`}
+            onClick={() => void redeemAll()}
+            disabled={redeeming}
+          >
+            {redeeming ? 'Redeeming…' : 'Redeem all shares'}
+          </button>
+        )}
         {!browsing && debate && <PhaseClock debate={debate} now={now} />}
         {!browsing && poke && (
           <button type="button" className="btn" onClick={runPoke} disabled={poking}>
@@ -377,6 +427,7 @@ export default function App() {
 
       {joinError && <p className="load-error">Could not join: {joinError}</p>}
       {pokeError && <p className="load-error">Could not tally the debate: {pokeError}</p>}
+      {redeemError && <p className="load-error">Could not redeem: {redeemError}</p>}
       {error && (
         <p className="load-error">
           Could not load {browsing ? 'the debates' : 'the debate'}: {error}. Check

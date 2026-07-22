@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ArgumentNode } from '../types';
-import { reservesOf, winnablePot } from './market';
+import { reservesOf, upsideOf } from './market';
 
 const node = (partial: Partial<ArgumentNode> & { id: number }): ArgumentNode => ({
   parentId: 0,
@@ -24,18 +24,18 @@ describe('reservesOf', () => {
   });
 });
 
-describe('winnablePot', () => {
-  test('the pot per direction is the reserve a corrector can free', () => {
+describe('upsideOf', () => {
+  test('the upside per direction is the reserve a corrector can free', () => {
     // Production debate 4's argument ended at reserves (1, 186): nothing left to win by rating
     // it up further, 186 for whoever proves it overrated - matching the forensic replay, where
     // the lone-corrector's gain approached the 5-token seed reserve as the stake grew.
-    expect(winnablePot(node({ id: 1, proReserve: 1, conReserve: 186 }))).toEqual({
+    expect(upsideOf(node({ id: 1, proReserve: 1, conReserve: 186 }))).toEqual({
       underrated: 1,
       overrated: 186,
     });
   });
 
   test('a fresh neutral seed offers its halves both ways', () => {
-    expect(winnablePot(node({ id: 1, proReserve: 5, conReserve: 5 }))).toEqual({ underrated: 5, overrated: 5 });
+    expect(upsideOf(node({ id: 1, proReserve: 5, conReserve: 5 }))).toEqual({ underrated: 5, overrated: 5 });
   });
 });

@@ -52,6 +52,7 @@ export function StakePanel({
         <button
           type="button"
           className="btn btn-pro"
+          title="Buys good-argument shares - they pay the argument's final rating."
           onClick={() => stake('pro')}
           disabled={busy !== null || invalid}
         >
@@ -60,6 +61,7 @@ export function StakePanel({
         <button
           type="button"
           className="btn btn-con"
+          title="Buys bad-argument shares - they pay the complement of the final rating."
           onClick={() => stake('con')}
           disabled={busy !== null || invalid}
         >

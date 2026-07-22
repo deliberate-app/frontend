@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
-import { potHint, winnablePot } from '../lib/market';
+import { upsideHint, upsideOf } from '../lib/market';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesisOf } from '../types';
@@ -17,7 +17,6 @@ import { MarketDetail } from './MarketDetail';
 import { StakePanel } from './StakePanel';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
-import { RedeemAllPanel } from './RedeemAllPanel';
 
 /** The debate interactions available to the connected, joined account. */
 export interface DebateTx {
@@ -137,7 +136,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const focusFinalizesIn =
     focus.state === 'created' && debate.timing ? focus.finalizationTime - liveChainTime(debate.timing, now) : null;
   const focusLocked = lockedNow(focus);
-  const focusPot = winnablePot(focus);
+  const focusUpside = upsideOf(focus);
 
   // Phase gates follow the live clock (see livePhaseOf), so the rating affordances open the moment
   // the editing window passes - the poll only catches up on data, never on time. Replying and
@@ -167,9 +166,6 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
       <MiniTree debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
       <AncestryRail debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
 
-      {tx && tx.joined && phase === 'finished' && (
-        <RedeemAllPanel loadPositions={tx.loadPositions} onRedeemAll={tx.redeemBatch} />
-      )}
       {isThesis && <BountyPanel debate={debate} tx={tx} now={now} />}
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
@@ -229,11 +225,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             <button
               type="button"
               className="market-chip"
-              title={`${potHint(focusPot)} Opens the market's curve.`}
+              title={`${upsideHint(focusUpside)} Opens the market's curve.`}
               onClick={() => setMarketOpen(true)}
             >
-              pot <strong className="mono market-pro">↑{focusPot.underrated}</strong>{' '}
-              <strong className="mono market-con">↓{focusPot.overrated}</strong> ⬡
+              upside <strong className="mono market-pro">↑{focusUpside.underrated}</strong>{' '}
+              <strong className="mono market-con">↓{focusUpside.overrated}</strong> ⬡
             </button>{' '}
             · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
           </p>

@@ -1,12 +1,12 @@
 import { formatApproval } from '../lib/impact';
-import { reservesOf, winnablePot } from '../lib/market';
+import { reservesOf, upsideOf } from '../lib/market';
 import type { ArgumentNode } from '../types';
 
 /**
- * The constant-product curve as a parametric plot (as in the whitepaper): con shares - the "bad
- * argument" axis - run right, pro shares - the "good argument" axis - run up, and the market sits
- * on the hyperbola `pro · con = k`. Staking slides the point along the curve: underrated stakes
- * toward the lower right (pro scarce, approval up), overrated toward the upper left.
+ * The constant-product curve as a parametric plot (as in the whitepaper): bad-argument shares run
+ * right, good-argument shares run up, and the market sits on the hyperbola `pro · con = k`.
+ * Staking slides the point along the curve: underrated stakes toward the lower right (good-argument
+ * shares scarce, approval up), overrated toward the upper left.
  */
 function CurvePlot({ pro, con }: { pro: number; con: number }) {
   const k = pro * con;
@@ -33,19 +33,19 @@ function CurvePlot({ pro, con }: { pro: number; con: number }) {
       <path d={path} className="market-curve" />
       <circle cx={sx(con)} cy={sy(pro)} r={4.5} className="market-point" />
       <text x={size - 4} y={size - pad + 16} textAnchor="end" className="market-label market-label-con">
-        con shares · bad argument →
+        bad-argument shares →
       </text>
       <text x={pad - 4} y={12} textAnchor="start" className="market-label market-label-pro">
-        ↑ pro shares · good argument
+        ↑ good-argument shares
       </text>
     </svg>
   );
 }
 
 /**
- * The focused argument's market, opened from the pot chip: the reserves on their constant-product
- * curve, the price they imply, and the pot a corrector can win per direction. Informational - the
- * cross and the backdrop are the exits.
+ * The focused argument's market, opened from the upside chip: the reserves on their
+ * constant-product curve, the price they imply, and the upside a corrector can gain per
+ * direction. Informational - the cross and the backdrop are the exits.
  */
 export function MarketDetail({
   node,
@@ -58,7 +58,7 @@ export function MarketDetail({
   onClose: () => void;
 }) {
   const { pro, con } = reservesOf(node);
-  const pot = winnablePot(node);
+  const upside = upsideOf(node);
 
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
@@ -81,7 +81,7 @@ export function MarketDetail({
         <p className="market-readout">
           rated <strong className="mono">{formatApproval(node.approval)}</strong> · reserves{' '}
           <strong className="mono">
-            {pro} <span className="market-pro">pro</span> / {con} <span className="market-con">con</span>
+            {pro} <span className="market-pro">good</span> / {con} <span className="market-con">bad</span>
           </strong>{' '}
           · pool <strong className="mono">{node.weight} ⬡</strong>
           {feePercentage > 0 ? (
@@ -94,9 +94,10 @@ export function MarketDetail({
           )}
         </p>
         <p className="composer-hint">
-          Staking slides the market along the curve and frees the bought side's reserve: correcting
-          it wins up to <strong className="mono">{pot.underrated} ⬡</strong> if it proves underrated,
-          up to <strong className="mono">{pot.overrated} ⬡</strong> if overrated (before fees).
+          Underrated stakes buy good-argument shares (they pay the final rating), overrated stakes
+          bad-argument ones (the complement). The upside of correcting:{' '}
+          <strong className="mono">{upside.underrated} ⬡</strong> if it proves underrated,{' '}
+          <strong className="mono">{upside.overrated} ⬡</strong> if overrated (before fees).
         </p>
       </div>
     </div>

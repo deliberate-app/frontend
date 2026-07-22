@@ -61,6 +61,23 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-23 — "Redeem all shares" lives in the top bar, next to the Finished label.** The
+  finished-debate settle action moved out of the thesis focus screen (where it read as thesis
+  chrome) up to the phase chip it belongs to: the label announces Finished, the button acts on it,
+  and it retires itself once nothing is left to redeem. It now shows from one held position up —
+  as the global affordance it no longer defers to the per-argument panel. Errors surface in the
+  standard load-error slot like the tally poke's. (Principle 5: the action on the state it acts
+  on.)
+- **2026-07-23 — shares are named by their claim: good-argument / bad-argument.** "Pro/con shares"
+  collided with the pro/con *stance* of arguments — a con argument's *pro* shares were a
+  vocabulary accident. A good-argument share pays the argument's final rating, a bad-argument
+  share its complement; the staking buttons keep their stance-free underrated/overrated verbs and
+  teach the share names in their tooltips. Glossary entry in the contracts repo's CONTEXT.md.
+  (Principle 10.)
+- **2026-07-23 — "pot" became "upside".** "Pot" said poker — a posted prize someone must win.
+  The figure is the mechanism-exact *bound on the gain* available per correction direction (the
+  reserve the bought side can free), which "upside" states honestly; it also reads naturally with
+  the directional split (`upside ↑1 ↓104 ⬡`). (Principle 10.)
 - **2026-07-22 — the winnable pot is the rater-attention beacon; the curve lives in a detail
   modal.** Every argument card carries a quiet `pot n ⬡` (the larger correction prize; both
   directions on hover), and the focus meta shows the split (`pot ↑1 ↓104 ⬡`) as a chip opening the

@@ -955,18 +955,6 @@ button {
   color: var(--bark);
 }
 
-.redeem-all {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-  background: var(--card);
-  border: 1px solid var(--hairline);
-  border-radius: 0.75rem;
-  padding: 0.7rem 1rem;
-  margin-bottom: 0.6rem;
-}
-
 /* Placeholder for content that could not be resolved from IPFS: the shortened digest, click to copy.
    Inherits the surrounding size (large in the focus heading) but stays muted and monospace. */
 .content-missing {
@@ -1121,8 +1109,8 @@ button {
 }
 
 /* The schedule summary is itself the settings affordance: one clickable chip, gear at the end. */
-/* The winnable pot: the rater-attention beacon - the correction prize a market still holds. */
-.card-pot {
+/* The upside: the rater-attention beacon - the correction gain a market still holds. */
+.card-upside {
   color: var(--bark);
   font-size: 0.72rem;
   white-space: nowrap;
@@ -1136,7 +1124,7 @@ button {
   color: var(--con);
 }
 
-/* The pot chip in the focus meta: reads as meta text, opens the market detail. */
+/* The upside chip in the focus meta: reads as meta text, opens the market detail. */
 .market-chip {
   border: none;
   background: none;
