@@ -4,7 +4,8 @@ Machine notes for future syncs. Config lives in `config.json`; the conventions h
 the project README is `conventions.md`; authored previews are in `previews/`.
 
 Target project: `e1ba9784-fc54-4561-a8c6-a6535960f2c0` ("deliberate design system").
-First full sync: 2026-07-29 — 22 components, 19 with authored previews, all cells graded `good`.
+First full sync: 2026-07-29 — 22 components, **all 22 with authored previews** (65 cells), every cell
+graded `good`. No floor cards remain.
 
 ## Repo shape (why the config looks like this)
 
@@ -53,6 +54,14 @@ First full sync: 2026-07-29 — 22 components, 19 with authored previews, all ce
   an inline arrow re-runs the load every render.
 - **Class names: check before inventing.** `composer-actions` does not exist; the real row class is
   `action-row` (which gives the trailing `char-budget` its `margin-left: auto`).
+- **The three app-shell views need live time and a full `tx`.** `DebateView` runs its own clock
+  (`useNow`), so its preview anchors the schedule to `Math.floor(Date.now() / 1000)` at module scope
+  — a frozen constant puts every cell in the tallying phase. Its `tx` fixture must carry the whole
+  surface (`joined`, `tokens`, `bountyClaimed`, and every handler), because separate branches read
+  different fields. Focus is internal state, so the "argument focused" cell dispatches a real click
+  on `button.card`.
+- **`WalletMenu` icons must be data URIs.** The preview page has no network; the real EIP-6963 icons
+  are data URIs too, so an inline SVG data URI is faithful, not a cheat.
 
 ## Known validate warnings (expected, non-blocking)
 
