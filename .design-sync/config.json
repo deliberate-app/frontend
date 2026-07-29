@@ -1,0 +1,66 @@
+{
+  "projectId": "e1ba9784-fc54-4561-a8c6-a6535960f2c0",
+  "shape": "package",
+  "pkg": "deliberate-frontend",
+  "globalName": "Deliberate",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".design-sync/ds-styles.css",
+  "componentSrcMap": {
+    "App": null
+  },
+  "entry": "./dist/index.js",
+  "srcDir": "src/components",
+  "extraEntries": [
+    "./.design-sync/ds-entry-styles.ts"
+  ],
+  "dtsPropsFor": {
+    "VerdictMark": "/** Green rounded check (confirmed) or rust cross (objected); colored via currentColor. */\napproved: boolean;",
+    "LockChip": "/** Closed padlock once final; open with a countdown while a draft. */\nlocked: boolean;\n/** Seconds until the draft locks in; null without a chain clock. */\nfinalizesIn: number | null;",
+    "CharBudget": "/** Characters used of the 250-char cap; renders as a mono n/250 counter. */\nlength: number;",
+    "AddressChip": "/** Checksummed 0x address; renders identicon + 0x1234…5678, click to copy. */\naddress: string;",
+    "AddressBadge": "address: string;\nlabel?: string;",
+    "ContentText": "text: string;\n/** The on-chain digest, shown (shortened) when the content could not be resolved. */\ndigest?: string;",
+    "StakePanel": "tokens: number;\n/** The debate's market fee in percent. */\nfeePercentage: number;\nonStake: (side: 'pro' | 'con', amount: number) => Promise<void>;",
+    "MarketDetail": "node: { id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string };\nfeePercentage: number;\nonClose: () => void;",
+    "ScheduleSettings": "schedule: { lockingDuration: number; editingDuration: number; ratingDuration: number };\nonChange: (schedule: { lockingDuration: number; editingDuration: number; ratingDuration: number }) => void;\nonClose: () => void;",
+    "FeeSettings": "feePercentage: number;\nonChange: (feePercentage: number) => void;\nonClose: () => void;",
+    "BountySettings": "bounty: { token: { address: string; symbol: string; decimals: number }; amount: bigint } | null;\nonChange: (bounty: { token: { address: string; symbol: string; decimals: number }; amount: bigint } | null) => void;\nonClose: () => void;\nresolveToken?: (address: string) => Promise<{ address: string; symbol: string; decimals: number }>;",
+    "Composer": "side: 'pro' | 'con';\ntokens: number;\nonAdd: (side: 'pro' | 'con', initialApproval: number, deposit: number, text: string) => Promise<void>;",
+    "PositionPanel": "argumentId: number;\nload: (argumentId: number) => Promise<{ proShares: number; conShares: number; claimableFees: number }>;\nonRedeem: (argumentId: number) => Promise<void>;\nonClaimFees: (argumentId: number) => Promise<void>;",
+    "DraftControls": "text: string;\n/** The argument's current approval as a percentage; the move slider defaults to it. */\ncurrentApproval: number;\nmoveTargets: Array<{ id: number; label: string }>;\nonEdit: (text: string) => Promise<void>;\nonMove: (newParentArgumentId: number, initialApproval: number) => Promise<void>;",
+    "PhaseClock": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; participantsCount?: number };\nnow: number;",
+    "ArgumentCard": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; participantsCount?: number };\nnode: { id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string };\n/** The argument's sway on its parent, -1..1; live preview of the tally. */\nimpact?: number;\nnow: number;\nonFocus: (id: number) => void;",
+    "MiniTree": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; participantsCount?: number };\nfocusedId: number;\nonFocus: (id: number) => void;",
+    "BountyPanel": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; bounty?: { token: string; symbol: string; decimals: number; pool: bigint; claimed: bigint; swept: boolean; claimEndTime: number }; participantsCount?: number };\ntx: Record<string, unknown> | null;\nnow: number;",
+    "BountyTopUpChip": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; bounty?: { token: string; symbol: string; decimals: number; pool: bigint; claimed: bigint; swept: boolean; claimEndTime: number }; participantsCount?: number };\ntx: Record<string, unknown> | null;"
+  },
+  "overrides": {
+    "ScheduleSettings": {
+      "cardMode": "single",
+      "viewport": "560x860"
+    },
+    "FeeSettings": {
+      "cardMode": "single",
+      "viewport": "520x600"
+    },
+    "BountySettings": {
+      "cardMode": "single",
+      "viewport": "560x800"
+    },
+    "MarketDetail": {
+      "cardMode": "single",
+      "viewport": "560x800"
+    },
+    "BountyTopUpChip": {
+      "cardMode": "single",
+      "viewport": "560x700"
+    },
+    "CharBudget": {
+      "cardMode": "column"
+    },
+    "DraftControls": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
