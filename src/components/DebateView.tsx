@@ -60,17 +60,33 @@ function moveTargetLabel(node: { parentId: number | null; side: Side | null; tex
   return `${kind}: ${text}`;
 }
 
+/** The disclosure chevron of the path: pointing down to open the claims, up to fold them away. */
+function Chevron({ up }: { up: boolean }) {
+  return (
+    <svg className="rail-chevron" viewBox="0 0 16 16" aria-hidden="true">
+      <path d={up ? 'M4 10 8 6l4 4' : 'M4 6l4 4 4-4'} />
+    </svg>
+  );
+}
+
 /**
  * The ancestry rail: the path from the thesis down to the focused claim,
  * drawn as a branch whose connectors carry the polarity of each step.
+ * Collapsed, each step is one clipped line; expanded, every parent claim up to the thesis
+ * is readable in full, with the rating it carries.
  */
 function AncestryRail({
   debate,
   focusedId,
+  expanded,
+  onExpandedChange,
   onFocus,
 }: {
   debate: Debate;
   focusedId: number;
+  /** Whether the parent claims read in full (the reader's choice, kept across focus changes). */
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
   onFocus: (id: number) => void;
 }) {
   const path = ancestryOf(debate, focusedId);
@@ -80,7 +96,7 @@ function AncestryRail({
   const focus = path[path.length - 1];
 
   return (
-    <nav className="rail" aria-label="Path from thesis">
+    <nav className={`rail ${expanded ? 'rail-expanded' : ''}`} aria-label="Path from thesis">
       {ancestors.map((node, depth) => (
         <div className="rail-step" key={node.id} style={{ marginLeft: `${depth * 1.25}rem` }}>
           {depth > 0 && (
@@ -89,16 +105,36 @@ function AncestryRail({
             </span>
           )}
           <button type="button" className="rail-node" onClick={() => onFocus(node.id)}>
-            {node.text}
+            {/* Raw text, as the cards render it: a rail node is a button, so it must not nest the
+                digest fallback's link. */}
+            <span className="rail-claim">{node.text}</span>
+            {/* The thesis is rated through its arguments, so only the argued steps carry figures. */}
+            {expanded && node.parentId !== null && (
+              <span className="rail-figures mono">
+                {formatApproval(node.approval)} · {node.weight} ⬡
+              </span>
+            )}
           </button>
         </div>
       ))}
-      <div
-        className="rail-step"
-        style={{ marginLeft: `${ancestors.length * 1.25}rem` }}
-        aria-hidden
-      >
-        <span className={`rail-connector rail-${focus.side}`}>└─</span>
+      <div className="rail-step" style={{ marginLeft: `${ancestors.length * 1.25}rem` }}>
+        <span className={`rail-connector rail-${focus.side}`} aria-hidden>
+          └─
+        </span>
+        <button
+          type="button"
+          className="rail-toggle"
+          aria-expanded={expanded}
+          title={
+            expanded
+              ? 'Fold the path back to one line per claim'
+              : 'Read every claim on the path up to the thesis in full'
+          }
+          onClick={() => onExpandedChange(!expanded)}
+        >
+          <Chevron up={expanded} />
+          {expanded ? 'Collapse path' : 'Expand path'}
+        </button>
       </div>
     </nav>
   );
@@ -111,6 +147,9 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const [focusedId, setFocusedId] = useState(thesis.id);
   // The focused argument's market detail (the curve modal), opened from the pot chip.
   const [marketOpen, setMarketOpen] = useState(false);
+  // Whether the ancestry rail reads its parent claims in full. Held here, not in the rail, so the
+  // choice survives navigating the tree (the rail unmounts whenever the thesis is focused).
+  const [pathExpanded, setPathExpanded] = useState(false);
   const now = useNow();
 
   const byId = new Map(debate.nodes.map((n) => [n.id, n]));
@@ -164,7 +203,13 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   return (
     <main className="debate">
       <MiniTree debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
-      <AncestryRail debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
+      <AncestryRail
+        debate={debate}
+        focusedId={focus.id}
+        expanded={pathExpanded}
+        onExpandedChange={setPathExpanded}
+        onFocus={setFocusedId}
+      />
 
       {isThesis && <BountyPanel debate={debate} tx={tx} now={now} />}
 

@@ -61,6 +61,17 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-07-30 — the ancestry rail expands to the full parent claims.** Kialo's "show the parents up
+  to the thesis" affordance, spoken in the rail's own vocabulary: a quiet `Expand path` chevron sits
+  on the connector that meets the focused claim, and opening it unclips every ancestor — the whole
+  claim, wrapped, followed by the rating it carries (`+48% · 86 ⬡`). The thesis shows no figures; it
+  is rated through its arguments. Collapsed stays the default (the one-line ladder is the
+  breadcrumb), and the choice is held by the view, so it survives navigating the tree. Expanded
+  claims drop the link underline for a hover one — a wrapped claim is a block of text, not a link —
+  and the measure is capped at 62ch so a deep path still reads as a column. Rejected: repeating the
+  parents as full argument cards with gauges (kialo's form), which would out-shout the focused claim
+  the page exists for. (Principle 5 — the affordance sits on the path it opens; north star: context
+  on demand.)
 - **2026-07-23 — "Redeem all shares" lives in the top bar, next to the Finished label.** The
   finished-debate settle action moved out of the thesis focus screen (where it read as thesis
   chrome) up to the phase chip it belongs to: the label announces Finished, the button acts on it,

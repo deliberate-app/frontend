@@ -378,6 +378,68 @@ button {
   text-decoration-color: var(--bark);
 }
 
+.rail-claim {
+  display: block;
+}
+
+/* Expanded: every parent claim up to the thesis reads in full, with the rating it carries. */
+.rail-expanded .rail-step {
+  margin-bottom: 0.5rem;
+}
+
+.rail-expanded .rail-node {
+  display: block;
+  flex: 1;
+  max-width: 62ch;
+  overflow: visible;
+  padding: 0.1rem 0.35rem;
+  color: var(--ink);
+  /* A wrapped claim is a block of text, not a link: the hover underline carries the affordance. */
+  text-decoration: none;
+}
+
+.rail-expanded .rail-node:hover {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--bark);
+}
+
+.rail-figures {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--bark);
+}
+
+/* The disclosure on the connector that meets the focused claim. */
+.rail-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 0;
+  background: none;
+  padding: 0.1rem 0.2rem;
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--bark);
+  cursor: pointer;
+}
+
+.rail-toggle:hover {
+  color: var(--ink);
+}
+
+.rail-chevron {
+  width: 0.85em;
+  height: 0.85em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .rail-connector {
   font-family: var(--font-mono);
   font-weight: 500;

@@ -22,6 +22,8 @@ Type: **Fraunces** (display: wordmark, focused claim, column headers) · **Publi
 
 The **ancestry rail**: the path from thesis to focused claim drawn as a branch, each `└─`
 connector colored by that step's polarity. It is the breadcrumb, but it encodes the tree.
+It also opens: a chevron on the connector meeting the focused claim expands every parent up to
+the thesis into its full text and rating (kialo's context stack, in the rail's own vocabulary).
 
 ## Tried / decided
 
