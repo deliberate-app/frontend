@@ -19,7 +19,9 @@ export function Composer({
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
-  const [approval, setApproval] = useState(50);
+  // 75% is the midpoint of the clamped sway scale (ADR-0012): half sway, with symmetric room
+  // for the market to double the argument or erase it. 50% would seed at zero sway.
+  const [approval, setApproval] = useState(75);
   const [deposit, setDeposit] = useState(MIN_DEPOSIT);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
