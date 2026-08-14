@@ -70,6 +70,7 @@ describe('nodeFromIndex', () => {
     con: '1',
     votes: '29',
     creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+    rating: null,
   };
 
   test('maps an argument row, deriving the approval from the reserves and finality from the clock', () => {
@@ -82,6 +83,7 @@ describe('nodeFromIndex', () => {
       proReserve: 21,
       conReserve: 1,
       weight: 29,
+      rating: null,
       state: 'final', // chain time 100 is past the finalization time 90
       finalizationTime: 90,
       // Checksummed from the index's lowercase form, matching chain reads.
@@ -105,6 +107,7 @@ describe('nodeFromIndex', () => {
         con: '0',
         votes: '0',
         creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+        rating: null,
       },
       100,
     );

@@ -66,7 +66,11 @@ interface OnChainArgument {
   pro: number;
   con: number;
   votes: number;
+  rating: bigint;
 }
+
+/** The contract's fixed-point scale: a rating of ±MAX_APPROVAL is full conviction (±100%). */
+const MAX_APPROVAL = 4294967295;
 
 /** Resolved argument content: the text, plus the on-chain digest when it could not be resolved. */
 export interface ResolvedContent {
@@ -201,6 +205,12 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                 proReserve: argument.pro,
                 conReserve: argument.con,
                 weight: argument.votes,
+                // The stored settlement rating exists once the tally has run; before that the
+                // field reads zero, which is a legal rating, so the phase decides null.
+                rating:
+                  currentPhase === PHASE_FINISHED && argumentId !== 0
+                    ? Number(argument.rating) / MAX_APPROVAL
+                    : null,
                 // Final-ness is by time: an argument locks in automatically once its editing window elapses.
                 state: chainTime >= Number(argument.finalizationTime) ? ('final' as const) : ('created' as const),
                 finalizationTime: Number(argument.finalizationTime),
@@ -378,6 +388,7 @@ export interface IndexedArgumentRow {
   con: string;
   votes: string;
   creator: string;
+  rating: string | null;
 }
 
 /**
@@ -402,6 +413,8 @@ export function nodeFromIndex(
     proReserve: Number(row.pro),
     conReserve: con,
     weight: Number(row.votes),
+    // The index writes the rating when the tally emits it; null until then.
+    rating: row.rating === null || row.rating === undefined ? null : Number(row.rating) / MAX_APPROVAL,
     state: chainTime >= finalizationTime ? 'final' : 'created',
     finalizationTime,
     // The index stores addresses lowercased; checksum to match the chain reads.
@@ -478,7 +491,7 @@ export function summaryFromIndex(
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
   Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved participantsCount feePercentage finishedAt bountyToken bountyPool bountyClaimed bountySwept }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
-    argumentId parent_id isSupporting contentURI finalizationTime pro con votes creator
+    argumentId parent_id isSupporting contentURI finalizationTime pro con votes creator rating
   }
 }`;
 

@@ -26,6 +26,12 @@ export interface ArgumentNode {
   conReserve?: number;
   /** Vote tokens staked on this argument's market. */
   weight: number;
+  /**
+   * The tallied rating the argument's shares settle against, as a fraction of full conviction
+   * (−1..1, negative meaning refuted); null until the tally has run, and always null for the
+   * thesis, whose verdict is its descendants' aggregate. Absent for bundled sample data.
+   */
+  rating?: number | null;
   /** Derived from the clock: `final` once `finalizationTime` has passed, `created` (draft) before. */
   state: ArgumentState;
   /**

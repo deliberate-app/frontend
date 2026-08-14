@@ -18,3 +18,5 @@ screenshots/
 *.log
 .vercel
 .env*
+ds-bundle/
+.ds-sync/

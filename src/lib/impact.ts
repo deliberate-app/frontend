@@ -13,8 +13,11 @@ import { childrenOf, thesisOf } from '../types';
  * Draft (unfinalized) arguments contribute nothing and weigh nothing until they lock in — the
  * tally never sees one.
  *
- * Values are fractions of the full scale, so they live in -1..1. During the rating this is a
- * live preview; after the tally it mirrors the final result.
+ * Values are fractions of the full scale, so they live in -1..1. Once the tally has run, every
+ * argument carries its stored settlement rating and the mirror uses it verbatim - the tally
+ * reads time-weighted prices and stakes (ADR-0013), which closing-price arithmetic cannot
+ * reconstruct. Before then this is a live projection from the standing prices and stakes: what
+ * the tally would say if the market held here for the rest of the window.
  */
 export function impactsOf(debate: Debate): Map<number, number> {
   const impacts = new Map<number, number>();
@@ -47,10 +50,12 @@ export function impactsOf(debate: Debate): Map<number, number> {
 
     const centered = 2 * node.approval - 1;
     const total = node.weight + childrenWeight;
-    const rating =
+    const projected =
       total === 0
         ? centered
         : (centered * node.weight + descendants * childrenWeight) / total;
+    // The stored settlement rating, once the tally has written it, replaces the projection.
+    const rating = node.rating ?? projected;
     return { rating, weight: total };
   };
 

@@ -333,11 +333,6 @@
       "internalType": "uint32"
      },
      {
-      "name": "fees",
-      "type": "uint32",
-      "internalType": "uint32"
-     },
-     {
       "name": "subtreeVotes",
       "type": "uint32",
       "internalType": "uint32"
@@ -346,6 +341,31 @@
       "name": "descendantsAggregate",
       "type": "int64",
       "internalType": "int64"
+     },
+     {
+      "name": "rating",
+      "type": "int64",
+      "internalType": "int64"
+     },
+     {
+      "name": "centeredApprovalSeconds",
+      "type": "int88",
+      "internalType": "int88"
+     },
+     {
+      "name": "votesSeconds",
+      "type": "uint88",
+      "internalType": "uint88"
+     },
+     {
+      "name": "lastAccrualTime",
+      "type": "uint48",
+      "internalType": "uint48"
+     },
+     {
+      "name": "fees",
+      "type": "uint32",
+      "internalType": "uint32"
      }
     ]
    }
@@ -1511,6 +1531,17 @@
     "type": "uint8",
     "internalType": "uint8"
    },
+   {
+    "name": "value",
+    "type": "int256",
+    "internalType": "int256"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "SafeCastOverflowedIntToUint",
+  "inputs": [
    {
     "name": "value",
     "type": "int256",
