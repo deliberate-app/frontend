@@ -108,6 +108,22 @@ export interface BountyFunding {
   amount: bigint;
 }
 
+/**
+ * The gas limit to send a call with, given its estimate.
+ *
+ * An estimate is not a safe limit: a stake's cost depends on the clock. The market's standing
+ * price and stake earn their held duration into two accumulators, and a stake estimated in the
+ * same second as that argument's last accrual finds nothing to write - so the estimator misses
+ * the two stores the transaction performs when it is mined a block or two later, and a limit set
+ * to the estimate is twenty thousand gas short: the stake is mined reverted, out of gas, mid
+ * rating window. Half again covers far more than that gap and costs nothing unused - the limit is
+ * not the price. Leaving the limit to the wallet is no answer either: some wallets pad, some send
+ * the bare estimate, and the app cannot tell which one signed.
+ */
+export function gasLimitFor(estimate: bigint): bigint {
+  return (estimate * 150n) / 100n;
+}
+
 /** Chains the app names in wallet prompts; anything else gets a generic label. */
 const CHAIN_NAMES: Record<number, string> = {
   8453: 'Base',
@@ -178,14 +194,13 @@ export async function connectDebateActions(
     opts: { settle?: boolean } = {},
   ): Promise<TransactionReceipt> => {
     await ensureWalletChain(walletClient, chain);
-    const { request } = await publicClient.simulateContract({
-      account,
-      address: config.address,
-      abi: abi as Abi,
-      functionName,
-      args,
-    });
-    const hash = await walletClient.writeContract(request);
+    const call = { account, address: config.address, abi: abi as Abi, functionName, args };
+    const [{ request }, estimate] = await Promise.all([
+      publicClient.simulateContract(call),
+      publicClient.estimateContractGas(call),
+    ]);
+    // The limit travels with the request, so the wallet signs it as sent rather than estimating anew.
+    const hash = await walletClient.writeContract({ ...request, gas: gasLimitFor(estimate) });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     // A mined transaction can still revert when another one beat it in a race.
     if (receipt.status === 'reverted') {

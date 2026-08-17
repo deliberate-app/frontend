@@ -9,13 +9,16 @@ import abi from '../abi/Deliberate.abi.json';
 import { classicSchedule } from '../lib/debateTiming';
 import { contentURIOf } from '../lib/ipfs';
 import type { Debate } from '../types';
-import { connectDebateActions, ensureWalletChain } from './actions';
+import { connectDebateActions, ensureWalletChain, gasLimitFor } from './actions';
 import { contractSource } from './source';
 
 const RPC_URL = 'http://127.0.0.1:8545';
 const CONTRACTS_DIR = new URL('../../../contracts', import.meta.url).pathname;
 
 const anvilAvailable = await rpcUp(RPC_URL);
+
+/** Every transaction the action layer handed the wallet, as the wallet saw it. */
+const sentTransactions: Array<{ gas?: Hex }> = [];
 
 /**
  * The first second of a debate's rating window. The tally weighs prices and stakes by the time they
@@ -32,6 +35,9 @@ function ratingOpens(debate: Debate): number {
  */
 const anvilProvider = {
   request: async ({ method, params }: { method: string; params?: unknown[] }) => {
+    if (method === 'eth_sendTransaction') {
+      sentTransactions.push((params as [{ gas?: Hex }])[0]);
+    }
     const response = await fetch(RPC_URL, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -242,7 +248,23 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     // 60 + 20 + 20 = 100.
     expect((await reads.userState(0, rater.account)).tokens).toBe(100);
     expect(await reads.positions(0, anvilAccount(8).address)).toEqual([]);
+
+    // Every transaction went to the wallet with its limit decided by the app, none left to the
+    // wallet's own estimate (see gasLimitFor).
+    expect(sentTransactions.length).toBeGreaterThan(0);
+    expect(sentTransactions.every((transaction) => transaction.gas !== undefined)).toBe(true);
   }, 30_000);
+});
+
+describe('gasLimitFor', () => {
+  test('covers a stake that costs two accumulator stores more than it was quoted', () => {
+    // The estimate that missed the accrual, against the cost the mined stake actually paid.
+    expect(gasLimitFor(75_194n)).toBeGreaterThanOrEqual(95_604n);
+  });
+
+  test('sends a limit above the estimate rather than the estimate itself', () => {
+    expect(gasLimitFor(100_000n)).toBeGreaterThan(100_000n);
+  });
 });
 
 describe('ensureWalletChain (against a scripted wallet provider)', () => {
