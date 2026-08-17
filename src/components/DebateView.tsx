@@ -309,21 +309,25 @@ export function DebateView({
               </span>
             )}{' '}
             · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
-            {rating && tx && (
-              <>
-                {' '}
-                ·{' '}
-                <button
-                  type="button"
-                  className="btn btn-small"
-                  title="Stake vote tokens on this argument being under- or overrated."
-                  onClick={() => setStakeOpen(true)}
-                >
-                  Stake ⬡
-                </button>
-              </>
-            )}
           </p>
+        )}
+        {rating && tx && (
+          <div className="action-panel">
+            <div className="action-row">
+              <button
+                type="button"
+                className="btn"
+                title="Stake vote tokens on this argument being under- or overrated."
+                onClick={() => setStakeOpen(true)}
+              >
+                Stake ⬡
+              </button>
+              <span className="action-hint">
+                You profit if the rating corrects your way once the debate ends
+                {debate.feePercentage > 0 ? ` · ${debate.feePercentage}% fee to the argument's creator` : ' · no market fee'}
+              </span>
+            </div>
+          </div>
         )}
         {marketOpen && !isThesis && (
           <MarketDetail
