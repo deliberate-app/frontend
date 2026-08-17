@@ -61,19 +61,25 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
-- **2026-08-18 — staking is a modal that shows what the stake would do before it is sent.** The
-  inline panel (amount + two firing buttons) asked for a number blind: nothing said what 5 ⬡ or
-  40 ⬡ would move. One `Stake ⬡` button on the focus meta opens a dialog: the direction as two
-  stance-colored radios (Underrated ↑ / Overrated ↓, the chosen one filled), the amount as a
-  slider from one token to the whole balance with a number field beside it, and three rows that
-  read as before → after - market approval, impact on parent, fee to the author - recomputed
-  with the contract's own integer quote (`previewStake`, fee rounded down, bought reserve rounded
-  up) and the tally mirror on the tree with that one market moved. The confirm button names the
-  trade (`Stake 40 ⬡ · Overrated ↓`). The impact row is a projection and the hint says so: the
-  tally weighs prices by how long they stood, so a late stake moves the final rating less than
-  shown. Rejected: two direction buttons that each open the modal pre-committed (no comparing the
-  directions inside), and keeping the panel inline with the preview under it (the debate view
-  grows for everyone, staker or not). (Principles 6, 10; north star: detail on demand.)
+- **2026-08-18 — staking is a modal with one signed slider that shows what the stake would do
+  before it is sent.** The inline panel (amount + two firing buttons) asked for a number blind:
+  nothing said what 5 ⬡ or 40 ⬡ would move. One `Stake ⬡` button on the focus meta opens a
+  dialog whose one control is a slider on a signed axis - the same diverging, centre-anchored
+  scale as the approval gauge (principle 8): left of centre calls the argument overrated (bad-
+  argument shares), right underrated (good-argument shares), the distance is the amount, and the
+  track fills from the centre to the thumb in that direction's stance colour, a signed number
+  field beside it for precision. Under it, three rows read as before → after - market approval,
+  impact on parent, fee to the author - recomputed with the contract's own integer quote
+  (`previewStake`, fee rounded down, bought reserve rounded up) and the tally mirror on the tree
+  with that one market moved. The confirm button takes the direction's colour and names the
+  trade with a stroke arrow (`Stake 40 ⬡ · Overrated ↓`); at the neutral rest it only says to
+  move the slider. The impact row is a projection and the hint says so: the tally weighs prices
+  by how long they stood, so a late stake moves the final rating less than shown. Tried and
+  dropped the same day: two stance-coloured direction radios above a one-sided slider (two
+  controls for one decision, and the radios pre-selected a direction). Rejected: two direction
+  buttons that each open the modal pre-committed (no comparing the directions inside), and
+  keeping the panel inline with the preview under it (the debate view grows for everyone, staker
+  or not). (Principles 1, 6, 8, 10; north star: detail on demand.)
 - **2026-08-18 — the stake modal's figures stay live: the markets are refetched every 5 s while
   it is open.** A stake decided on a five-minute-old price is a stake against a market that may
   no longer exist. The app-wide poll stays at 30 s (it resolves every text and reads the bounty

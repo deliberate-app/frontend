@@ -1,11 +1,8 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { actionErrorMessage } from '../data/actions';
 import { formatImpact, IMPACT_HINT, impactsOf } from '../lib/impact';
 import { previewStake, withPreviewedStake } from '../lib/market';
 import type { ArgumentNode, Debate, Side } from '../types';
-
-/** The stake the modal opens with; the slider runs from one token to the whole balance. */
-const DEFAULT_AMOUNT = 5;
 
 const signClassOf = (value: number) => (value > 0 ? 'impact-pos' : value < 0 ? 'impact-neg' : '');
 
@@ -26,13 +23,31 @@ function Shift({ before, after }: { before: number; after: number | null }) {
   );
 }
 
+/** The direction glyph on the confirm button: a stroke arrow, up for underrated, down for overrated. */
+function DirectionArrow({ side }: { side: Side }) {
+  return (
+    <svg className="btn-glyph" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d={side === 'pro' ? 'M8 13.5 V2.5 M3.5 7 8 2.5 12.5 7' : 'M8 2.5 V13.5 M3.5 9 8 13.5 12.5 9'}
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
 /**
- * Rating the focused argument: stake vote tokens on it being under- or overrated, and see what the
- * stake would do before sending it - the market approval and the impact on the parent, as they
- * stand and as they would stand, recomputed from the debate as it is right now (the tree behind
- * this modal keeps refreshing while it is open, so the figures move when someone else stakes).
- * Stance-free on purpose - one can agree with an argument and still call it overrated. Underneath,
- * the stake buys good- or bad-argument shares of its market.
+ * Rating the focused argument: one signed slider decides both the direction and the size of the
+ * stake - left of centre calls the argument overrated (bad-argument shares), right of centre
+ * underrated (good-argument shares), the distance from centre is the amount - and the modal
+ * shows what the stake would do before sending it: the market approval and the impact on the
+ * parent, as they stand and as they would stand, recomputed from the debate as it is right now
+ * (the tree behind this modal keeps refreshing while it is open, so the figures move when someone
+ * else stakes). Stance-free on purpose - one can agree with an argument and still call it
+ * overrated.
  */
 export function StakeModal({
   debate,
@@ -43,26 +58,28 @@ export function StakeModal({
 }: {
   debate: Debate;
   node: ArgumentNode;
-  /** The account's vote token balance in this debate - the most it can stake. */
+  /** The account's vote token balance in this debate - the most it can stake either way. */
   tokens: number;
   onStake: (side: Side, amount: number) => Promise<void>;
   onClose: () => void;
 }) {
-  const [side, setSide] = useState<Side>('pro');
-  const [amount, setAmount] = useState(Math.min(DEFAULT_AMOUNT, Math.max(tokens, 1)));
+  // The slider's value: negative stakes against, positive for, zero is the neutral rest.
+  const [signed, setSigned] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const valid = Number.isInteger(amount) && amount >= 1 && amount <= tokens;
+  const side: Side | null = signed > 0 ? 'pro' : signed < 0 ? 'con' : null;
+  const amount = Math.abs(signed);
+  const valid = side !== null && Number.isInteger(amount) && amount <= tokens;
 
   // The stake as the contract would execute it against the market as it stands now, and the
   // tally mirror's reading of the tree with that one market moved.
-  const preview = valid ? previewStake(node, side, amount, debate.feePercentage) : null;
+  const preview = valid && side ? previewStake(node, side, amount, debate.feePercentage) : null;
   const impactBefore = impactsOf(debate).get(node.id) ?? 0;
   const impactAfter = preview ? (impactsOf(withPreviewedStake(debate, node.id, preview)).get(node.id) ?? 0) : null;
 
   const stake = async () => {
-    if (!valid) return;
+    if (!valid || !side) return;
     setBusy(true);
     setError(null);
     try {
@@ -73,6 +90,15 @@ export function StakeModal({
       setBusy(false);
     }
   };
+
+  // The track fills from the centre to the thumb in the stance colour of the chosen direction.
+  const max = Math.max(tokens, 1);
+  const thumbPercent = ((Math.max(-max, Math.min(max, signed)) + max) / (2 * max)) * 100;
+  const trackStyle = {
+    '--fill-from': `${Math.min(50, thumbPercent)}%`,
+    '--fill-to': `${Math.max(50, thumbPercent)}%`,
+    '--fill-color': side === 'pro' ? 'var(--pro)' : side === 'con' ? 'var(--con)' : 'var(--hairline)',
+  } as CSSProperties;
 
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
@@ -90,58 +116,46 @@ export function StakeModal({
           </button>
         </div>
 
-        <div className="stake-sides" role="radiogroup" aria-label="Direction">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={side === 'pro'}
-            className={`btn btn-pro ${side === 'pro' ? 'stake-side-active' : ''}`}
-            title="Buys good-argument shares - they pay the argument's tallied rating as a price."
-            onClick={() => setSide('pro')}
-            disabled={busy}
-          >
-            Underrated ↑
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={side === 'con'}
-            className={`btn btn-con ${side === 'con' ? 'stake-side-active' : ''}`}
-            title="Buys bad-argument shares - they pay the complement of the tallied rating."
-            onClick={() => setSide('con')}
-            disabled={busy}
-          >
-            Overrated ↓
-          </button>
-        </div>
-
-        <label className="stake-amount">
+        <div className="stake-amount">
           <span className="stake-amount-label">
-            Amount <span className="stake-amount-of">of your {tokens} ⬡</span>
+            Stake <span className="stake-amount-of">of your {tokens} ⬡ - left calls it overrated, right underrated</span>
           </span>
           <span className="stake-amount-inputs">
-            <input
-              type="range"
-              min={1}
-              max={Math.max(tokens, 1)}
-              step={1}
-              value={valid ? amount : 1}
-              onChange={(event) => setAmount(Number(event.target.value))}
-              disabled={busy || tokens < 1}
-              aria-label="Amount to stake"
-            />
+            <span className="stake-slider">
+              <input
+                type="range"
+                className="stake-range"
+                style={trackStyle}
+                min={-max}
+                max={max}
+                step={1}
+                value={signed}
+                onChange={(event) => setSigned(Number(event.target.value))}
+                disabled={busy || tokens < 1}
+                aria-label="Stake: negative calls the argument overrated, positive underrated"
+              />
+              <span className="stake-slider-ends" aria-hidden="true">
+                <span className="market-con" title="Buys bad-argument shares - they pay the complement of the tallied rating.">
+                  Overrated ↓
+                </span>
+                <span className="market-pro" title="Buys good-argument shares - they pay the argument's tallied rating as a price.">
+                  Underrated ↑
+                </span>
+              </span>
+            </span>
             <input
               type="number"
-              min={1}
+              min={-tokens}
               max={tokens}
-              value={amount}
-              onChange={(event) => setAmount(Number(event.target.value))}
+              step={1}
+              value={signed}
+              onChange={(event) => setSigned(Number(event.target.value))}
               disabled={busy || tokens < 1}
-              aria-label="Amount to stake, in vote tokens"
+              aria-label="Stake in vote tokens: negative calls the argument overrated, positive underrated"
             />
             ⬡
           </span>
-        </label>
+        </div>
 
         <dl className="market-facts">
           <dt>Market approval</dt>
@@ -156,8 +170,23 @@ export function StakeModal({
           <dd className="mono">{preview ? `${preview.fee} ⬡` : '—'}</dd>
         </dl>
 
-        <button type="button" className="btn btn-solid" onClick={() => void stake()} disabled={busy || !valid}>
-          {busy ? 'Staking…' : `Stake ${valid ? amount : '—'} ⬡ · ${side === 'pro' ? 'Underrated ↑' : 'Overrated ↓'}`}
+        <button
+          type="button"
+          className={`btn stake-submit ${side === 'pro' ? 'stake-submit-pro' : side === 'con' ? 'stake-submit-con' : ''}`}
+          onClick={() => void stake()}
+          disabled={busy || !valid}
+        >
+          {busy ? (
+            'Staking…'
+          ) : side === null ? (
+            'Move the slider to stake'
+          ) : !valid ? (
+            `You only have ${tokens} ⬡ in this debate`
+          ) : (
+            <>
+              Stake {amount} ⬡ · {side === 'pro' ? 'Underrated' : 'Overrated'} <DirectionArrow side={side} />
+            </>
+          )}
         </button>
         <p className="composer-hint">
           {tokens < 1
