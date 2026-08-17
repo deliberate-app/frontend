@@ -873,23 +873,6 @@ button {
   flex-wrap: wrap;
 }
 
-.action-amount {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--bark);
-}
-
-.action-amount input {
-  width: 4.5rem;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--hairline);
-  border-radius: 0.5rem;
-  font: inherit;
-  font-family: var(--font-mono);
-}
-
 .action-hint {
   font-size: 0.78rem;
   color: var(--bark);
@@ -1240,6 +1223,77 @@ button {
 
 .market-label-con {
   fill: var(--con);
+}
+
+/* ── Stake modal ─────────────────────────────────────────────────────── */
+/* The direction: two stance-colored radios; the chosen one fills. */
+.stake-sides {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.stake-sides .btn {
+  flex: 1;
+}
+
+.stake-side-active.btn-pro,
+.stake-side-active.btn-pro:hover:enabled {
+  background: var(--pro);
+  color: var(--card);
+}
+
+.stake-side-active.btn-con,
+.stake-side-active.btn-con:hover:enabled {
+  background: var(--con);
+  color: var(--card);
+}
+
+.stake-amount {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.stake-amount-label {
+  font-weight: 600;
+}
+
+.stake-amount-of {
+  font-weight: 400;
+  color: var(--bark);
+}
+
+.stake-amount-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--bark);
+}
+
+.stake-amount-inputs input[type='range'] {
+  flex: 1;
+  accent-color: var(--ink);
+  margin: 0;
+}
+
+.stake-amount-inputs input[type='number'] {
+  width: 4.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  font: inherit;
+  font-family: var(--font-mono);
+}
+
+/* A figure as it stands → as the stake would leave it; the after is the emphasized one. */
+.stake-shift {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.stake-arrow {
+  color: var(--bark);
 }
 
 /* The market's facts, one under the other: label column, figure column. */

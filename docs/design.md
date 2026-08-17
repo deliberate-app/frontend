@@ -61,6 +61,19 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-08-18 — staking is a modal that shows what the stake would do before it is sent.** The
+  inline panel (amount + two firing buttons) asked for a number blind: nothing said what 5 ⬡ or
+  40 ⬡ would move. One `Stake ⬡` button on the focus meta opens a dialog: the direction as two
+  stance-colored radios (Underrated ↑ / Overrated ↓, the chosen one filled), the amount as a
+  slider from one token to the whole balance with a number field beside it, and three rows that
+  read as before → after - market approval, impact on parent, fee to the author - recomputed
+  with the contract's own integer quote (`previewStake`, fee rounded down, bought reserve rounded
+  up) and the tally mirror on the tree with that one market moved. The confirm button names the
+  trade (`Stake 40 ⬡ · Overrated ↓`). The impact row is a projection and the hint says so: the
+  tally weighs prices by how long they stood, so a late stake moves the final rating less than
+  shown. Rejected: two direction buttons that each open the modal pre-committed (no comparing the
+  directions inside), and keeping the panel inline with the preview under it (the debate view
+  grows for everyone, staker or not). (Principles 6, 10; north star: detail on demand.)
 - **2026-08-18 — the market detail lists its facts one under the other, the author's fees among
   them.** The one-line readout (`rated +40% · reserves 6 good / 14 bad · pool 33 ⬡ · fee 5%`) had
   become a sentence of figures; it is now a label/figure list - market approval, staked,

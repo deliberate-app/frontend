@@ -13,7 +13,7 @@ import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
 import { LockChip } from './LockChip';
 import { MarketDetail } from './MarketDetail';
-import { StakePanel } from './StakePanel';
+import { StakeModal } from './StakeModal';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
 
@@ -156,6 +156,8 @@ export function DebateView({
   const [focusedId, setFocusedId] = useState(thesis.id);
   // The focused argument's market detail (the curve modal), opened from the rating market link.
   const [marketOpen, setMarketOpen] = useState(false);
+  // The stake modal, opened from the focus meta during the rating phase.
+  const [stakeOpen, setStakeOpen] = useState(false);
   // Whether the ancestry rail reads its parent claims in full. Held here, not in the rail, so the
   // choice survives navigating the tree (the rail unmounts whenever the thesis is focused).
   const [pathExpanded, setPathExpanded] = useState(false);
@@ -292,6 +294,20 @@ export function DebateView({
                 Rating market →
               </button>{' '}
               · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
+              {rating && tx && (
+                <>
+                  {' '}
+                  ·{' '}
+                  <button
+                    type="button"
+                    className="btn btn-small"
+                    title="Stake vote tokens on this argument being under- or overrated."
+                    onClick={() => setStakeOpen(true)}
+                  >
+                    Stake ⬡
+                  </button>
+                </>
+              )}
             </p>
           </div>
         )}
@@ -315,11 +331,14 @@ export function DebateView({
             }
           />
         )}
-        {rating && tx && (
-          <StakePanel
+        {stakeOpen && rating && tx && (
+          <StakeModal
+            key={focus.id}
+            debate={debate}
+            node={focus}
             tokens={tx.tokens}
-            feePercentage={debate.feePercentage}
             onStake={(side, amount) => tx.stake(focus.id, side, amount)}
+            onClose={() => setStakeOpen(false)}
           />
         )}
         {finished && tx && (
