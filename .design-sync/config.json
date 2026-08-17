@@ -1,0 +1,85 @@
+{
+  "projectId": "e1ba9784-fc54-4561-a8c6-a6535960f2c0",
+  "shape": "package",
+  "pkg": "deliberate-frontend",
+  "globalName": "Deliberate",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".design-sync/ds-styles.css",
+  "componentSrcMap": {
+    "App": null
+  },
+  "entry": "./dist/index.js",
+  "srcDir": "src/components",
+  "extraEntries": [
+    "./.design-sync/ds-entry-styles.ts"
+  ],
+  "dtsPropsFor": {
+    "VerdictMark": "/** Green rounded check (confirmed) or rust cross (objected); colored via currentColor. */\napproved: boolean;",
+    "LockChip": "/** Closed padlock once final; open with a countdown while a draft. */\nlocked: boolean;\n/** Seconds until the draft locks in; null without a chain clock. */\nfinalizesIn: number | null;",
+    "CharBudget": "/** Characters used of the 250-char cap; renders as a mono n/250 counter. */\nlength: number;",
+    "AddressChip": "/** Checksummed 0x address; renders identicon + 0x1234…5678, click to copy. */\naddress: string;",
+    "AddressBadge": "address: string;\nlabel?: string;",
+    "ContentText": "text: string;\n/** The on-chain digest, shown (shortened) when the content could not be resolved. */\ndigest?: string;",
+    "MarketDetail": "node: { id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; rating?: number | null; state: 'created' | 'final'; finalizationTime: number; creator?: string };\n/** The debate's market fee in percent. */\nfeePercentage: number;\n/** The fees the argument has earned its author so far; omit when the source cannot say. */\nloadFeesEarned?: () => Promise<number>;\nonClose: () => void;",
+    "ScheduleSettings": "schedule: { lockingDuration: number; editingDuration: number; ratingDuration: number };\nonChange: (schedule: { lockingDuration: number; editingDuration: number; ratingDuration: number }) => void;\nonClose: () => void;",
+    "FeeSettings": "feePercentage: number;\nonChange: (feePercentage: number) => void;\nonClose: () => void;",
+    "BountySettings": "bounty: { token: { address: string; symbol: string; decimals: number }; amount: bigint } | null;\nonChange: (bounty: { token: { address: string; symbol: string; decimals: number }; amount: bigint } | null) => void;\nonClose: () => void;\nresolveToken?: (address: string) => Promise<{ address: string; symbol: string; decimals: number }>;",
+    "Composer": "side: 'pro' | 'con';\ntokens: number;\nonAdd: (side: 'pro' | 'con', initialApproval: number, deposit: number, text: string) => Promise<void>;",
+    "PositionPanel": "argumentId: number;\nload: (argumentId: number) => Promise<{ proShares: number; conShares: number; claimableFees: number }>;\nonRedeem: (argumentId: number) => Promise<void>;\nonClaimFees: (argumentId: number) => Promise<void>;",
+    "DraftControls": "text: string;\n/** The argument's current approval as a percentage; the move slider defaults to it. */\ncurrentApproval: number;\nmoveTargets: Array<{ id: number; label: string }>;\nonEdit: (text: string) => Promise<void>;\nonMove: (newParentArgumentId: number, initialApproval: number) => Promise<void>;",
+    "PhaseClock": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; participantsCount?: number };\nnow: number;",
+    "ArgumentCard": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; participantsCount?: number };\nnode: { id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string };\n/** The argument's impact on its parent, -1..1; live preview of the tally. */\nimpact?: number;\nnow: number;\nonFocus: (id: number) => void;",
+    "MiniTree": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; participantsCount?: number };\nfocusedId: number;\nonFocus: (id: number) => void;",
+    "BountyPanel": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; bounty?: { token: string; symbol: string; decimals: number; pool: bigint; claimed: bigint; swept: boolean; claimEndTime: number }; participantsCount?: number };\ntx: Record<string, unknown> | null;\nnow: number;",
+    "BountyTopUpChip": "debate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; bounty?: { token: string; symbol: string; decimals: number; pool: bigint; claimed: bigint; swept: boolean; claimEndTime: number }; participantsCount?: number };\ntx: Record<string, unknown> | null;",
+    "WalletMenu": "/** The wallet connection state; the menu owns only its open/closed state. */\nwallet: { wallets: Array<{ info: { uuid: string; name: string; icon: string; rdns: string }; provider: unknown }>; account: string | null; provider: unknown; walletName: string | null; connect: (wallet: { info: { uuid: string; name: string; icon: string; rdns: string }; provider: unknown }) => Promise<void>; disconnect: () => void };",
+    "BrowseView": "debates: Array<{ id: number; thesis: string; contentDigest?: string; phase: editing | rating | tallying | finished; approved?: boolean; stake: number; argumentsCount: number; bounty?: { token: string; symbol: string; decimals: number; pool: bigint; claimed: bigint; swept: boolean; claimEndTime: number }; creator?: string }>;\n/** The connected account; enables the \"mine\" author-filter shortcut. */\naccount?: string;\n/** Filter state is owned by the parent so it survives navigating into a debate and back. */\nfilter: { status: editing | rating | tallying | finished | all; thesis: string; author: string; sort: recent | stake | bounty };\nonFilter: (filter: { status: string; thesis: string; author: string; sort: string }) => void;\n/** Why creating is unavailable (shown on the disabled trigger); null when it is possible. */\ncreateDisabledHint: string | null;\nonOpen: (debateId: number) => void;\nonCreate: (thesis: string, schedule: { lockingDuration: number; editingDuration: number; ratingDuration: number }, feePercentage: number, bounty: { token: { address: string; symbol: string; decimals: number }; amount: bigint } | null) => Promise<void>;\nresolveToken?: (address: string) => Promise<{ address: string; symbol: string; decimals: number }>;",
+    "DebateView": "debate: { id: number; phase: editing | rating | tallying | finished; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: pro | con | null; text: string; contentDigest?: string; approval: number; proReserve?: number; conReserve?: number; weight: number; state: created | final; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; bounty?: { token: string; symbol: string; decimals: number; pool: bigint; claimed: bigint; swept: boolean; claimEndTime: number }; participantsCount?: number };\n/** The transaction surface for the connected account; null read-only (no wallet). */\ntx: { account: string; joined: boolean; tokens: number; bountyClaimed: boolean; addArgument: (parentArgumentId: number, side: pro | con, initialApproval: number, deposit: number, text: string) => Promise<void>; alterArgument: (argumentId: number, text: string) => Promise<void>; moveArgument: (argumentId: number, newParentArgumentId: number, initialApproval: number) => Promise<void>; stake: (argumentId: number, side: pro | con, amount: number) => Promise<void>; position: (argumentId: number) => Promise<{ proShares: number; conShares: number; claimableFees: number }>; loadPositions: () => Promise<Array<{ argumentId: number; proShares: number; conShares: number }>>; redeem: (argumentId: number) => Promise<void>; redeemBatch: (argumentIds: number[]) => Promise<void>; claimFees: (argumentId: number) => Promise<void>; fundBounty: (amount: bigint) => Promise<void>; claimBounty: (argumentIds: number[]) => Promise<void>; sweepBounty: () => Promise<void> } | null;\n/** The market fees an argument has earned its author so far; omit for sample data. */\nfeesEarnedOf?: (debateId: number, argumentId: number) => Promise<number>;\n/** Refetches only the markets into `debate`; polled while the stake modal is open. */\nonRefreshMarkets?: () => Promise<void>;",
+    "StakeModal": "/** The whole debate - the preview re-tallies the tree to show the impact the stake would have. */\ndebate: { id: number; phase: 'editing' | 'rating' | 'tallying' | 'finished'; feePercentage: number; nodes: Array<{ id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; rating?: number | null; state: 'created' | 'final'; finalizationTime: number; creator?: string }>; timing?: { editingEndTime: number; ratingEndTime: number; chainTime: number; loadedAt: number }; approved?: boolean; participantsCount?: number };\n/** The argument being rated. */\nnode: { id: number; parentId: number | null; side: 'pro' | 'con' | null; text: string; approval: number; proReserve?: number; conReserve?: number; weight: number; rating?: number | null; state: 'created' | 'final'; finalizationTime: number; creator?: string };\n/** The account's vote token balance in this debate - the most it can stake either way. */\ntokens: number;\nonStake: (side: 'pro' | 'con', amount: number) => Promise<void>;\nonClose: () => void;"
+  },
+  "overrides": {
+    "ScheduleSettings": {
+      "cardMode": "single",
+      "viewport": "560x860"
+    },
+    "FeeSettings": {
+      "cardMode": "single",
+      "viewport": "520x600"
+    },
+    "BountySettings": {
+      "cardMode": "single",
+      "viewport": "560x800"
+    },
+    "MarketDetail": {
+      "cardMode": "single",
+      "viewport": "560x800"
+    },
+    "BountyTopUpChip": {
+      "cardMode": "single",
+      "viewport": "560x700"
+    },
+    "CharBudget": {
+      "cardMode": "column"
+    },
+    "DraftControls": {
+      "cardMode": "column"
+    },
+    "WalletMenu": {
+      "cardMode": "single",
+      "viewport": "420x460"
+    },
+    "BrowseView": {
+      "cardMode": "single",
+      "viewport": "1100x820"
+    },
+    "DebateView": {
+      "cardMode": "single",
+      "viewport": "1240x900"
+    },
+    "StakeModal": {
+      "cardMode": "single",
+      "viewport": "560x470"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
