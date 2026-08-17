@@ -1,7 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
-import { upsideHint, upsideOf } from '../lib/market';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesisOf } from '../types';
@@ -146,7 +145,7 @@ const impactClassOf = (impact: number) => (impact > 0 ? 'impact-pos' : impact < 
 export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null }) {
   const thesis = thesisOf(debate);
   const [focusedId, setFocusedId] = useState(thesis.id);
-  // The focused argument's market detail (the curve modal), opened from the pot chip.
+  // The focused argument's market detail (the curve modal), opened from the rating market link.
   const [marketOpen, setMarketOpen] = useState(false);
   // Whether the ancestry rail reads its parent claims in full. Held here, not in the rail, so the
   // choice survives navigating the tree (the rail unmounts whenever the thesis is focused).
@@ -176,7 +175,6 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
   const focusFinalizesIn =
     focus.state === 'created' && debate.timing ? focus.finalizationTime - liveChainTime(debate.timing, now) : null;
   const focusLocked = lockedNow(focus);
-  const focusUpside = upsideOf(focus);
 
   // Phase gates follow the live clock (see livePhaseOf), so the rating affordances open the moment
   // the editing window passes - the poll only catches up on data, never on time. Replying and
@@ -254,31 +252,34 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             )}
           </p>
         ) : (
-          <p className="focus-meta">
-            Market approval{' '}
-            <strong className={`mono ${impactClassOf(2 * focus.approval - 1)}`}>
-              {formatApproval(focus.approval)}
-            </strong>{' '}
-            · staked <strong className="mono">{focus.weight} ⬡</strong>
-            {focusImpact !== undefined && (
-              <span title={IMPACT_HINT}>
-                {' '}
-                · impact on parent{' '}
-                <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
-              </span>
-            )}{' '}
-            ·{' '}
-            <button
-              type="button"
-              className="market-chip"
-              title={`${upsideHint(focusUpside)} Opens the market's curve.`}
-              onClick={() => setMarketOpen(true)}
-            >
-              upside <strong className="mono market-pro">↑{focusUpside.underrated}</strong>{' '}
-              <strong className="mono market-con">↓{focusUpside.overrated}</strong> ⬡
-            </button>{' '}
-            · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
-          </p>
+          <div className="focus-meta">
+            {/* The figures on one line, what to do about them on the next. */}
+            <p className="focus-meta-row">
+              Market approval{' '}
+              <strong className={`mono ${impactClassOf(2 * focus.approval - 1)}`}>
+                {formatApproval(focus.approval)}
+              </strong>{' '}
+              · staked <strong className="mono">{focus.weight} ⬡</strong>
+              {focusImpact !== undefined && (
+                <span title={IMPACT_HINT}>
+                  {' '}
+                  · impact on parent{' '}
+                  <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
+                </span>
+              )}
+            </p>
+            <p className="focus-meta-row">
+              <button
+                type="button"
+                className="market-chip"
+                title="The market behind these figures: its curve, reserves, what correcting it can gain, and the fees it has earned its author."
+                onClick={() => setMarketOpen(true)}
+              >
+                Rating market →
+              </button>{' '}
+              · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
+            </p>
+          </div>
         )}
         {marketOpen && !isThesis && (
           <MarketDetail node={focus} feePercentage={debate.feePercentage} onClose={() => setMarketOpen(false)} />

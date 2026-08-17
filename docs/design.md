@@ -61,6 +61,15 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-08-18 — the upside moved into the market detail; the focus meta reads in two rows.** The
+  per-direction upside (`upside ↑6 ↓14 ⬡`) is mechanism-exact but asks the reader to already know
+  what a reserve is - too much for the card and the meta line, where it competed with the three
+  figures that carry the argument's story (approval, staked, impact on parent). Cards drop it;
+  the focus meta shows the figures on one row and, on a second, a plain `Rating market →` link
+  opening the detail where the upside still lives with the curve. Rejected: keeping a smaller
+  upside on the cards as the rater-attention beacon (2026-07-22) - the beacon was not read as one,
+  and the market detail is one click away from every focused argument. (Principles 5, 10; north
+  star: detail on demand.)
 - **2026-08-18 — the metric labels say what a newcomer would say: staked, impact on parent, net
   impact.** "Weight" named the tally's own concept (a subtree's share of its siblings' stake), which
   a reader meets nowhere else on the screen; the figure it labels is the vote tokens staked on the
