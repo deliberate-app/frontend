@@ -135,10 +135,10 @@ export function StakeModal({
                 aria-label="Stake: negative calls the argument overrated, positive underrated"
               />
               <span className="stake-slider-ends" aria-hidden="true">
-                <span className="market-con" title="Buys bad-argument shares - they pay the complement of the tallied rating.">
+                <span className="market-con" title="Buys bad-argument shares, paid by the complement of the final rating.">
                   Overrated ↓
                 </span>
-                <span className="market-pro" title="Buys good-argument shares - they pay the argument's tallied rating as a price.">
+                <span className="market-pro" title="Buys good-argument shares, paid by the argument's final rating.">
                   Underrated ↑
                 </span>
               </span>
@@ -191,9 +191,8 @@ export function StakeModal({
         <p className="composer-hint">
           {tokens < 1
             ? 'You have no vote tokens left in this debate.'
-            : 'You profit if the tallied rating ends up on your side of the price you paid. The impact is ' +
-              'a live projection: the tally weighs prices by how long they stood, so a late stake moves ' +
-              'the final rating less than shown.'}
+            : 'You profit if the final rating lands on your side of the price you paid. The impact shown ' +
+              'is a projection - the tally weighs prices by how long they stood, so a late stake moves it less.'}
         </p>
         {error && <p className="action-error">{error}</p>}
       </div>

@@ -61,6 +61,13 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-08-18 — every hover is one sentence, and copy says a thing once.** Principle 9 asks for
+  one-sentence hover copy and the market vocabulary had drifted past it: `IMPACT_HINT` ran four
+  clauses, the info chip's tooltip listed the modal's whole contents (a tooltip is a label, not a
+  table of contents - the dialog it opens says the rest), and the market detail's closing
+  paragraph re-printed the two reserve figures already listed a row above. All trimmed to one
+  sentence each; the detail's paragraph now states the rule ("correcting can gain at most the
+  reserve on that side") and lets the Reserves row carry the numbers. (Principles 9, 10.)
 - **2026-08-18 — staking is a modal with one signed slider that shows what the stake would do
   before it is sent.** The inline panel (amount + two firing buttons) asked for a number blind:
   nothing said what 5 ⬡ or 40 ⬡ would move. One `Stake ⬡` button on the focus meta opens a

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatApproval } from '../lib/impact';
-import { reservesOf, upsideOf } from '../lib/market';
+import { reservesOf } from '../lib/market';
 import type { ArgumentNode } from '../types';
 
 /**
@@ -63,7 +63,6 @@ export function MarketDetail({
   onClose: () => void;
 }) {
   const { pro, con } = reservesOf(node);
-  const upside = upsideOf(node);
 
   // The lifetime fee figure comes from the stake history, so it loads separately from the tree;
   // null while loading or when the source cannot say.
@@ -130,12 +129,9 @@ export function MarketDetail({
           )}
         </dl>
         <p className="composer-hint">
-          Underrated stakes buy good-argument shares, overrated stakes bad-argument ones. When the
-          debate ends, a good-argument share pays the argument's tallied rating as a price and a
-          bad-argument share the complement - the sub-debate's verdict, not the closing price. The
-          reserves are also the ceiling on what correcting can gain: at most{' '}
-          <span className="mono">{upside.underrated} ⬡</span> if the argument proves underrated,{' '}
-          <span className="mono">{upside.overrated} ⬡</span> if overrated, before fees.
+          Underrated stakes buy good-argument shares, paid by the argument's final rating; overrated
+          stakes buy bad-argument shares, paid by its complement. Correcting the market can gain at
+          most the reserve on that side, before fees.
         </p>
       </div>
     </div>

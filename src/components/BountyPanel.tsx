@@ -175,7 +175,7 @@ export function BountyPanel({ debate, tx, now }: { debate: Debate; tx: DebateTx 
           type="button"
           className="btn btn-solid"
           disabled={busy}
-          title="One transaction: redeem your shares, collect your arguments' fees, then claim your share - one-shot."
+          title="One transaction, once: redeem shares, collect fees, claim your share."
           onClick={() => void claim()}
         >
           {busy ? 'Claiming…' : 'Redeem & claim bounty share'}

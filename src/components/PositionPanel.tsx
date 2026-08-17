@@ -60,7 +60,7 @@ export function PositionPanel({
           <>
             <span
               className="action-hint"
-              title="A good-argument share pays the argument's final rating, a bad-argument share its complement."
+              title="Good-argument shares pay by the argument's final rating, bad-argument shares by its complement."
             >
               Your shares:{' '}
               <strong className="mono">

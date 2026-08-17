@@ -291,7 +291,7 @@ export function DebateView({
             <button
               type="button"
               className="round-chip"
-              title="About this rating market: its curve, reserves, what correcting it can gain, and the fees it has earned its author."
+              title="About this rating market"
               aria-label="About this rating market"
               onClick={() => setMarketOpen(true)}
             >
