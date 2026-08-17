@@ -25,19 +25,10 @@ export function reservesOf(node: ArgumentNode): MarketReserves {
  * The market's upside: what a corrector can gain from it, per direction, before fees. Buying
  * good-argument shares ("underrated") frees at most the pro reserve - as the stake grows, the
  * shares freed beyond the tokens paid approach the reserve, each redeeming at up to one token -
- * and buying bad-argument shares ("overrated") at most the con reserve. This is the honest
- * rater-attention beacon: the prize is the seeded deposit plus whatever mispricing others left
- * behind, extractable only by being right.
+ * and buying bad-argument shares ("overrated") at most the con reserve. The prize is the seeded
+ * deposit plus whatever mispricing others left behind, extractable only by being right.
  */
 export function upsideOf(node: ArgumentNode): { underrated: number; overrated: number } {
   const { pro, con } = reservesOf(node);
   return { underrated: pro, overrated: con };
-}
-
-/** The shared tooltip explaining an argument's upside figures. */
-export function upsideHint(upside: { underrated: number; overrated: number }): string {
-  return (
-    `The most correcting this market can gain: up to ${upside.underrated} ⬡ if it proves underrated, ` +
-    `up to ${upside.overrated} ⬡ if overrated (before fees).`
-  );
 }

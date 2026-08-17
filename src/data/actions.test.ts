@@ -125,7 +125,8 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await rater.redeemShares(0, 1);
     expect((await reads.userState(0, rater.account)).tokens).toBe(104);
 
-    // The author claims the accrued market fee.
+    // The author claims the accrued market fee - the one fee the argument has earned so far.
+    expect(await reads.feesEarned(0, 1)).toBe(1);
     expect((await reads.argumentPosition(0, 1, author.account)).claimableFees).toBe(1);
     await author.claimFees(0, 1);
     expect((await reads.userState(0, author.account)).tokens).toBe(91);

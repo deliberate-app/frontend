@@ -22,6 +22,8 @@ import { useWallet } from './wallet/useWallet';
 
 const source = defaultSource();
 const config = contractConfig();
+// Sample data has no markets to have earned anything; the deployed sources answer from the index.
+const feesEarnedOf = config ? source.feesEarned.bind(source) : undefined;
 
 // One shared read client for resolving custom bounty tokens; absent in sample mode.
 const tokenClient = config ? createPublicClient({ transport: http(config.rpcUrl) }) : null;
@@ -451,7 +453,12 @@ export default function App() {
           />
         )
       ) : debate ? (
-        <DebateView key={debate.id} debate={debate} tx={tx} />
+        <DebateView
+          key={debate.id}
+          debate={debate}
+          tx={tx}
+          feesEarnedOf={feesEarnedOf}
+        />
       ) : (
         !error && (
           <p className="load-note">

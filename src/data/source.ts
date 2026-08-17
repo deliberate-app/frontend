@@ -30,6 +30,11 @@ export interface DebateSource {
   argumentPosition(debateId: number, argumentId: number, account: string): Promise<ArgumentPosition>;
   /** The account's share holdings across a debate's arguments, for the batch-redeem flow. */
   positions(debateId: number, account: string): Promise<AccountPosition[]>;
+  /**
+   * The market fees an argument has earned its author over its lifetime, in vote tokens - what
+   * every stake on it paid, whether or not the author has claimed it yet.
+   */
+  feesEarned(debateId: number, argumentId: number): Promise<number>;
 }
 
 const sampleDebates = [climateDebate, confirmedDebate, objectedDebate, editingDebate];
@@ -49,6 +54,7 @@ export const mockSource: DebateSource = {
   userState: async () => ({ joined: false, tokens: 0, bountyClaimed: false }),
   argumentPosition: async () => ({ proShares: 0, conShares: 0, claimableFees: 0 }),
   positions: async () => [],
+  feesEarned: async () => 0,
 };
 
 // Phase.Status on-chain: 0 Uninitialized … 4 Finished. Only these two boundaries are read raw - one to
@@ -356,6 +362,19 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         }))
         .filter((position) => position.proShares > 0 || position.conShares > 0);
     },
+
+    async feesEarned(debateId: number, argumentId: number): Promise<number> {
+      // The chain keeps only the standing balance, which the author's claim zeroes: exact until the
+      // debate finishes (fees claim only then), a floor afterwards. The lifetime figure needs the
+      // stake history, which is the index's to keep.
+      const argument = (await client.readContract({
+        address,
+        abi,
+        functionName: 'getArgument',
+        args: [BigInt(debateId), argumentId],
+      })) as { fees: number };
+      return argument.fees;
+    },
   };
 }
 
@@ -511,6 +530,10 @@ const INDEXER_USER_STATE_QUERY = `query UserState($participantId: String!) {
 const INDEXER_ARGUMENT_POSITION_QUERY = `query ArgumentPosition($positionId: String!, $argumentId: String!) {
   Position(where: { id: { _eq: $positionId } }) { proShares conShares }
   Argument(where: { id: { _eq: $argumentId } }) { creator fees }
+}`;
+
+const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
+  Stake(where: { argument_id: { _eq: $argumentId } }) { fee }
 }`;
 
 const CHAIN_METADATA_QUERY = `{ chain_metadata { latest_processed_block } }`;
@@ -703,6 +726,15 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
         conShares: Number(row.conShares),
       })).filter((position) => position.proShares > 0 || position.conShares > 0);
     },
+
+    async feesEarned(debateId: number, argumentId: number): Promise<number> {
+      // The stake history is append-only, so the fees it records outlive the author's claim -
+      // unlike the argument's standing `fees` balance, which the claim zeroes.
+      const data = await graphql<{ Stake: Array<{ fee: string }> }>(INDEXER_ARGUMENT_FEES_QUERY, {
+        argumentId: `${debateId}_${argumentId}`,
+      });
+      return data.Stake.reduce((sum, stake) => sum + Number(stake.fee), 0);
+    },
   };
 }
 
@@ -724,6 +756,7 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
     userState: guarded((source) => source.userState.bind(source)),
     argumentPosition: guarded((source) => source.argumentPosition.bind(source)),
     positions: guarded((source) => source.positions.bind(source)),
+    feesEarned: guarded((source) => source.feesEarned.bind(source)),
   };
 }
 

@@ -61,6 +61,17 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-08-18 — the market detail lists its facts one under the other, the author's fees among
+  them.** The one-line readout (`rated +40% · reserves 6 good / 14 bad · pool 33 ⬡ · fee 5%`) had
+  become a sentence of figures; it is now a label/figure list - market approval, staked,
+  reserves, fee - plus a row the detail never had: what the fee has earned the author so far.
+  That figure is the lifetime sum over the argument's stake history (the index keeps every stake
+  with its fee), not the standing `fees` balance the author's claim zeroes; the chain-only
+  fallback can offer no more than the balance and says so in the code. The upside is no longer a
+  row: it *is* the reserve on that side (the most a correction can free), so listing both showed
+  the same two numbers twice, and Michael found "reserves" - the shares sitting in the market -
+  the more intuitive name; the hint gives the upside reading in words. "Pool" became "staked" to
+  match the meta line. (Principles 5, 10.)
 - **2026-08-18 — the upside moved into the market detail; the focus meta reads in two rows.** The
   per-direction upside (`upside ↑6 ↓14 ⬡`) is mechanism-exact but asks the reader to already know
   what a reserve is - too much for the card and the meta line, where it competed with the three

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
@@ -142,7 +142,16 @@ function AncestryRail({
 
 const impactClassOf = (impact: number) => (impact > 0 ? 'impact-pos' : impact < 0 ? 'impact-neg' : '');
 
-export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null }) {
+export function DebateView({
+  debate,
+  tx,
+  feesEarnedOf,
+}: {
+  debate: Debate;
+  tx: DebateTx | null;
+  /** The market fees an argument has earned its author so far; absent for sample data. */
+  feesEarnedOf?: (debateId: number, argumentId: number) => Promise<number>;
+}) {
   const thesis = thesisOf(debate);
   const [focusedId, setFocusedId] = useState(thesis.id);
   // The focused argument's market detail (the curve modal), opened from the rating market link.
@@ -154,6 +163,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
 
   const byId = new Map(debate.nodes.map((n) => [n.id, n]));
   const focus = byId.get(focusedId) ?? thesis;
+  // Stable per focused argument, so the market detail loads the figure once, not on every tick.
+  const loadFeesEarned = useMemo(
+    () => (feesEarnedOf ? () => feesEarnedOf(debate.id, focus.id) : undefined),
+    [feesEarnedOf, debate.id, focus.id],
+  );
   const pros = childrenOf(debate, focus.id, 'pro');
   const cons = childrenOf(debate, focus.id, 'con');
   const isThesis = focus.id === thesis.id;
@@ -282,7 +296,12 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
           </div>
         )}
         {marketOpen && !isThesis && (
-          <MarketDetail node={focus} feePercentage={debate.feePercentage} onClose={() => setMarketOpen(false)} />
+          <MarketDetail
+            node={focus}
+            feePercentage={debate.feePercentage}
+            loadFeesEarned={loadFeesEarned}
+            onClose={() => setMarketOpen(false)}
+          />
         )}
         {ownDraft && tx && (
           <DraftControls

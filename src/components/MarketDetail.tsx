@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { formatApproval } from '../lib/impact';
 import { reservesOf, upsideOf } from '../lib/market';
 import type { ArgumentNode } from '../types';
@@ -43,22 +44,44 @@ function CurvePlot({ pro, con }: { pro: number; con: number }) {
 }
 
 /**
- * The focused argument's market, opened from the upside chip: the reserves on their
- * constant-product curve, the price they imply, and the upside a corrector can gain per
- * direction. Informational - the cross and the backdrop are the exits.
+ * The focused argument's market, opened from the rating market link: the reserves on their
+ * constant-product curve, then the facts one under the other - price, stake, reserves, and the
+ * fee with what it has earned the author so far - and, in words, what the reserves mean for a
+ * corrector. Informational - the cross and the backdrop are the exits.
  */
 export function MarketDetail({
   node,
   feePercentage,
+  loadFeesEarned,
   onClose,
 }: {
   node: ArgumentNode;
   /** The debate's market fee in percent, creator-chosen at creation. */
   feePercentage: number;
+  /** The fees the argument has earned its author so far; absent for sample data without markets. */
+  loadFeesEarned?: () => Promise<number>;
   onClose: () => void;
 }) {
   const { pro, con } = reservesOf(node);
   const upside = upsideOf(node);
+
+  // The lifetime fee figure comes from the stake history, so it loads separately from the tree;
+  // null while loading or when the source cannot say.
+  const [feesEarned, setFeesEarned] = useState<number | null>(null);
+  useEffect(() => {
+    if (!loadFeesEarned || feePercentage === 0) return;
+    let cancelled = false;
+    loadFeesEarned()
+      .then((fees) => {
+        if (!cancelled) setFeesEarned(fees);
+      })
+      .catch(() => {
+        if (!cancelled) setFeesEarned(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadFeesEarned, feePercentage]);
 
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
@@ -78,26 +101,41 @@ export function MarketDetail({
 
         <CurvePlot pro={pro} con={con} />
 
-        <p className="market-readout">
-          rated <strong className="mono">{formatApproval(node.approval)}</strong> · reserves{' '}
-          <strong className="mono">
+        <dl className="market-facts">
+          <dt>Market approval</dt>
+          <dd className="mono">{formatApproval(node.approval)}</dd>
+          <dt>Staked</dt>
+          <dd className="mono">{node.weight} ⬡</dd>
+          <dt>Reserves</dt>
+          <dd className="mono">
             {pro} <span className="market-pro">good</span> / {con} <span className="market-con">bad</span>
-          </strong>{' '}
-          · pool <strong className="mono">{node.weight} ⬡</strong>
-          {feePercentage > 0 ? (
+          </dd>
+          <dt>Fee</dt>
+          <dd>
+            {feePercentage > 0 ? (
+              <>
+                <span className="mono">{feePercentage}%</span> of every stake, to the author
+              </>
+            ) : (
+              'none'
+            )}
+          </dd>
+          {feesEarned !== null && (
             <>
-              {' '}
-              · fee <strong className="mono">{feePercentage}%</strong>
+              <dt>Author earned</dt>
+              <dd>
+                <span className="mono">{feesEarned} ⬡</span> so far
+              </dd>
             </>
-          ) : (
-            ' · no fee'
           )}
-        </p>
+        </dl>
         <p className="composer-hint">
-          Underrated stakes buy good-argument shares (they pay the final rating), overrated stakes
-          bad-argument ones (the complement). The upside of correcting:{' '}
-          <strong className="mono">{upside.underrated} ⬡</strong> if it proves underrated,{' '}
-          <strong className="mono">{upside.overrated} ⬡</strong> if overrated (before fees).
+          Underrated stakes buy good-argument shares, overrated stakes bad-argument ones. When the
+          debate ends, a good-argument share pays the argument's tallied rating as a price and a
+          bad-argument share the complement - the sub-debate's verdict, not the closing price. The
+          reserves are also the ceiling on what correcting can gain: at most{' '}
+          <span className="mono">{upside.underrated} ⬡</span> if the argument proves underrated,{' '}
+          <span className="mono">{upside.overrated} ⬡</span> if overrated, before fees.
         </p>
       </div>
     </div>

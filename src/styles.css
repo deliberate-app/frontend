@@ -1242,10 +1242,21 @@ button {
   fill: var(--con);
 }
 
-.market-readout {
+/* The market's facts, one under the other: label column, figure column. */
+.market-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
+}
+
+.market-facts dt {
   color: var(--bark);
+}
+
+.market-facts dd {
+  margin: 0;
 }
 
 /* The schedule and bounty chips share one row, wrapping when the width runs out. */

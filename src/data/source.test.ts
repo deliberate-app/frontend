@@ -208,6 +208,10 @@ describe('withFallback', () => {
       if (result instanceof Error) throw result;
       return positions;
     },
+    feesEarned: async () => {
+      if (result instanceof Error) throw result;
+      return 3;
+    },
   });
 
   test('serves from the primary while it works', async () => {
@@ -219,6 +223,7 @@ describe('withFallback', () => {
     expect(await withFallback(source(debate), source(new Error('unused'))).userState(0, '0xabc')).toBe(
       userState,
     );
+    expect(await withFallback(source(debate), source(new Error('unused'))).feesEarned(0, 1)).toBe(3);
   });
 
   test('falls back when the primary fails', async () => {
@@ -230,6 +235,7 @@ describe('withFallback', () => {
     expect(
       await withFallback(source(new Error('indexer down')), source(debate)).userState(0, '0xabc'),
     ).toBe(userState);
+    expect(await withFallback(source(new Error('indexer down')), source(debate)).feesEarned(0, 1)).toBe(3);
   });
 });
 
