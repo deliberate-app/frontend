@@ -268,48 +268,48 @@ export function DebateView({
             )}
           </p>
         ) : (
-          <div className="focus-meta">
-            {/* The figures on one line, what to do about them on the next. */}
-            <p className="focus-meta-row">
-              Market approval{' '}
-              <strong className={`mono ${impactClassOf(2 * focus.approval - 1)}`}>
-                {formatApproval(focus.approval)}
-              </strong>{' '}
-              · staked <strong className="mono">{focus.weight} ⬡</strong>
-              {focusImpact !== undefined && (
-                <span title={IMPACT_HINT}>
-                  {' '}
-                  · impact on parent{' '}
-                  <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
-                </span>
-              )}
-            </p>
-            <p className="focus-meta-row">
-              <button
-                type="button"
-                className="market-chip"
-                title="The market behind these figures: its curve, reserves, what correcting it can gain, and the fees it has earned its author."
-                onClick={() => setMarketOpen(true)}
-              >
-                Rating market →
-              </button>{' '}
-              · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
-              {rating && tx && (
-                <>
-                  {' '}
-                  ·{' '}
-                  <button
-                    type="button"
-                    className="btn btn-small"
-                    title="Stake vote tokens on this argument being under- or overrated."
-                    onClick={() => setStakeOpen(true)}
-                  >
-                    Stake ⬡
-                  </button>
-                </>
-              )}
-            </p>
-          </div>
+          <p className="focus-meta">
+            Market approval{' '}
+            <strong className={`mono ${impactClassOf(2 * focus.approval - 1)}`}>
+              {formatApproval(focus.approval)}
+            </strong>{' '}
+            {/* The market detail sits on the figure it explains, as the bounty top-up sits on the pool. */}
+            <button
+              type="button"
+              className="round-chip"
+              title="About this rating market: its curve, reserves, what correcting it can gain, and the fees it has earned its author."
+              aria-label="About this rating market"
+              onClick={() => setMarketOpen(true)}
+            >
+              <svg className="chip-glyph" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M8 7.25 V11.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                <path d="M8 4.5 V4.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+              </svg>
+            </button>{' '}
+            · staked <strong className="mono">{focus.weight} ⬡</strong>
+            {focusImpact !== undefined && (
+              <span title={IMPACT_HINT}>
+                {' '}
+                · impact on parent{' '}
+                <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
+              </span>
+            )}{' '}
+            · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
+            {rating && tx && (
+              <>
+                {' '}
+                ·{' '}
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  title="Stake vote tokens on this argument being under- or overrated."
+                  onClick={() => setStakeOpen(true)}
+                >
+                  Stake ⬡
+                </button>
+              </>
+            )}
+          </p>
         )}
         {marketOpen && !isThesis && (
           <MarketDetail

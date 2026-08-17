@@ -516,15 +516,6 @@ button {
   font-size: 0.85rem;
 }
 
-/* An argument's meta reads in two rows: the figures, then what to do about them. */
-.focus-meta-row {
-  margin: 0;
-}
-
-.focus-meta-row + .focus-meta-row {
-  margin-top: 0.35rem;
-}
-
 /* ── Columns ─────────────────────────────────────────────────────────── */
 .columns {
   display: grid;
@@ -966,8 +957,9 @@ button {
   margin: 0.75rem 0 0;
 }
 
-/* The top-up affordance: a small round plus right after the bounty figure. */
-.bounty-plus {
+/* A small round glyph button right after the figure it acts on: the bounty's top-up plus, the
+   market approval's info. */
+.round-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -984,7 +976,7 @@ button {
   cursor: pointer;
 }
 
-.bounty-plus:hover {
+.round-chip:hover {
   border-color: var(--bark);
   color: var(--ink);
 }
@@ -1168,20 +1160,6 @@ button {
 
 .market-con {
   color: var(--con);
-}
-
-/* The rating market link in the focus meta: reads as meta text, opens the market detail. */
-.market-chip {
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-.market-chip:hover {
-  text-decoration: underline dotted;
 }
 
 /* The market detail's parametric constant-product curve. */

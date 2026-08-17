@@ -85,15 +85,18 @@ contouring are exactly right — treat them as the baseline to protect.)
   the same two numbers twice, and Michael found "reserves" - the shares sitting in the market -
   the more intuitive name; the hint gives the upside reading in words. "Pool" became "staked" to
   match the meta line. (Principles 5, 10.)
-- **2026-08-18 — the upside moved into the market detail; the focus meta reads in two rows.** The
-  per-direction upside (`upside ↑6 ↓14 ⬡`) is mechanism-exact but asks the reader to already know
-  what a reserve is - too much for the card and the meta line, where it competed with the three
-  figures that carry the argument's story (approval, staked, impact on parent). Cards drop it;
-  the focus meta shows the figures on one row and, on a second, a plain `Rating market →` link
-  opening the detail where the upside still lives with the curve. Rejected: keeping a smaller
-  upside on the cards as the rater-attention beacon (2026-07-22) - the beacon was not read as one,
-  and the market detail is one click away from every focused argument. (Principles 5, 10; north
-  star: detail on demand.)
+- **2026-08-18 — the upside moved into the market detail, which opens from a round info chip on
+  the approval figure.** The per-direction upside (`upside ↑6 ↓14 ⬡`) is mechanism-exact but asks
+  the reader to already know what a reserve is - too much for the card and the meta line, where
+  it competed with the three figures that carry the argument's story (approval, staked, impact on
+  parent). Cards drop it; the focus meta stays one line and the detail opens from a small round
+  `i` right after `Market approval +40%` - the same chip the bounty's top-up plus is (`.round-chip`:
+  hairline circle, stroke glyph in `currentColor`, centered on the figure's cap height), sitting on
+  the value it explains. Tried and dropped the same day: a second meta row carrying a `Rating
+  market →` text link - a whole row for one affordance, and a text link reads as navigation, not
+  as "more about this number". Rejected earlier: keeping a smaller upside on the cards as the
+  rater-attention beacon (2026-07-22) - the beacon was not read as one, and the detail is one click
+  away from every focused argument. (Principles 1, 5, 10; north star: detail on demand.)
 - **2026-08-18 — the metric labels say what a newcomer would say: staked, impact on parent, net
   impact.** "Weight" named the tally's own concept (a subtree's share of its siblings' stake), which
   a reader meets nowhere else on the screen; the figure it labels is the vote tokens staked on the

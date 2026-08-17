@@ -52,7 +52,7 @@ export function BountyTopUpChip({ debate, tx }: { debate: Debate; tx: DebateTx |
       bounty {pool}{' '}
       <button
         type="button"
-        className="bounty-plus"
+        className="round-chip"
         title="Top up the bounty"
         aria-label="Top up the bounty"
         onClick={() => setOpen(true)}
