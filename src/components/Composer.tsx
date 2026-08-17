@@ -41,7 +41,7 @@ export function Composer({
     );
   }
 
-  // The deposit seeds the market and sets the argument's starting weight: at least
+  // The deposit seeds the market and is the stake the argument starts with: at least
   // the minimum, at most the balance.
   const depositValid = Number.isInteger(deposit) && deposit >= MIN_DEPOSIT && deposit <= tokens;
   const canSubmit = !busy && text.trim().length > 0 && depositValid;
@@ -95,7 +95,7 @@ export function Composer({
       </label>
       <p className={`composer-hint${depositValid ? '' : ' composer-hint-error'}`}>
         {depositValid
-          ? 'A larger stake deepens the market and gives the argument more starting weight.'
+          ? 'A larger deposit deepens the market and puts more stake behind the argument from the start.'
           : deposit > tokens
             ? `You only have ${tokens} ⬡ in this debate.`
             : `The minimum stake is ${MIN_DEPOSIT} ⬡.`}

@@ -47,7 +47,7 @@ contouring are exactly right — treat them as the baseline to protect.)
    default preset is literally named "Default" — one concept, no separate reset affordance. Free
    fields sit in the same editor for full control; where the contract allows a value we advise
    against, the UI warns softly rather than forbidding.
-8. **Neutral looks neutral.** Ratings and sways are signed percentages around ±0 with diverging,
+8. **Neutral looks neutral.** Ratings and impacts are signed percentages around ±0 with diverging,
    center-anchored gauges — a 50% market reads as ±0%, not as "half full".
 9. **Hard rules block, guidance warns, hints stay short.** Constraints the contract enforces are
    mirrored as errors that disable the action (locking > 0, editing > locking, rating ≥ locking);
@@ -61,6 +61,14 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-08-18 — the metric labels say what a newcomer would say: staked, impact on parent, net
+  impact.** "Weight" named the tally's own concept (a subtree's share of its siblings' stake), which
+  a reader meets nowhere else on the screen; the figure it labels is the vote tokens staked on the
+  argument, so it now says `staked 33 ⬡`, and the bare `33 ⬡` on cards and in the rail names itself
+  on hover. "Sways parent" was the protocol's verb (ADR-0012's rating/sway) and read as jargon;
+  the same figure is now `impact on parent`, the thesis figure `net impact`, and the tooltips
+  explain in the same words. The protocol vocabulary stays in the code and the ADRs — the label
+  is a translation, not a rename. (Principle 10.)
 - **2026-07-30 — the ancestry rail expands to the full parent claims.** Kialo's "show the parents up
   to the thesis" affordance, spoken in the rail's own vocabulary: a quiet `Expand path` chevron sits
   on the connector that meets the focused claim, and opening it unclips every ancestor — the whole
@@ -223,7 +231,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   "DRAFT · LOCKS IN" text chip: shackle-ajar padlock with a seven-character countdown while a draft
   can change, a muted closed padlock once final. (Principles 1, 3.)
 - **2026-07-13 — approval displayed as a signed rating centered on neutral.** 0..100% market
-  approval reads as −100%..+100% around ±0, matching the sway figures; the gauge diverges from the
+  approval reads as −100%..+100% around ±0, matching the impact figures; the gauge diverges from the
   center. Display-only — the contract keeps its 0..1 price. (Principle 8.)
 - **2026-07-11 — rating controls relabeled "Stake n ⬡ · Underrated ↑ / Overrated ↓".**
   "Invest pro/con" implied agreement; staking on a correction is stance-free. (Principle 9.)

@@ -2,7 +2,7 @@
 
 A kialo-style viewer for Deliberate debates: the thesis (or any focused argument) on top, its pro and con arguments in two columns, click any card to drill down the tree. The ancestry rail above the focused claim shows the path back to the thesis, with each connector colored by that step's polarity. Above it, a clickable mini tree-view maps the debate around the focus — the thesis in black, pros green, cons red, the current path filled — expanding rows as you drill down and collapsing them as you climb back up.
 
-Every card shows the argument's **market approval** (the pro share of its argument market) and its **weight** (vote tokens staked).
+Every card shows the argument's **market approval** (the pro share of its argument market) and its **stake** (vote tokens staked on it).
 
 ## Develop
 
@@ -120,7 +120,7 @@ this: `just dev-testnet` authors against the dockerized kubo, no pinning service
 Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi-provider discovery via viem, so any announcing browser wallet (MetaMask, Rabby, Coinbase Wallet, …) appears in the connect menu. Once connected against an on-chain deployment, the app is fully interactive ([src/data/actions.ts](src/data/actions.ts)):
 
 - **Join** the debate from the header (the token balance replaces the button once joined).
-- **Author arguments** during Editing: a composer beneath each column publishes the text through the content pipeline, then commits the digest with `addArgument`. The author picks the deposit (at least the minimum) — a larger stake deepens the market and gives the argument more starting weight.
+- **Author arguments** during Editing: a composer beneath each column publishes the text through the content pipeline, then commits the digest with `addArgument`. The author picks the deposit (at least the minimum) — a larger deposit deepens the market and puts more stake behind the argument from the start.
 - **Rate arguments** during Rating: stake vote tokens on the focused argument being under- or overrated.
 - **After the debate**: redeem your shares and claim creator fees from the focused argument, or redeem across every argument you hold at once from the finished-debate banner (`redeemArgumentSharesBatch`, its argumentIds read from the indexer's per-participant positions).
 

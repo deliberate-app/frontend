@@ -18,7 +18,7 @@ function ApprovalGauge({ approval, weight }: { approval: number; weight: number 
         />
       </span>
       <span className="gauge-figures">
-        {formatApproval(approval)} · {weight} ⬡
+        {formatApproval(approval)} · <span title={`${weight} ⬡ staked on this argument`}>{weight} ⬡</span>
       </span>
     </span>
   );

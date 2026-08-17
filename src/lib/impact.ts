@@ -67,19 +67,19 @@ export function impactsOf(debate: Debate): Map<number, number> {
   return impacts;
 }
 
-/** The tooltip explaining an argument's sway figure, shared by every place it appears. */
+/** The tooltip explaining an argument's impact-on-parent figure, shared by every place it appears. */
 export const IMPACT_HINT =
-  "How much this argument sways its parent's rating in the tally: its own rating - approval " +
-  'corrected by its sub-arguments, each weighted by the stake behind it - counted at its ' +
-  "subtree's share of the siblings' stake. Green sways the parent up, red down; a refuted " +
-  'argument sways nothing.';
+  "How much this argument moves its parent's rating in the tally: its own rating - the market " +
+  'approval, corrected by its sub-arguments, each counted by the stake behind it - at its ' +
+  "subtree's share of the siblings' stake. Green pushes the parent up, red down; a refuted " +
+  'argument has no impact.';
 
-/** The tooltip explaining the thesis' net sway figure. */
+/** The tooltip explaining the thesis' net impact figure. */
 export const NET_IMPACT_HINT =
-  "The top-level arguments' sways blended by the stake behind each: above zero the thesis is " +
+  "The top-level arguments' impacts blended by the stake behind each: above zero the thesis is " +
   'confirmed, at or below it is objected.';
 
-/** Formats a sway or rating fraction as a signed percentage, e.g. "+12%". */
+/** Formats an impact or rating fraction as a signed percentage, e.g. "+12%". */
 export function formatImpact(impact: number): string {
   const percent = Math.round(impact * 100);
   return percent > 0 ? `+${percent}%` : percent < 0 ? `−${Math.abs(percent)}%` : '±0%';

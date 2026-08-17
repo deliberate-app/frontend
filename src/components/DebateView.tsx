@@ -111,7 +111,8 @@ function AncestryRail({
             {/* The thesis is rated through its arguments, so only the argued steps carry figures. */}
             {expanded && node.parentId !== null && (
               <span className="rail-figures mono">
-                {formatApproval(node.approval)} · {node.weight} ⬡
+                {formatApproval(node.approval)} ·{' '}
+                <span title={`${node.weight} ⬡ staked on this argument`}>{node.weight} ⬡</span>
               </span>
             )}
           </button>
@@ -230,7 +231,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             {focusImpact !== undefined && (
               <span title={NET_IMPACT_HINT}>
                 {' '}
-                · net sway <strong className="mono">{formatImpact(focusImpact)}</strong>
+                · net impact <strong className="mono">{formatImpact(focusImpact)}</strong>
               </span>
             )}
           </p>
@@ -241,7 +242,7 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             {phase !== 'finished' && focusImpact !== undefined && (
               <span title={NET_IMPACT_HINT}>
                 {' '}
-                · net sway{' '}
+                · net impact{' '}
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
               </span>
             )}
@@ -258,11 +259,11 @@ export function DebateView({ debate, tx }: { debate: Debate; tx: DebateTx | null
             <strong className={`mono ${impactClassOf(2 * focus.approval - 1)}`}>
               {formatApproval(focus.approval)}
             </strong>{' '}
-            · weight <strong className="mono">{focus.weight} ⬡</strong>
+            · staked <strong className="mono">{focus.weight} ⬡</strong>
             {focusImpact !== undefined && (
               <span title={IMPACT_HINT}>
                 {' '}
-                · sways parent{' '}
+                · impact on parent{' '}
                 <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
               </span>
             )}{' '}
