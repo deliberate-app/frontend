@@ -46,6 +46,12 @@ export interface ArgumentNode {
   creator?: string;
 }
 
+/**
+ * An argument's market as it stands - the columns of an `ArgumentNode` a stake can move. What a
+ * lightweight refetch carries while someone is deciding on a stake: no texts, no clock, no tree.
+ */
+export type ArgumentMarket = Pick<ArgumentNode, 'id' | 'approval' | 'proReserve' | 'conReserve' | 'weight' | 'rating'>;
+
 /** The debate's on-chain phase clock, in unix seconds. */
 export interface DebateTiming {
   editingEndTime: number;

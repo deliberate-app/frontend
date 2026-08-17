@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import type { Hex } from 'viem';
 import { rpcUp } from '../../scripts/devstack/anvil';
-import type { AccountPosition, Debate, DebateSummary } from '../types';
+import type { AccountPosition, ArgumentMarket, Debate, DebateSummary } from '../types';
 import {
   contractSource,
   decodeInlineContent,
   indexerSource,
+  marketFromIndex,
   nodeFromIndex,
   summaryFromIndex,
   waitForIndexerBlock,
@@ -93,6 +94,21 @@ describe('nodeFromIndex', () => {
 
   test('reads a draft while the chain clock is before its finalization time', () => {
     expect(nodeFromIndex(row, 89).state).toBe('created');
+  });
+
+  test('a market refetch reads the same columns the same way', () => {
+    // The market poll and the full load must agree to the digit, or a poll would make the
+    // figures jump on the next full load.
+    const node = nodeFromIndex(row, 100);
+    expect(marketFromIndex(row)).toEqual({
+      id: node.id,
+      approval: node.approval,
+      proReserve: node.proReserve,
+      conReserve: node.conReserve,
+      weight: node.weight,
+      rating: node.rating,
+    });
+    expect(marketFromIndex({ ...row, rating: '2147483647' }).rating).toBeCloseTo(0.5, 6);
   });
 
   test('maps the thesis: no parent, no side, empty market reads as even', () => {
@@ -186,6 +202,7 @@ describe('withFallback', () => {
   const debate = { id: 0, phase: 'rating', nodes: [] } as unknown as Debate;
   const summaries = [{ id: 0 }] as unknown as DebateSummary[];
   const positions: AccountPosition[] = [{ argumentId: 1, proShares: 3, conShares: 0 }];
+  const markets: ArgumentMarket[] = [{ id: 1, approval: 0.8, proReserve: 2, conReserve: 8, weight: 10, rating: null }];
   const userState = { joined: true, tokens: 90, bountyClaimed: false };
   const source = (result: Debate | Error): DebateSource => ({
     load: async () => {
@@ -212,6 +229,10 @@ describe('withFallback', () => {
       if (result instanceof Error) throw result;
       return 3;
     },
+    markets: async () => {
+      if (result instanceof Error) throw result;
+      return markets;
+    },
   });
 
   test('serves from the primary while it works', async () => {
@@ -224,6 +245,7 @@ describe('withFallback', () => {
       userState,
     );
     expect(await withFallback(source(debate), source(new Error('unused'))).feesEarned(0, 1)).toBe(3);
+    expect(await withFallback(source(debate), source(new Error('unused'))).markets(0)).toBe(markets);
   });
 
   test('falls back when the primary fails', async () => {
@@ -236,6 +258,7 @@ describe('withFallback', () => {
       await withFallback(source(new Error('indexer down')), source(debate)).userState(0, '0xabc'),
     ).toBe(userState);
     expect(await withFallback(source(new Error('indexer down')), source(debate)).feesEarned(0, 1)).toBe(3);
+    expect(await withFallback(source(new Error('indexer down')), source(debate)).markets(0)).toBe(markets);
   });
 });
 

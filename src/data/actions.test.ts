@@ -114,6 +114,11 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     expect(raterPosition.proShares).toBe(0);
     expect(raterPosition.claimableFees).toBe(0); // not the creator
 
+    // The market refetch reads the moved market as the full load does: 21 pro / 1 con, 29 staked.
+    const [, market] = await reads.markets(0);
+    expect(market).toEqual({ id: 1, approval: 1 / 22, proReserve: 21, conReserve: 1, weight: 29, rating: null });
+    expect((await reads.load(0)).nodes.find((node) => node.id === 1)).toMatchObject(market);
+
     // The rating window closes by the clock; the keeper finishes the debate with the tally.
     await warp(10 * timeUnit);
     await keeper.tallyTree(0);

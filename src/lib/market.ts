@@ -1,4 +1,4 @@
-import type { ArgumentNode, Debate, Side } from '../types';
+import type { ArgumentMarket, ArgumentNode, Debate, Side } from '../types';
 
 /** An argument market's share reserves; approval (the good-argument share price) is `con / (pro + con)`. */
 export interface MarketReserves {
@@ -68,6 +68,23 @@ export function previewStake(node: ArgumentNode, side: Side, amount: number, fee
     reserves,
     approval: reserves.con / (reserves.pro + reserves.con),
     weight: node.weight + net,
+  };
+}
+
+/**
+ * The debate with its markets brought up to date from a lightweight refetch: each argument keeps
+ * its text, clock, and place in the tree and takes the fresh price, reserves, stake, and rating.
+ * An argument the refetch does not mention (or one it mentions that the tree does not have yet)
+ * is left for the next full load - a market poll never adds or removes arguments.
+ */
+export function withMarkets(debate: Debate, markets: readonly ArgumentMarket[]): Debate {
+  const byId = new Map(markets.map((market) => [market.id, market]));
+  return {
+    ...debate,
+    nodes: debate.nodes.map((node) => {
+      const market = byId.get(node.id);
+      return market ? { ...node, ...market } : node;
+    }),
   };
 }
 

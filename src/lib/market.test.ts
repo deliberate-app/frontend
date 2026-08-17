@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { ArgumentNode, Debate } from '../types';
 import { impactsOf } from './impact';
-import { previewStake, reservesOf, upsideOf, withPreviewedStake } from './market';
+import { previewStake, reservesOf, upsideOf, withMarkets, withPreviewedStake } from './market';
 
 const node = (partial: Partial<ArgumentNode> & { id: number }): ArgumentNode => ({
   parentId: 0,
@@ -98,6 +98,26 @@ describe('previewStake', () => {
       expect(preview.reserves.pro).toBeGreaterThanOrEqual(1);
       expect(preview.sharesOut).toBeGreaterThanOrEqual(amount - preview.fee);
     }
+  });
+});
+
+describe('withMarkets', () => {
+  test('takes the fresh market columns and keeps everything else', () => {
+    const thesis = node({ id: 0, parentId: null, side: null, weight: 0, text: 'thesis' });
+    const argument = node({ id: 1, proReserve: 5, conReserve: 5, weight: 10, text: 'kept', creator: '0xabc' });
+    const debate: Debate = { id: 0, phase: 'rating', feePercentage: 0, nodes: [thesis, argument] };
+
+    const fresh = withMarkets(debate, [
+      { id: 1, approval: 25 / 26, proReserve: 1, conReserve: 25, weight: 30, rating: null },
+      // An argument the tree does not have yet is left for the next full load.
+      { id: 7, approval: 0.5, proReserve: 5, conReserve: 5, weight: 10, rating: null },
+    ]);
+
+    expect(fresh.nodes).toHaveLength(2);
+    expect(fresh.nodes[1]).toMatchObject({ text: 'kept', creator: '0xabc', approval: 25 / 26, weight: 30, proReserve: 1 });
+    // A market the refetch does not mention stands as it was.
+    expect(fresh.nodes[0]).toBe(thesis);
+    expect(debate.nodes[1]).toBe(argument);
   });
 });
 

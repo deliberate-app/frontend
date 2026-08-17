@@ -14,6 +14,7 @@ import {
 import { contractConfig } from './data/config';
 import { defaultSource } from './data/source';
 import type { DebateSchedule } from './lib/debateTiming';
+import { withMarkets } from './lib/market';
 import { tokenInfo } from './lib/tokens';
 import { useNow } from './lib/time';
 import type { AccountPosition, Debate, DebateFilter, DebateSummary } from './types';
@@ -160,6 +161,23 @@ export default function App() {
     if (optimisticJoinRef.current && nextState !== null && !nextState.joined) return;
     if (nextState?.joined) optimisticJoinRef.current = false;
     setUserState(nextState);
+  }, []);
+
+  // The lightweight companion to refresh(): only the markets, merged into the debate as it stands.
+  // Runs every few seconds while someone has the stake modal open, so the figures they are about
+  // to act on move when another participant stakes. A full refresh that starts meanwhile wins:
+  // its response is newer than anything this read can bring back.
+  const refreshMarkets = useCallback(async () => {
+    const target = debateIdRef.current;
+    if (target === null) return;
+    const seq = loadSeq.current;
+    try {
+      const markets = await source.markets(target);
+      if (seq !== loadSeq.current || debateIdRef.current !== target) return;
+      setDebate((current) => (current && current.id === target ? withMarkets(current, markets) : current));
+    } catch {
+      // A missed poll is nothing to report; the next one, or the full refresh, catches up.
+    }
   }, []);
 
   // Route changes drop the previous view's data and reload for the new route.
@@ -458,6 +476,7 @@ export default function App() {
           debate={debate}
           tx={tx}
           feesEarnedOf={feesEarnedOf}
+          onRefreshMarkets={config ? refreshMarkets : undefined}
         />
       ) : (
         !error && (

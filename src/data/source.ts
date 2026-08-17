@@ -12,7 +12,7 @@ import {
 import abi from '../abi/Deliberate.abi.json';
 import { fetchTextByDigest } from '../lib/ipfs';
 import { tokenInfo } from '../lib/tokens';
-import type { AccountPosition, ArgumentNode, Debate, DebateBounty, DebateSummary } from '../types';
+import type { AccountPosition, ArgumentMarket, ArgumentNode, Debate, DebateBounty, DebateSummary } from '../types';
 import { CLAIM_WINDOW_SECONDS, phaseOf, shortDigest, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
 import { climateDebate, confirmedDebate, editingDebate, objectedDebate } from './climateDebate';
@@ -35,6 +35,18 @@ export interface DebateSource {
    * every stake on it paid, whether or not the author has claimed it yet.
    */
   feesEarned(debateId: number, argumentId: number): Promise<number>;
+  /**
+   * Every argument's market as it stands - the one read cheap enough to repeat every few seconds
+   * while someone decides on a stake: no texts to resolve, no bounty or clock, just the columns a
+   * stake can move.
+   */
+  markets(debateId: number): Promise<ArgumentMarket[]>;
+}
+
+/** The market columns of a node, as a market refetch would report them. */
+export function marketOf(node: ArgumentNode): ArgumentMarket {
+  const { id, approval, proReserve, conReserve, weight, rating } = node;
+  return { id, approval, proReserve, conReserve, weight, rating };
 }
 
 const sampleDebates = [climateDebate, confirmedDebate, objectedDebate, editingDebate];
@@ -55,6 +67,7 @@ export const mockSource: DebateSource = {
   argumentPosition: async () => ({ proShares: 0, conShares: 0, claimableFees: 0 }),
   positions: async () => [],
   feesEarned: async () => 0,
+  markets: async (debateId) => (await mockSource.load(debateId)).nodes.map(marketOf),
 };
 
 // Phase.Status on-chain: 0 Uninitialized … 4 Finished. Only these two boundaries are read raw - one to
@@ -375,6 +388,31 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
       })) as { fees: number };
       return argument.fees;
     },
+
+    async markets(debateId: number): Promise<ArgumentMarket[]> {
+      const id = BigInt(debateId);
+      const [[currentPhase], [, argumentsCount]] = await Promise.all([
+        client.readContract({ address, abi, functionName: 'phases', args: [id] }) as Promise<[number, bigint, bigint, bigint]>,
+        client.readContract({ address, abi, functionName: 'debates', args: [id] }) as Promise<[number, number, number, number]>,
+      ]);
+      // Argument ids are contiguous 0..argumentsCount-1; the thesis (0) has no market of its own,
+      // its columns read as the empty market load() gives it.
+      const ids = Array.from({ length: Number(argumentsCount) }, (_, i) => i);
+      const rows = (await Promise.all(
+        ids.map((argumentId) => client.readContract({ address, abi, functionName: 'getArgument', args: [id, argumentId] })),
+      )) as OnChainArgument[];
+      return rows.map((argument, i) => {
+        const marketSize = argument.pro + argument.con;
+        return {
+          id: ids[i],
+          approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
+          proReserve: argument.pro,
+          conReserve: argument.con,
+          weight: argument.votes,
+          rating: currentPhase === PHASE_FINISHED && ids[i] !== 0 ? Number(argument.rating) / MAX_APPROVAL : null,
+        };
+      });
+    },
   };
 }
 
@@ -410,6 +448,24 @@ export interface IndexedArgumentRow {
   rating: string | null;
 }
 
+/** The market columns of an indexer argument row. */
+export type IndexedMarketRow = Pick<IndexedArgumentRow, 'argumentId' | 'pro' | 'con' | 'votes' | 'rating'>;
+
+/** Maps an indexer row's market columns the way `nodeFromIndex` maps them - one reading, two callers. */
+export function marketFromIndex(row: IndexedMarketRow): ArgumentMarket {
+  const con = Number(row.con);
+  const marketSize = Number(row.pro) + con;
+  return {
+    id: Number(row.argumentId),
+    approval: marketSize === 0 ? 0.5 : con / marketSize,
+    proReserve: Number(row.pro),
+    conReserve: con,
+    weight: Number(row.votes),
+    // The index writes the rating when the tally emits it; null until then.
+    rating: row.rating === null || row.rating === undefined ? null : Number(row.rating) / MAX_APPROVAL,
+  };
+}
+
 /**
  * Maps an indexer row to a debate node; the text still needs resolving from the contentURI.
  * Final-ness is derived from `chainTime` (the indexer stores no argument state) — an argument
@@ -419,21 +475,13 @@ export function nodeFromIndex(
   row: IndexedArgumentRow,
   chainTime: number,
 ): Omit<ArgumentNode, 'text'> & { contentURI: Hex } {
-  const con = Number(row.con);
-  const marketSize = Number(row.pro) + con;
   const finalizationTime = Number(row.finalizationTime);
   return {
-    id: Number(row.argumentId),
+    ...marketFromIndex(row),
     // Argument entity IDs are `{debateId}_{argumentId}`; the thesis has no parent.
     parentId: row.parent_id === null ? null : Number(row.parent_id.split('_')[1]),
     side: row.isSupporting === null ? null : row.isSupporting ? 'pro' : 'con',
     contentURI: row.contentURI as Hex,
-    approval: marketSize === 0 ? 0.5 : con / marketSize,
-    proReserve: Number(row.pro),
-    conReserve: con,
-    weight: Number(row.votes),
-    // The index writes the rating when the tally emits it; null until then.
-    rating: row.rating === null || row.rating === undefined ? null : Number(row.rating) / MAX_APPROVAL,
     state: chainTime >= finalizationTime ? 'final' : 'created',
     finalizationTime,
     // The index stores addresses lowercased; checksum to match the chain reads.
@@ -530,6 +578,10 @@ const INDEXER_USER_STATE_QUERY = `query UserState($participantId: String!) {
 const INDEXER_ARGUMENT_POSITION_QUERY = `query ArgumentPosition($positionId: String!, $argumentId: String!) {
   Position(where: { id: { _eq: $positionId } }) { proShares conShares }
   Argument(where: { id: { _eq: $argumentId } }) { creator fees }
+}`;
+
+const INDEXER_MARKETS_QUERY = `query DebateMarkets($debateId: String!) {
+  Argument(where: { debate_id: { _eq: $debateId } }) { argumentId pro con votes rating }
 }`;
 
 const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
@@ -735,6 +787,13 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       });
       return data.Stake.reduce((sum, stake) => sum + Number(stake.fee), 0);
     },
+
+    async markets(debateId: number): Promise<ArgumentMarket[]> {
+      const data = await graphql<{ Argument: IndexedMarketRow[] }>(INDEXER_MARKETS_QUERY, {
+        debateId: String(debateId),
+      });
+      return data.Argument.map(marketFromIndex);
+    },
   };
 }
 
@@ -757,6 +816,7 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
     argumentPosition: guarded((source) => source.argumentPosition.bind(source)),
     positions: guarded((source) => source.positions.bind(source)),
     feesEarned: guarded((source) => source.feesEarned.bind(source)),
+    markets: guarded((source) => source.markets.bind(source)),
   };
 }
 

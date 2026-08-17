@@ -74,6 +74,16 @@ contouring are exactly right — treat them as the baseline to protect.)
   shown. Rejected: two direction buttons that each open the modal pre-committed (no comparing the
   directions inside), and keeping the panel inline with the preview under it (the debate view
   grows for everyone, staker or not). (Principles 6, 10; north star: detail on demand.)
+- **2026-08-18 — the stake modal's figures stay live: the markets are refetched every 5 s while
+  it is open.** A stake decided on a five-minute-old price is a stake against a market that may
+  no longer exist. The app-wide poll stays at 30 s (it resolves every text and reads the bounty
+  and clock); the modal adds a light read of only the market columns (`DebateSource.markets`: one
+  indexer query, or `getArgument` per argument on the chain fallback), merged into the tree by id
+  (`withMarkets`) - so the before → after rows and the balance move under the reader's hands when
+  someone else stakes, and stop the moment the modal closes. A full refresh that starts meanwhile
+  wins over a market read still in flight. Rejected: 2 s (2.5× the reads for a difference nobody
+  acts on) and no extra polling (the modal could sit on a stale price for half a minute).
+  (Principle 6; north star: the figures are the interface, so they must be true.)
 - **2026-08-18 — the market detail lists its facts one under the other, the author's fees among
   them.** The one-line readout (`rated +40% · reserves 6 good / 14 bad · pool 33 ⬡ · fee 5%`) had
   become a sentence of figures; it is now a label/figure list - market approval, staked,

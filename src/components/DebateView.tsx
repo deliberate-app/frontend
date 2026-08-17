@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
 import { useNow } from '../lib/time';
@@ -142,15 +142,21 @@ function AncestryRail({
 
 const impactClassOf = (impact: number) => (impact > 0 ? 'impact-pos' : impact < 0 ? 'impact-neg' : '');
 
+/** How often the markets are refetched while the stake modal is open: one light query per tick. */
+const MARKET_POLL_MS = 5_000;
+
 export function DebateView({
   debate,
   tx,
   feesEarnedOf,
+  onRefreshMarkets,
 }: {
   debate: Debate;
   tx: DebateTx | null;
   /** The market fees an argument has earned its author so far; absent for sample data. */
   feesEarnedOf?: (debateId: number, argumentId: number) => Promise<number>;
+  /** Refetches only the markets into `debate`; polled while the stake modal is open. Absent for sample data. */
+  onRefreshMarkets?: () => Promise<void>;
 }) {
   const thesis = thesisOf(debate);
   const [focusedId, setFocusedId] = useState(thesis.id);
@@ -158,6 +164,14 @@ export function DebateView({
   const [marketOpen, setMarketOpen] = useState(false);
   // The stake modal, opened from the focus meta during the rating phase.
   const [stakeOpen, setStakeOpen] = useState(false);
+  // While it is open, the markets behind its preview are refetched every few seconds, so a stake
+  // is decided against the market as it is - not as it was when the modal opened.
+  useEffect(() => {
+    if (!stakeOpen || !onRefreshMarkets) return;
+    void onRefreshMarkets();
+    const timer = setInterval(() => void onRefreshMarkets(), MARKET_POLL_MS);
+    return () => clearInterval(timer);
+  }, [stakeOpen, onRefreshMarkets]);
   // Whether the ancestry rail reads its parent claims in full. Held here, not in the rail, so the
   // choice survives navigating the tree (the rail unmounts whenever the thesis is focused).
   const [pathExpanded, setPathExpanded] = useState(false);
