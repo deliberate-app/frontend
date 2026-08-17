@@ -8,6 +8,7 @@ import { anvilAccount, devChainClient } from '../../scripts/devstack/debate';
 import abi from '../abi/Deliberate.abi.json';
 import { classicSchedule } from '../lib/debateTiming';
 import { contentURIOf } from '../lib/ipfs';
+import type { Debate } from '../types';
 import { connectDebateActions, ensureWalletChain } from './actions';
 import { contractSource } from './source';
 
@@ -15,6 +16,15 @@ const RPC_URL = 'http://127.0.0.1:8545';
 const CONTRACTS_DIR = new URL('../../../contracts', import.meta.url).pathname;
 
 const anvilAvailable = await rpcUp(RPC_URL);
+
+/**
+ * The first second of a debate's rating window. The tally weighs prices and stakes by the time they
+ * stood, so a stake made here counts (nearly) in full - which pins the settlement figures below.
+ */
+function ratingOpens(debate: Debate): number {
+  if (!debate.timing) throw new Error('the chain source always carries the timing');
+  return debate.timing.editingEndTime + 1;
+}
 
 /**
  * A minimal EIP-1193 provider forwarding every request to anvil, which signs
@@ -60,6 +70,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       await client.increaseTime({ seconds });
       await client.mine({ blocks: 1 });
     };
+    const warpTo = async (timestamp: number) => warp(timestamp - Number((await client.getBlock()).timestamp));
 
     // The action layer, as the UI uses it: no IPFS API configured - digest-only publishing.
     const config = { address, rpcUrl: RPC_URL };
@@ -85,12 +96,12 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     expect((await reads.userState(0, author.account)).tokens).toBe(90);
 
     // Time passes: the argument finalizes automatically once its window elapses, and the debate enters
-    // Rating by the clock alone - no poke.
-    await warp(timeUnit + 1);
-    await warp(7 * timeUnit);
+    // Rating by the clock alone - no poke. The rater joins beforehand and stakes in the window's opening
+    // seconds, so the corrected price stands for (nearly) the whole time-weighted window.
+    await rater.join(0);
+    await warpTo(ratingOpens(await reads.load(0)));
 
     // The rater disagrees: 20 tokens on con (fee 1, net 19) buy 8 + 19 - ceil(16/21) = 26 shares.
-    await rater.join(0);
     await rater.stake(0, 1, 'con', 20);
     const raterPosition = await reads.argumentPosition(0, 1, rater.account);
     expect(raterPosition.conShares).toBe(26);
@@ -101,7 +112,10 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await warp(10 * timeUnit);
     await keeper.tallyTree(0);
 
-    // The correcting rater profits: 26 shares x 21/22 = 24 tokens back on 20 staked.
+    // The correcting rater profits: a con share settles at (1 - rating) / 2 of a token, and a
+    // childless argument's rating is its market's time-weighted centered approval - the 1/22 close
+    // (-0.91) held for all but the window's first second or two, so 26 shares x 0.95 = 24 tokens
+    // back on 20 staked.
     await rater.redeemShares(0, 1);
     expect((await reads.userState(0, rater.account)).tokens).toBe(104);
 
@@ -183,6 +197,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       await client.increaseTime({ seconds });
       await client.mine({ blocks: 1 });
     };
+    const warpTo = async (timestamp: number) => warp(timestamp - Number((await client.getBlock()).timestamp));
 
     const config = { address, rpcUrl: RPC_URL };
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
@@ -200,12 +215,11 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.addArgument(0, 0, 'pro', 50, 10, 'second argument'); // id 2
 
     // The arguments finalize automatically once their editing windows elapse, and the debate enters
-    // Rating by the clock.
-    await warp(timeUnit + 1);
-    await warp(7 * timeUnit);
+    // Rating by the clock. The rater joins beforehand and stakes as the window opens.
+    await rater.join(0);
+    await warpTo(ratingOpens(await reads.load(0)));
 
     // The rater takes a con position in both arguments (22 con shares, 20 tokens each).
-    await rater.join(0);
     await rater.stake(0, 1, 'con', 20);
     await rater.stake(0, 2, 'con', 20);
     expect((await reads.userState(0, rater.account)).tokens).toBe(60);
@@ -223,7 +237,9 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       held.map((position) => position.argumentId),
     );
 
-    // 20 tokens back per argument: 60 + 20 + 20 = 100.
+    // A con share settles at (1 - rating) / 2 of a token; each market closed at 2/26 (-0.85) for
+    // all but the window's opening seconds, so 22 shares x 0.92 = 20 tokens back per argument:
+    // 60 + 20 + 20 = 100.
     expect((await reads.userState(0, rater.account)).tokens).toBe(100);
     expect(await reads.positions(0, anvilAccount(8).address)).toEqual([]);
   }, 30_000);
