@@ -13,7 +13,7 @@ const noop = () => {};
 
 /** Undebated: nothing has corrected the market, so Market and Rating agree and it lifts its parent. */
 export const BackedPro = () => (
-  <div style={{ maxWidth: 360 }}>
+  <div style={{ maxWidth: 420 }}>
     <ArgumentCard debate={debate} node={nodes[1]} tally={{ rating: 0.64, impact: 0.61, subtreeWeight: 120 }} now={NOW} onFocus={noop} />
   </div>
 );
@@ -23,14 +23,14 @@ export const BackedPro = () => (
     only here has a sub-debate added to the argument's own - so only here does the Rating figure
     carry a stake in parentheses of its own. */
 export const OverruledByItsSubDebate = () => (
-  <div style={{ maxWidth: 360 }}>
+  <div style={{ maxWidth: 420 }}>
     <ArgumentCard debate={debate} node={nodes[1]} tally={{ rating: -0.3, impact: 0, subtreeWeight: 190 }} now={NOW} onFocus={noop} />
   </div>
 );
 
 /** A rejected con argument: rust contour, both figures below neutral, pulling its parent down. */
 export const RejectedCon = () => (
-  <div style={{ maxWidth: 360 }}>
+  <div style={{ maxWidth: 420 }}>
     <ArgumentCard debate={debate} node={nodes[2]} tally={{ rating: -0.38, impact: -0.12, subtreeWeight: 65 }} now={NOW} onFocus={noop} />
   </div>
 );
@@ -38,7 +38,7 @@ export const RejectedCon = () => (
 /** A draft still inside its locking window: open padlock with the countdown, and no figures but
     its own market - a draft is not counted until it locks in. */
 export const DraftCountingDown = () => (
-  <div style={{ maxWidth: 360 }}>
+  <div style={{ maxWidth: 420 }}>
     <ArgumentCard debate={debate} node={nodes[3]} now={NOW} onFocus={noop} />
   </div>
 );

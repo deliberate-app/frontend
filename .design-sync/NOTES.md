@@ -6,8 +6,9 @@ the project README is `conventions.md`; authored previews are in `previews/`.
 Target project: `e1ba9784-fc54-4561-a8c6-a6535960f2c0` ("deliberate design system").
 First full sync: 2026-07-29 — 22 components, **all 22 with authored previews** (65 cells), every cell
 graded `good`. No floor cards remain.
-Re-sync 2026-08-18 — still 22 components: `StakePanel` retired, `StakeModal` added (4 cells),
-`ArgumentCard` and `MarketDetail` re-graded, `DebateView` re-uploaded for its contract. 66 cells.
+Re-sync 2026-08-18 — **25 components**: `StakePanel` retired, `StakeModal` added, and the shared
+figure subcomponents (`Market`, `Rating`, `ParentImpact`) now ship as components of their own, since
+`srcDir: src/components` discovers every PascalCase export there.
 
 ## Repo shape (why the config looks like this)
 
@@ -85,6 +86,12 @@ Re-sync 2026-08-18 — still 22 components: `StakePanel` retired, `StakeModal` a
 - Adding a component to `src/components/` ships it automatically, but **without a preview** it
   appears as a floor card and **without a `dtsPropsFor` entry** it ships an untyped prop bag. Both
   are silent. Add the pair when adding a component.
+- **A new file under `src/components/` ships every PascalCase export it has.** `Figures.tsx` added
+  five and four of them were wanted (`Market`, `Rating`, `ParentImpact` are the app's shared figure
+  subcomponents, and a design agent should compose with them rather than invent a percentage); the
+  internal primitive `SignedFigure` is excluded via `componentSrcMap`. Anything shipped this way
+  needs a `dtsPropsFor` entry or it goes out as `[key: string]: unknown` - an untyped prop bag the
+  design agent cannot code against.
 - **A component rename is two edits, not one.** Dropping `StakePanel` for `StakeModal` needed the
   `dtsPropsFor` entry swapped, the preview file renamed, an `overrides` entry added (it is a modal),
   and the old preview deleted. The diff then lists the old paths in `upload.deletePaths` - upload
