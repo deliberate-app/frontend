@@ -41,9 +41,11 @@ layout:
 - `focus-kicker-row` / `focus-kicker` / `focus-text` — the focused claim's header: stance kicker on
   the left, author chip on the right, the claim itself in display type.
 - `focus-meta` — the meta line beneath a claim: Market, Rating, Parent impact, lock.
-- `figure` / `figure-label` — one labelled figure on the signed scale; `card-figures` groups them
-  on a card. Never hand-render these: the `Market`, `Rating`, `ParentImpact` and `Staked`
-  subcomponents are the only way they are drawn, so they read alike everywhere.
+- `figure` / `figure-label` / `figure-stake` / `unit` — one labelled figure on the signed scale;
+  `card-figures` groups them on a card. Never hand-render these: the `Market`, `Rating` and
+  `ParentImpact` subcomponents are the only way they are drawn, so they read alike everywhere.
+  A stake is not its own component — pass `stake={n}` to `Market` or `Rating` and it renders after
+  a comma, tight against its ⬡.
 - `round-chip` — a small round hairline button carrying one stroke glyph, placed right after the
   figure it acts on (the market approval's info, the bounty's top-up plus). It is how a figure
   offers more without a text link taking a line of its own.

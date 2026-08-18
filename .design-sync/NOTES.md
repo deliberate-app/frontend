@@ -80,6 +80,12 @@ figure subcomponents (`Market`, `Rating`, `ParentImpact`) now ship as components
 
 - `[FONT_REMOTE]` — Fraunces / Public Sans / IBM Plex Mono load from a remote font host, exactly as
   `index.html` does. Nothing to fix; a warn that is *not* in this list is new.
+- `[RENDER_SKIPPED]` on a **no-change** re-sync — the driver scopes the render check away when
+  nothing uploads. Expected, per the skill; it is only a finding when something did change.
+- **`[SYNC_STALE]` is not always a warn.** On a no-change run the driver *names* it in prose —
+  "render check: skipped … ([SYNC_STALE] and the file-shape checks still run)" — so a grep for
+  `[A-Z_]+` tags reports it as fired when it did not. Read the surrounding lines: the real signal is
+  `_ds_sync.json render hashes match disk (N recomputed)`.
 
 ## Re-sync risks
 
@@ -96,6 +102,13 @@ figure subcomponents (`Market`, `Rating`, `ParentImpact`) now ship as components
   `dtsPropsFor` entry swapped, the preview file renamed, an `overrides` entry added (it is a modal),
   and the old preview deleted. The diff then lists the old paths in `upload.deletePaths` - upload
   them verbatim or the retired card lingers in the picker forever.
+- **The conventions header rots silently when a component is removed.** Dropping the `Staked`
+  subcomponent (its stake became a `stake` prop on `Market`/`Rating`) left `conventions.md` naming
+  it — and that file is inlined into the design agent's prompt, so the agent would have written
+  `<Staked>` and got an invalid element in every design. The re-sync validation pass is what caught
+  it: grep every backticked `Component` in conventions.md against `ds-bundle/components/general/`.
+  Watch the false positives - backticked prop names (`node`, `now`, `timing`, `stake`) look like
+  class names to a naive regex.
 - `_ds_sync.json` in the uploaded project is the verification anchor — carry-forward comes from
   there, not from git. `.design-sync/.cache/` (grades) is gitignored on purpose.
 - Envio/Vercel are unrelated to this sync; nothing here touches a deploy.
