@@ -76,10 +76,11 @@ contouring are exactly right — treat them as the baseline to protect.)
   countered with Market/Rating because *Rating* has to stay the word the thesis, the on-chain
   field and the settlement all use, and *Market* names the source rather than the relationship —
   and it points at the info chip beside it, which opens the Rating market. Each figure carries the
-  stake behind it **in parentheses, not as a separate bulleted item** — `Market +40% (33 ⬡)`, the
-  argument's own market; `Rating −30% (93 ⬡)`, its whole sub-debate's, which is what the tally
-  weighs the blend by. The parenthesis binds the stake to the figure it backs instead of leaving it
-  floating between two of them, and the rating's is drawn only once a sub-debate has actually added
+  stake behind it **after a comma, not as a separate bulleted item** — `Market +40%, 33⬡`, the
+  argument's own market; `Rating −30%, 93⬡`, its whole sub-debate's, which is what the tally weighs
+  the blend by. The comma binds the stake to the figure it backs instead of leaving it floating
+  between two of them (parentheses were tried first and read as an aside rather than as part of the
+  figure), and the ⬡ sits tight against its amount — it is a unit, not a following word; and the rating's is drawn only once a sub-debate has actually added
   to the market's, since until then it would just repeat the number before it. The approval gauge was
   retired with its CSS: a labelled signed percentage says what the bar said, and the bar could not
   show two figures. (Principles 8, 10; the north star's "every addition must pay for itself" —

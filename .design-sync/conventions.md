@@ -74,8 +74,9 @@ Vote tokens render with the `⬡` glyph. Every rating and impact is a **signed p
 what an argument's own market says, **Rating** is the debate's verdict on it (that market corrected
 by its sub-arguments — what its shares settle against, and the only figure the market-less thesis
 has), and **Parent impact** is what its rating moves its parent by. Show Market and Rating as a
-pair, market first. Each carries the stake behind it in parentheses — the market its own, the rating
-its whole sub-debate's — via the figures' `stake` prop, never as a separate item. The same signed axis
+pair, market first. Each carries the stake behind it after a comma — the market its own, the rating its
+whole sub-debate's — via the figures' `stake` prop, never as a separate item. `unit` tightens the ⬡
+against its amount. The same signed axis
 carries controls: `StakeModal`'s slider runs negative (overrated, rust) through zero to positive
 (underrated, green), so one control sets both direction and size.
 

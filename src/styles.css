@@ -767,6 +767,11 @@ button {
   color: var(--bark);
 }
 
+/* The ⬡ sits closer to its amount than a word space: it is a unit, not a following word. */
+.unit {
+  margin-left: 0.12em;
+}
+
 /* ── Actions ─────────────────────────────────────────────────────────── */
 .btn {
   padding: 0.45rem 0.9rem;

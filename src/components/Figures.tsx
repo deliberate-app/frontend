@@ -14,14 +14,14 @@ import { formatApproval, formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT } f
  * Where they agree the argument stands as its market priced it; where they part, the sub-debate (or,
  * after the tally, the time-weighting) is the difference.
  *
- * Each carries the stake behind it in parentheses - the market its own, the rating its whole
+ * Each carries the stake behind it after a comma - the market its own, the rating its whole
  * sub-debate's - because a figure means little without knowing what backs it.
  */
 
 const signClassOf = (value: number) => (value > 0 ? 'impact-pos' : value < 0 ? 'impact-neg' : '');
 
 /** One labelled figure on the signed scale: name, the value in mono colored by its sign, and - when
- *  the figure is backed by a stake - that stake in parentheses. */
+ *  the figure is backed by a stake - that stake after a comma. */
 export function SignedFigure({
   label,
   value,
@@ -45,8 +45,9 @@ export function SignedFigure({
       <strong className={`mono ${signClassOf(value)}`}>{formatImpact(value)}</strong>
       {stake !== undefined && (
         <span className="figure-stake" title={stakeHint}>
-          {' '}
-          (<span className="mono">{stake} ⬡</span>)
+          ,{' '}
+          <span className="mono">{stake}</span>
+          <span className="unit">⬡</span>
         </span>
       )}
     </span>
