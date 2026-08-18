@@ -5,6 +5,7 @@ import type { AccountPosition, ArgumentMarket, Debate, DebateSummary } from '../
 import {
   contractSource,
   decodeInlineContent,
+  resolveContent,
   indexerSource,
   marketFromIndex,
   nodeFromIndex,
@@ -23,6 +24,60 @@ describe('decodeInlineContent', () => {
   test('surfaces an unresolvable digest shortened, keeping the full value to copy', () => {
     const digest = '0x2a3a8cf5cb8e05cd7b6f9ac881adafe1fb14030dba846233f211d4ce051d0683';
     expect(decodeInlineContent(digest as Hex)).toEqual({ text: '0x2a3a…0683', digest });
+  });
+});
+
+describe('resolveContent', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  // "Public transport should be free" - the thesis that read as a bare digest on the live app.
+  const TEXT = 'Public transport should be free';
+  const DIGEST = '0x48265361d891578f4eeec7159a49600aed6305df194feca6cb7df55b7b7796ad' as Hex;
+
+  /** Serves TEXT from the named gateways only; every other host answers 504, as a miss does. */
+  const stubGateways = (serving: Record<string, number>) => {
+    globalThis.fetch = (async (input: string | URL) => {
+      const url = String(input);
+      const host = Object.keys(serving).find((candidate) => url.startsWith(candidate));
+      if (host === undefined) return new Response('not found', { status: 504 });
+      await Bun.sleep(serving[host] as number);
+      return new Response(TEXT);
+    }) as unknown as typeof fetch;
+  };
+
+  test('takes the content from whichever gateway has it, not the first one listed', async () => {
+    // The live failure: the configured gateway could not serve freshly pinned content in time.
+    stubGateways({ 'http://slow-and-empty': 0 } as Record<string, number>);
+    expect(await resolveContent(DIGEST, 'http://has-nothing,http://slow-and-empty')).toEqual({ text: TEXT });
+  });
+
+  test('a gateway that misses does not settle the race for a gateway that has it', async () => {
+    // The miss answers instantly and the holder takes 30ms: first-to-answer would lose the text.
+    stubGateways({ 'http://holder': 30 } as Record<string, number>);
+    expect(await resolveContent(DIGEST, 'http://misses-fast,http://holder')).toEqual({ text: TEXT });
+  });
+
+  test('falls back to the digest when no gateway can serve it', async () => {
+    stubGateways({} as Record<string, number>);
+    expect(await resolveContent(DIGEST, 'http://a,http://b')).toEqual({
+      text: '0x4826\u200a\u2026\u200a96ad'.replace(/\u200a/g, ''),
+      digest: DIGEST,
+    });
+  });
+
+  test('ignores blank entries and surrounding space in the list', async () => {
+    stubGateways({ 'http://holder': 0 } as Record<string, number>);
+    expect(await resolveContent(DIGEST, ' , http://holder , ')).toEqual({ text: TEXT });
+  });
+
+  test('with no gateway configured, decodes inline without any fetch', async () => {
+    globalThis.fetch = (async () => {
+      throw new Error('resolveContent must not reach the network without a gateway');
+    }) as unknown as typeof fetch;
+    expect(await resolveContent(DIGEST, undefined)).toEqual({ text: '0x4826\u202696ad', digest: DIGEST });
   });
 });
 

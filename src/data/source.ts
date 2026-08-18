@@ -111,10 +111,37 @@ export function decodeInlineContent(contentURI: Hex): ResolvedContent {
     : { text: shortDigest(contentURI), digest: contentURI };
 }
 
-async function resolveContent(contentURI: Hex, gateway: string | undefined): Promise<ResolvedContent> {
-  if (gateway) {
-    const ipfsText = await fetchTextByDigest(gateway, hexToBytes(contentURI));
-    if (ipfsText !== null) return { text: ipfsText };
+/**
+ * Resolves content from every configured gateway at once, taking the first that answers.
+ *
+ * One gateway is one point of failure, and the failure is routine rather than exotic: freshly
+ * pinned content is reachable through whoever holds it long before a given public gateway has
+ * found a provider for it. Both texts of the first debate authored on the hosted app read as
+ * bare digests for minutes because `ipfs.io` could not serve them inside the timeout, while
+ * other gateways returned them immediately - the content was never missing.
+ *
+ * Racing is safe here for the same reason the gateway is untrusted at all: every response must
+ * hash back to the on-chain digest, so the winner is the fastest gateway that told the truth,
+ * and a liar loses by failing that check rather than by being asked second. Set
+ * `VITE_IPFS_GATEWAY` to a comma-separated list to widen the field.
+ */
+export async function resolveContent(contentURI: Hex, gateway: string | undefined): Promise<ResolvedContent> {
+  const gateways = (gateway ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+  if (gateways.length > 0) {
+    const digest = hexToBytes(contentURI);
+    const attempts = gateways.map(async (url) => {
+      const text = await fetchTextByDigest(url, digest);
+      // Rejecting rather than returning null is what lets Promise.any take the first success
+      // instead of the first answer - a gateway that 404s must not settle the race.
+      if (text === null) throw new Error(`no content from ${url}`);
+      return text;
+    });
+    const text = await Promise.any(attempts).catch(() => null);
+    if (text !== null) return { text };
   }
   return decodeInlineContent(contentURI);
 }

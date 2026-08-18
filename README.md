@@ -38,7 +38,8 @@ Set both variables (in `.env.local` or the environment):
 ```sh
 VITE_DELIBERATE_ADDRESS=0x…   # Deliberate contract address
 VITE_RPC_URL=https://…       # JSON-RPC endpoint
-VITE_IPFS_GATEWAY=https://ipfs.io   # optional, enables content resolution (gateway is untrusted - reads are digest-verified)
+VITE_IPFS_GATEWAY=https://ipfs.io   # optional, enables content resolution; comma-separated for several
+                             # (gateways are untrusted - reads are digest-verified)
 VITE_IPFS_API=https://…      # optional, kubo-compatible RPC API the authoring flow publishes content to
 VITE_INDEXER_URL=https://…   # optional, GraphQL endpoint of the debate indexer (../indexer)
 ```
@@ -75,7 +76,7 @@ testnet, point them at a hosted pinning service instead.
 The contract stores each argument's content as a `bytes32` — the **sha-256 multihash digest of an IPFS raw-leaves block**. The content pipeline lives in [src/lib/ipfs.ts](src/lib/ipfs.ts):
 
 - **Publish** (`publishText`): adds and pins the text on a kubo-compatible RPC API (`/api/v0/add?raw-leaves=true&cid-version=1&pin=true`) and returns the digest for on-chain use. The returned CID is asserted to wrap exactly the locally computed digest, so the on-chain reference and the pinned content cannot drift, and content above the single-block limit (256 KiB) is rejected up front — it could never be referenced by one digest. Publish first, then send the transaction: a failed transaction leaves only a harmless pinned text block. Today the publisher is the dev seeding tool; the upcoming authoring flow publishes to `VITE_IPFS_API` before sending `addArgument`.
-- **Resolve** (`fetchTextByDigest`): rebuilds the CIDv1 (`b` + base32 of `0x01 0x55 0x12 0x20 + digest`, [src/lib/cid.ts](src/lib/cid.ts)) and fetches the text from `VITE_IPFS_GATEWAY`. **The gateway is untrusted**: responses are size-capped while streaming and must hash back to the on-chain digest, otherwise they are discarded. Without a gateway (or when verification fails), short ASCII payloads are decoded inline and anything else is shown as the raw digest.
+- **Resolve** (`fetchTextByDigest`): rebuilds the CIDv1 (`b` + base32 of `0x01 0x55 0x12 0x20 + digest`, [src/lib/cid.ts](src/lib/cid.ts)) and fetches the text from `VITE_IPFS_GATEWAY`, which takes a **comma-separated list** and is raced - the first gateway whose bytes hash to the digest wins, because one gateway not yet having freshly pinned content is routine rather than exceptional. **Gateways are untrusted**: responses are size-capped while streaming and must hash back to the on-chain digest, otherwise they are discarded. Without a gateway (or when verification fails), short ASCII payloads are decoded inline and anything else is shown as the raw digest.
 
 A local [kubo](https://github.com/ipfs/kubo) node runs via Docker for a reproducible setup (`docker-compose.yml`, image version pinned). Its RPC API allowlists the dev app origins — never `*`, the Origin check is the unauthenticated API's CSRF defense ([ipfs/container-init.d](ipfs/container-init.d/010-rpc-cors.sh)) — so the authoring flow will work in development without infrastructure changes:
 
@@ -106,7 +107,8 @@ Project environment variables (Settings → Environment Variables):
 VITE_DELIBERATE_ADDRESS=0x…   # the live deployment (contracts/broadcast/…/runWithMockRegistry-latest.json)
 VITE_RPC_URL=https://sepolia.base.org
 VITE_INDEXER_URL=https://…   # the hosted indexer endpoint; the dev tier mints a new URL per deploy
-VITE_IPFS_GATEWAY=https://ipfs.io
+VITE_IPFS_GATEWAY=https://gateway.pinata.cloud,https://ipfs.io,https://dweb.link  # raced; this deployment's own
+                             # pinning service first, public gateways behind it
 VITE_IPFS_API=/              # authoring goes through the same-origin pin proxy
 PINATA_JWT=…                 # server-side only (Sensitive): a v3 key scoped to Files: Write
 ```
