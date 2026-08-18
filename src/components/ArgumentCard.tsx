@@ -1,7 +1,7 @@
 import type { NodeTally } from '../lib/impact';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf, liveChainTime } from '../types';
-import { Market, ParentImpact, Rating, Staked } from './Figures';
+import { Market, ParentImpact, Rating } from './Figures';
 import { LockChip } from './LockChip';
 
 export function ArgumentCard({
@@ -39,11 +39,16 @@ export function ArgumentCard({
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
         <span className="card-figures">
-          <Market approval={node.approval} />
-          {tally && <Rating rating={tally.rating} />}
-          {/* Bare on a card: four labelled figures plus the lock and replies wrap onto a second
-              line, and the ⬡ unit already names the figure (its tooltip spells it out). */}
-          <Staked weight={node.weight} label={false} />
+          {/* Each figure carries the stake behind it: the market its own, the rating its whole
+              sub-debate's - and the latter only once that sub-debate has added something, since
+              until then it repeats the market's. */}
+          <Market approval={node.approval} stake={node.weight} />
+          {tally && (
+            <Rating
+              rating={tally.rating}
+              stake={tally.subtreeWeight > node.weight ? tally.subtreeWeight : undefined}
+            />
+          )}
           {tally && <ParentImpact impact={tally.impact} />}
         </span>
         <LockChip locked={locked} finalizesIn={finalizesIn} />

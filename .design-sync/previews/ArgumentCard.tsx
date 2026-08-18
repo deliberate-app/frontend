@@ -11,21 +11,32 @@ const nodes = [
 const debate = { id: 0, phase: 'rating', feePercentage: 1, nodes, timing };
 const noop = () => {};
 
-/** A well-backed pro argument: green contour, diverging gauge right, positive impact on its parent. */
+/** Undebated: nothing has corrected the market, so Market and Rating agree and it lifts its parent. */
 export const BackedPro = () => (
   <div style={{ maxWidth: 360 }}>
-    <ArgumentCard debate={debate} node={nodes[1]} impact={0.61} now={NOW} onFocus={noop} />
+    <ArgumentCard debate={debate} node={nodes[1]} tally={{ rating: 0.64, impact: 0.61, subtreeWeight: 120 }} now={NOW} onFocus={noop} />
   </div>
 );
 
-/** A rejected con argument: rust contour, gauge diverging left, negative impact on its parent. */
+/** The pair parting: a market that likes the argument, a sub-debate that overrules it to refuted -
+    so it moves its parent by nothing at all. The `total` stake appears here and only here, because
+    only here has a sub-debate added to the argument's own - so only here does the Rating figure
+    carry a stake in parentheses of its own. */
+export const OverruledByItsSubDebate = () => (
+  <div style={{ maxWidth: 360 }}>
+    <ArgumentCard debate={debate} node={nodes[1]} tally={{ rating: -0.3, impact: 0, subtreeWeight: 190 }} now={NOW} onFocus={noop} />
+  </div>
+);
+
+/** A rejected con argument: rust contour, both figures below neutral, pulling its parent down. */
 export const RejectedCon = () => (
   <div style={{ maxWidth: 360 }}>
-    <ArgumentCard debate={debate} node={nodes[2]} impact={-0.12} now={NOW} onFocus={noop} />
+    <ArgumentCard debate={debate} node={nodes[2]} tally={{ rating: -0.38, impact: -0.12, subtreeWeight: 65 }} now={NOW} onFocus={noop} />
   </div>
 );
 
-/** A draft still inside its locking window: open padlock with the countdown, no impact yet. */
+/** A draft still inside its locking window: open padlock with the countdown, and no figures but
+    its own market - a draft is not counted until it locks in. */
 export const DraftCountingDown = () => (
   <div style={{ maxWidth: 360 }}>
     <ArgumentCard debate={debate} node={nodes[3]} now={NOW} onFocus={noop} />

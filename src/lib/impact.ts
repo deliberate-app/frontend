@@ -15,6 +15,11 @@ export interface NodeTally {
    * stance, at its subtree's share of the siblings' stake. Zero for the thesis, which has no parent.
    */
   impact: number;
+  /**
+   * The stake behind the rating: the argument's own market stake plus every sub-argument's, which
+   * is what the tally weighs the blend by. Equal to the argument's own stake while it is undebated.
+   */
+  subtreeWeight: number;
 }
 
 /**
@@ -55,7 +60,7 @@ export function tallyOf(debate: Debate): Map<number, NodeTally> {
     for (const draft of drafts) {
       // A draft weighs nothing and moves nothing, but it has a market, so it has a rating of its
       // own - and it cannot have been replied to, so nothing corrects it.
-      tallies.set(draft.id, { rating: 2 * draft.approval - 1, impact: 0 });
+      tallies.set(draft.id, { rating: 2 * draft.approval - 1, impact: 0, subtreeWeight: draft.weight });
     }
 
     const childrenWeight = children.reduce((sum, { weight }) => sum + weight, 0);
@@ -64,7 +69,7 @@ export function tallyOf(debate: Debate): Map<number, NodeTally> {
       const share = childrenWeight === 0 ? 0 : weight / childrenWeight;
       // `|| 0` normalizes the negative zero a clamped con argument produces: there is no such
       // thing as a negatively-zero impact, and -0 compares unequal to 0 for anything downstream.
-      tallies.set(child.id, { rating, impact: signed * share || 0 });
+      tallies.set(child.id, { rating, impact: signed * share || 0, subtreeWeight: weight });
       descendants += signed * share;
     }
 
@@ -83,7 +88,7 @@ export function tallyOf(debate: Debate): Map<number, NodeTally> {
   const { rating, weight } = subtree(thesis);
   // The thesis has no market of its own, so its rating is the pure descendants aggregate - and an
   // argument-less debate reads as a neutral ±0 by construction. It has no parent to move.
-  tallies.set(thesis.id, { rating: weight === 0 ? 0 : rating, impact: 0 });
+  tallies.set(thesis.id, { rating: weight === 0 ? 0 : rating, impact: 0, subtreeWeight: weight });
   return tallies;
 }
 

@@ -762,7 +762,8 @@ button {
   white-space: nowrap;
 }
 
-.figure-label {
+.figure-label,
+.figure-stake {
   color: var(--bark);
 }
 

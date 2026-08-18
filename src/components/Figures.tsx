@@ -13,52 +13,86 @@ import { formatApproval, formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT } f
  * Market and Rating are shown as a pair, in that order: the market speaks first, the debate answers.
  * Where they agree the argument stands as its market priced it; where they part, the sub-debate (or,
  * after the tally, the time-weighting) is the difference.
+ *
+ * Each carries the stake behind it in parentheses - the market its own, the rating its whole
+ * sub-debate's - because a figure means little without knowing what backs it.
  */
 
 const signClassOf = (value: number) => (value > 0 ? 'impact-pos' : value < 0 ? 'impact-neg' : '');
 
-/** One labelled figure on the signed scale: name, then the value in mono, colored by its sign. */
+/** One labelled figure on the signed scale: name, the value in mono colored by its sign, and - when
+ *  the figure is backed by a stake - that stake in parentheses. */
 export function SignedFigure({
   label,
   value,
   hint,
+  stake,
+  stakeHint,
   /** Renders the value without its label - for the compact rail, where the context is the row. */
   bare = false,
 }: {
   label: string;
   value: number;
   hint: string;
+  /** Vote tokens behind this figure; omitted where the stake would only repeat a neighbour's. */
+  stake?: number;
+  stakeHint?: string;
   bare?: boolean;
 }) {
   return (
     <span className="figure" title={hint}>
       {!bare && <span className="figure-label">{label} </span>}
       <strong className={`mono ${signClassOf(value)}`}>{formatImpact(value)}</strong>
+      {stake !== undefined && (
+        <span className="figure-stake" title={stakeHint}>
+          {' '}
+          (<span className="mono">{stake} ⬡</span>)
+        </span>
+      )}
     </span>
   );
 }
 
 /** An argument's own market price, centered; takes the raw 0..1 approval the sources carry. */
-export const Market = ({ approval, bare }: { approval: number; bare?: boolean }) => (
-  <SignedFigure label="Market" value={2 * approval - 1} hint={MARKET_HINT} bare={bare} />
+export const Market = ({ approval, stake, bare }: { approval: number; stake?: number; bare?: boolean }) => (
+  <SignedFigure
+    label="Market"
+    value={2 * approval - 1}
+    hint={MARKET_HINT}
+    stake={stake}
+    stakeHint={stake === undefined ? undefined : `${stake} ⬡ staked on this argument's own market`}
+    bare={bare}
+  />
 );
 
-/** The debate's verdict on an argument - or, on the thesis, on the whole debate. */
-export const Rating = ({ rating, hint = RATING_HINT, bare }: { rating: number; hint?: string; bare?: boolean }) => (
-  <SignedFigure label="Rating" value={rating} hint={hint} bare={bare} />
+/**
+ * The debate's verdict on an argument - or, on the thesis, on the whole debate. Its stake is the
+ * argument's whole subtree, which is what the tally weighs the blend by.
+ */
+export const Rating = ({
+  rating,
+  stake,
+  hint = RATING_HINT,
+  bare,
+}: {
+  rating: number;
+  stake?: number;
+  hint?: string;
+  bare?: boolean;
+}) => (
+  <SignedFigure
+    label="Rating"
+    value={rating}
+    hint={hint}
+    stake={stake}
+    stakeHint={stake === undefined ? undefined : `${stake} ⬡ staked across this argument and its sub-arguments`}
+    bare={bare}
+  />
 );
 
-/** What an argument moves its parent's rating by. */
+/** What an argument moves its parent's rating by. Carries no stake - its share of one is the figure. */
 export const ParentImpact = ({ impact, bare }: { impact: number; bare?: boolean }) => (
   <SignedFigure label="Parent impact" value={impact} hint={IMPACT_HINT} bare={bare} />
-);
-
-/** Vote tokens staked on an argument's market. Not signed - it is an amount, not a position. */
-export const Staked = ({ weight, label = true }: { weight: number; label?: boolean }) => (
-  <span className="figure" title={`${weight} ⬡ staked on this argument`}>
-    {label && <span className="figure-label">staked </span>}
-    <strong className="mono">{weight} ⬡</strong>
-  </span>
 );
 
 export { formatApproval };

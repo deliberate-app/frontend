@@ -9,7 +9,7 @@ import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ContentText } from './ContentText';
 import { ArgumentCard } from './ArgumentCard';
-import { Market, ParentImpact, Rating, Staked } from './Figures';
+import { Market, ParentImpact, Rating } from './Figures';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
 import { LockChip } from './LockChip';
@@ -114,8 +114,7 @@ function AncestryRail({
             {/* The thesis is rated through its arguments, so only the argued steps carry figures. */}
             {expanded && node.parentId !== null && (
               <span className="rail-figures">
-                <Rating rating={tallies.get(node.id)?.rating ?? 2 * node.approval - 1} bare />{' '}
-                · <Staked weight={node.weight} label={false} />
+                <Rating rating={tallies.get(node.id)?.rating ?? 2 * node.approval - 1} stake={node.weight} bare />
               </span>
             )}
           </button>
@@ -264,9 +263,8 @@ export function DebateView({
         )}
         {isThesis ? (
           <p className="focus-meta">
-            {focusTally && <Rating rating={focusTally.rating} hint={THESIS_RATING_HINT} />}
-            {focusTally && ' · '}
-            total stake <strong className="mono">{totalStake} ⬡</strong>
+            {/* The thesis owns no market, so its rating stands alone - backed by the whole debate. */}
+            {focusTally && <Rating rating={focusTally.rating} stake={totalStake} hint={THESIS_RATING_HINT} />}
             {debate.bounty && (
               <>
                 {' '}
@@ -276,7 +274,7 @@ export function DebateView({
           </p>
         ) : (
           <p className="focus-meta">
-            <Market approval={focus.approval} />{' '}
+            <Market approval={focus.approval} stake={focus.weight} />{' '}
             {/* The market detail sits on the figure it explains, as the bounty top-up sits on the pool. */}
             <button
               type="button"
@@ -293,13 +291,11 @@ export function DebateView({
             {focusTally && (
               <>
                 {' '}
-                · <Rating rating={focusTally.rating} />
-              </>
-            )}{' '}
-            · <Staked weight={focus.weight} />
-            {focusTally && (
-              <>
-                {' '}
+                ·{' '}
+                <Rating
+                  rating={focusTally.rating}
+                  stake={focusTally.subtreeWeight > focus.weight ? focusTally.subtreeWeight : undefined}
+                />{' '}
                 · <ParentImpact impact={focusTally.impact} />
               </>
             )}{' '}

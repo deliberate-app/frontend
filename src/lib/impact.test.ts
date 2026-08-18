@@ -149,3 +149,33 @@ describe('tallyOf ratings', () => {
     expect(tally.get(0)?.impact).toBe(0);
   });
 });
+
+describe('tallyOf subtree stake', () => {
+  test('an undebated argument is backed by its own market stake alone', () => {
+    const tally = tallyOf(debate([node({ id: 1, approval: 0.8, weight: 30 })]));
+    expect(tally.get(1)?.subtreeWeight).toBe(30);
+  });
+
+  test('a debated one accumulates its sub-arguments - the stake its rating is weighed by', () => {
+    const tally = tallyOf(
+      debate([
+        node({ id: 1, approval: 0.8, weight: 30 }),
+        node({ id: 2, parentId: 1, side: 'con', approval: 0.9, weight: 50 }),
+        node({ id: 3, parentId: 2, side: 'pro', approval: 0.6, weight: 20 }),
+      ]),
+    );
+    expect(tally.get(3)?.subtreeWeight).toBe(20);
+    expect(tally.get(2)?.subtreeWeight).toBe(70);
+    expect(tally.get(1)?.subtreeWeight).toBe(100);
+    // The thesis accumulates the whole debate.
+    expect(tally.get(0)?.subtreeWeight).toBe(100);
+  });
+
+  test('a draft carries its own stake but adds nothing to its parent', () => {
+    const tally = tallyOf(
+      debate([node({ id: 1, approval: 0.8, weight: 30 }), node({ id: 2, parentId: 1, approval: 0.8, weight: 10, state: 'created' })]),
+    );
+    expect(tally.get(2)?.subtreeWeight).toBe(10);
+    expect(tally.get(1)?.subtreeWeight).toBe(30);
+  });
+});

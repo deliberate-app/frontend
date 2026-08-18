@@ -40,7 +40,7 @@ layout:
 - `action-hint` (one-sentence explanation), `action-error` (blocking message).
 - `focus-kicker-row` / `focus-kicker` / `focus-text` — the focused claim's header: stance kicker on
   the left, author chip on the right, the claim itself in display type.
-- `focus-meta` — the meta line beneath a claim: Market, Rating, staked, Parent impact, lock.
+- `focus-meta` — the meta line beneath a claim: Market, Rating, Parent impact, lock.
 - `figure` / `figure-label` — one labelled figure on the signed scale; `card-figures` groups them
   on a card. Never hand-render these: the `Market`, `Rating`, `ParentImpact` and `Staked`
   subcomponents are the only way they are drawn, so they read alike everywhere.
@@ -74,7 +74,8 @@ Vote tokens render with the `⬡` glyph. Every rating and impact is a **signed p
 what an argument's own market says, **Rating** is the debate's verdict on it (that market corrected
 by its sub-arguments — what its shares settle against, and the only figure the market-less thesis
 has), and **Parent impact** is what its rating moves its parent by. Show Market and Rating as a
-pair, market first. The same signed axis
+pair, market first. Each carries the stake behind it in parentheses — the market its own, the rating
+its whole sub-debate's — via the figures' `stake` prop, never as a separate item. The same signed axis
 carries controls: `StakeModal`'s slider runs negative (overrated, rust) through zero to positive
 (underrated, green), so one control sets both direction and size.
 
