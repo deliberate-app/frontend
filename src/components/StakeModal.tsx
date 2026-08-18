@@ -117,9 +117,7 @@ export function StakeModal({
         </div>
 
         <div className="stake-amount">
-          <span className="stake-amount-label">
-            Stake <span className="stake-amount-of">of your {tokens} ⬡ - left calls it overrated, right underrated</span>
-          </span>
+          <span className="stake-amount-label">Available {tokens} ⬡</span>
           <span className="stake-amount-inputs">
             <span className="stake-slider">
               <input

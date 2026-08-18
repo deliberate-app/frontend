@@ -1195,11 +1195,6 @@ button {
   font-weight: 600;
 }
 
-.stake-amount-of {
-  font-weight: 400;
-  color: var(--bark);
-}
-
 .stake-amount-inputs {
   display: flex;
   align-items: flex-start;
