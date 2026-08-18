@@ -1,6 +1,22 @@
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf, thesisOf } from '../types';
 
+/** What the tally says about one argument. */
+export interface NodeTally {
+  /**
+   * The tally's verdict: the argument's own market approval corrected by its sub-arguments, each
+   * counted by the stake behind it. Negative means refuted. Equal to the centered approval while
+   * an argument is undebated - and, once the tally has run, the stored settlement rating, which is
+   * time-weighted and so parts from the closing price even without sub-arguments.
+   */
+  rating: number;
+  /**
+   * What the argument moves its parent's rating by: its rating clamped at neutral, signed by its
+   * stance, at its subtree's share of the siblings' stake. Zero for the thesis, which has no parent.
+   */
+  impact: number;
+}
+
 /**
  * A client-side mirror of the on-chain tally (ADR-0011, ADR-0012), computable at any time.
  *
@@ -19,10 +35,10 @@ import { childrenOf, thesisOf } from '../types';
  * reconstruct. Before then this is a live projection from the standing prices and stakes: what
  * the tally would say if the market held here for the rest of the window.
  */
-export function impactsOf(debate: Debate): Map<number, number> {
-  const impacts = new Map<number, number>();
+export function tallyOf(debate: Debate): Map<number, NodeTally> {
+  const tallies = new Map<number, NodeTally>();
 
-  /** The node's tallied rating and subtree stake; fills the map with its children's sways. */
+  /** The node's tallied rating and subtree stake; fills the map with its children's tallies. */
   const subtree = (node: ArgumentNode): { rating: number; weight: number } => {
     const children = [...childrenOf(debate, node.id, 'pro'), ...childrenOf(debate, node.id, 'con')]
       .filter((child) => child.state === 'final')
@@ -31,20 +47,24 @@ export function impactsOf(debate: Debate): Map<number, number> {
         // The clamp: refuted (negative rating) folds as zero strength - silenced, never
         // handed to the other side - while the stance decides the sign of what remains.
         const strength = Math.max(sub.rating, 0);
-        return { child, signed: child.side === 'con' ? -strength : strength, weight: sub.weight };
+        return { child, signed: child.side === 'con' ? -strength : strength, weight: sub.weight, rating: sub.rating };
       });
     const drafts = [...childrenOf(debate, node.id, 'pro'), ...childrenOf(debate, node.id, 'con')].filter(
       (child) => child.state === 'created',
     );
     for (const draft of drafts) {
-      impacts.set(draft.id, 0);
+      // A draft weighs nothing and moves nothing, but it has a market, so it has a rating of its
+      // own - and it cannot have been replied to, so nothing corrects it.
+      tallies.set(draft.id, { rating: 2 * draft.approval - 1, impact: 0 });
     }
 
     const childrenWeight = children.reduce((sum, { weight }) => sum + weight, 0);
     let descendants = 0;
-    for (const { child, signed, weight } of children) {
+    for (const { child, signed, weight, rating } of children) {
       const share = childrenWeight === 0 ? 0 : weight / childrenWeight;
-      impacts.set(child.id, signed * share);
+      // `|| 0` normalizes the negative zero a clamped con argument produces: there is no such
+      // thing as a negatively-zero impact, and -0 compares unequal to 0 for anything downstream.
+      tallies.set(child.id, { rating, impact: signed * share || 0 });
       descendants += signed * share;
     }
 
@@ -61,22 +81,31 @@ export function impactsOf(debate: Debate): Map<number, number> {
 
   const thesis = thesisOf(debate);
   const { rating, weight } = subtree(thesis);
-  // The thesis has no market of its own, so its rating is the pure descendants aggregate -
-  // and an argument-less debate reads as a neutral ±0 by construction.
-  impacts.set(thesis.id, weight === 0 ? 0 : rating);
-  return impacts;
+  // The thesis has no market of its own, so its rating is the pure descendants aggregate - and an
+  // argument-less debate reads as a neutral ±0 by construction. It has no parent to move.
+  tallies.set(thesis.id, { rating: weight === 0 ? 0 : rating, impact: 0 });
+  return tallies;
 }
 
-/** The tooltip explaining an argument's impact-on-parent figure, shared by every place it appears. */
+/** The tooltip on the parent-impact figure, shared by every place it appears. */
 export const IMPACT_HINT =
-  "How much this argument moves its parent's rating: its own rating - the market approval, " +
-  "corrected by its sub-arguments - at its share of the siblings' stake; a refuted argument " +
-  'moves nothing.';
+  "How much this argument moves its parent's rating: its own rating at its share of the siblings' " +
+  'stake, signed by the side it takes; a refuted argument moves nothing.';
 
-/** The tooltip explaining the thesis' net impact figure. */
-export const NET_IMPACT_HINT =
-  "The top-level arguments' impacts, weighted by their stake: above zero confirms the thesis, at " +
-  'or below objects it.';
+/** The tooltip on an argument's rating figure. */
+export const RATING_HINT =
+  "The debate's verdict on this argument: its market rating corrected by its sub-arguments, each " +
+  'counted by the stake behind it. This is what its shares settle against.';
+
+/** The tooltip on the thesis' rating figure - it has no market, so its rating is its arguments'. */
+export const THESIS_RATING_HINT =
+  "The debate's verdict: the top-level arguments' impacts, weighted by their stake. Above zero " +
+  'confirms the thesis, at or below objects it.';
+
+/** The tooltip on an argument's own market figure. */
+export const MARKET_HINT =
+  'What this argument\'s market alone says, before its sub-arguments are counted: the price of a ' +
+  'good-argument share, centered so an undecided market reads ±0%.';
 
 /** Formats an impact or rating fraction as a signed percentage, e.g. "+12%". */
 export function formatImpact(impact: number): string {

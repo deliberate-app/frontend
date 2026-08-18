@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ArgumentNode, Debate } from '../types';
-import { impactsOf } from './impact';
+import { tallyOf } from './impact';
 import { previewStake, reservesOf, upsideOf, withMarkets, withPreviewedStake } from './market';
 
 const node = (partial: Partial<ArgumentNode> & { id: number }): ArgumentNode => ({
@@ -132,8 +132,8 @@ describe('withPreviewedStake', () => {
     const preview = previewStake(argument, 'pro', 20, 0);
     const previewed = withPreviewedStake(debate, 1, preview);
 
-    expect(impactsOf(debate).get(1)).toBe(0);
-    expect(impactsOf(previewed).get(1)).toBeCloseTo(2 * (25 / 26) - 1, 12);
+    expect(tallyOf(debate).get(1)?.impact).toBe(0);
+    expect(tallyOf(previewed).get(1)?.impact).toBeCloseTo(2 * (25 / 26) - 1, 12);
     expect(previewed.nodes[1]).toMatchObject({ approval: 25 / 26, weight: 30, proReserve: 1, conReserve: 25 });
     // The input is left alone.
     expect(debate.nodes[1]).toBe(argument);

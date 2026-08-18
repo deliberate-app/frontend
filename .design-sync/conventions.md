@@ -40,7 +40,10 @@ layout:
 - `action-hint` (one-sentence explanation), `action-error` (blocking message).
 - `focus-kicker-row` / `focus-kicker` / `focus-text` — the focused claim's header: stance kicker on
   the left, author chip on the right, the claim itself in display type.
-- `focus-meta` — the meta line beneath a claim: market approval, staked, impact on parent, lock.
+- `focus-meta` — the meta line beneath a claim: Market, Rating, staked, Parent impact, lock.
+- `figure` / `figure-label` — one labelled figure on the signed scale; `card-figures` groups them
+  on a card. Never hand-render these: the `Market`, `Rating`, `ParentImpact` and `Staked`
+  subcomponents are the only way they are drawn, so they read alike everywhere.
 - `round-chip` — a small round hairline button carrying one stroke glyph, placed right after the
   figure it acts on (the market approval's info, the bounty's top-up plus). It is how a figure
   offers more without a text link taking a line of its own.
@@ -66,8 +69,12 @@ contract. Two things to get right:
   phase from `timing`; a `debate.phase` of `'editing'` with a passed `editingEndTime` renders as
   rating. Only `'finished'` is a latch.
 
-Vote tokens render with the `⬡` glyph. Ratings and impacts are **signed percentages around ±0**
-with center-anchored gauges — a 50% market reads `±0%`, never "half full". The same signed axis
+Vote tokens render with the `⬡` glyph. Every rating and impact is a **signed percentage around ±0**
+— a 50% market reads `±0%`, never "half full". Three figures, and they are distinct: **Market** is
+what an argument's own market says, **Rating** is the debate's verdict on it (that market corrected
+by its sub-arguments — what its shares settle against, and the only figure the market-less thesis
+has), and **Parent impact** is what its rating moves its parent by. Show Market and Rating as a
+pair, market first. The same signed axis
 carries controls: `StakeModal`'s slider runs negative (overrated, rust) through zero to positive
 (underrated, green), so one control sets both direction and size.
 

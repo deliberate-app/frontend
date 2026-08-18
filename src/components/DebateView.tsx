@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
-import { formatApproval, formatImpact, IMPACT_HINT, impactsOf, NET_IMPACT_HINT } from '../lib/impact';
+import { tallyOf, THESIS_RATING_HINT, type NodeTally } from '../lib/impact';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesisOf } from '../types';
@@ -9,6 +9,7 @@ import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ContentText } from './ContentText';
 import { ArgumentCard } from './ArgumentCard';
+import { Market, ParentImpact, Rating, Staked } from './Figures';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
 import { LockChip } from './LockChip';
@@ -76,12 +77,15 @@ function Chevron({ up }: { up: boolean }) {
  */
 function AncestryRail({
   debate,
+  tallies,
   focusedId,
   expanded,
   onExpandedChange,
   onFocus,
 }: {
   debate: Debate;
+  /** The tally mirror, so each step on the path carries the same rating figure the cards show. */
+  tallies: Map<number, NodeTally>;
   focusedId: number;
   /** Whether the parent claims read in full (the reader's choice, kept across focus changes). */
   expanded: boolean;
@@ -109,9 +113,9 @@ function AncestryRail({
             <span className="rail-claim">{node.text}</span>
             {/* The thesis is rated through its arguments, so only the argued steps carry figures. */}
             {expanded && node.parentId !== null && (
-              <span className="rail-figures mono">
-                {formatApproval(node.approval)} ·{' '}
-                <span title={`${node.weight} ⬡ staked on this argument`}>{node.weight} ⬡</span>
+              <span className="rail-figures">
+                <Rating rating={tallies.get(node.id)?.rating ?? 2 * node.approval - 1} bare />{' '}
+                · <Staked weight={node.weight} label={false} />
               </span>
             )}
           </button>
@@ -139,8 +143,6 @@ function AncestryRail({
     </nav>
   );
 }
-
-const impactClassOf = (impact: number) => (impact > 0 ? 'impact-pos' : impact < 0 ? 'impact-neg' : '');
 
 /** How often the markets are refetched while the stake modal is open: one light query per tick. */
 const MARKET_POLL_MS = 5_000;
@@ -188,10 +190,11 @@ export function DebateView({
   const cons = childrenOf(debate, focus.id, 'con');
   const isThesis = focus.id === thesis.id;
 
-  // A live, client-side preview of the tally in every phase - during editing arguments sway as they
-  // lock in (drafts contribute nothing, like the tally treats them) - and the mirrored result once run.
-  const impacts = impactsOf(debate);
-  const focusImpact = impacts.get(focus.id);
+  // A live, client-side preview of the tally in every phase - during editing arguments start
+  // counting as they lock in (drafts contribute nothing, like the tally treats them) - and the
+  // mirrored result once run.
+  const tallies = tallyOf(debate);
+  const focusTally = tallies.get(focus.id);
   const totalStake = debate.nodes.reduce((sum, node) => sum + node.weight, 0);
 
   // An argument is locked once the data says final or the live clock has passed its finalization
@@ -234,6 +237,7 @@ export function DebateView({
       <MiniTree debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
       <AncestryRail
         debate={debate}
+        tallies={tallies}
         focusedId={focus.id}
         expanded={pathExpanded}
         onExpandedChange={setPathExpanded}
@@ -256,24 +260,13 @@ export function DebateView({
           <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
             {debate.approved ? 'Thesis confirmed ' : 'Thesis objected '}
             <VerdictMark approved={debate.approved} />
-            {focusImpact !== undefined && (
-              <span title={NET_IMPACT_HINT}>
-                {' '}
-                · net impact <strong className="mono">{formatImpact(focusImpact)}</strong>
-              </span>
-            )}
           </p>
         )}
         {isThesis ? (
           <p className="focus-meta">
-            Rated through its arguments · total stake <strong className="mono">{totalStake} ⬡</strong>
-            {phase !== 'finished' && focusImpact !== undefined && (
-              <span title={NET_IMPACT_HINT}>
-                {' '}
-                · net impact{' '}
-                <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
-              </span>
-            )}
+            {focusTally && <Rating rating={focusTally.rating} hint={THESIS_RATING_HINT} />}
+            {focusTally && ' · '}
+            total stake <strong className="mono">{totalStake} ⬡</strong>
             {debate.bounty && (
               <>
                 {' '}
@@ -283,10 +276,7 @@ export function DebateView({
           </p>
         ) : (
           <p className="focus-meta">
-            Market approval{' '}
-            <strong className={`mono ${impactClassOf(2 * focus.approval - 1)}`}>
-              {formatApproval(focus.approval)}
-            </strong>{' '}
+            <Market approval={focus.approval} />{' '}
             {/* The market detail sits on the figure it explains, as the bounty top-up sits on the pool. */}
             <button
               type="button"
@@ -299,14 +289,19 @@ export function DebateView({
                 <path d="M8 7.25 V11.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                 <path d="M8 4.5 V4.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
               </svg>
-            </button>{' '}
-            · staked <strong className="mono">{focus.weight} ⬡</strong>
-            {focusImpact !== undefined && (
-              <span title={IMPACT_HINT}>
+            </button>
+            {focusTally && (
+              <>
                 {' '}
-                · impact on parent{' '}
-                <strong className={`mono ${impactClassOf(focusImpact)}`}>{formatImpact(focusImpact)}</strong>
-              </span>
+                · <Rating rating={focusTally.rating} />
+              </>
+            )}{' '}
+            · <Staked weight={focus.weight} />
+            {focusTally && (
+              <>
+                {' '}
+                · <ParentImpact impact={focusTally.impact} />
+              </>
             )}{' '}
             · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
           </p>
@@ -393,7 +388,7 @@ export function DebateView({
                 key={node.id}
                 debate={debate}
                 node={node}
-                impact={impacts.get(node.id)}
+                tally={tallies.get(node.id)}
                 now={now}
                 onFocus={setFocusedId}
               />
@@ -425,7 +420,7 @@ export function DebateView({
                 key={node.id}
                 debate={debate}
                 node={node}
-                impact={impacts.get(node.id)}
+                tally={tallies.get(node.id)}
                 now={now}
                 onFocus={setFocusedId}
               />

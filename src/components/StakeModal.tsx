@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { actionErrorMessage } from '../data/actions';
-import { formatImpact, IMPACT_HINT, impactsOf } from '../lib/impact';
+import { formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT, tallyOf } from '../lib/impact';
 import { previewStake, withPreviewedStake } from '../lib/market';
 import type { ArgumentNode, Debate, Side } from '../types';
 
@@ -75,8 +75,8 @@ export function StakeModal({
   // The stake as the contract would execute it against the market as it stands now, and the
   // tally mirror's reading of the tree with that one market moved.
   const preview = valid && side ? previewStake(node, side, amount, debate.feePercentage) : null;
-  const impactBefore = impactsOf(debate).get(node.id) ?? 0;
-  const impactAfter = preview ? (impactsOf(withPreviewedStake(debate, node.id, preview)).get(node.id) ?? 0) : null;
+  const before = tallyOf(debate).get(node.id);
+  const after = preview ? tallyOf(withPreviewedStake(debate, node.id, preview)).get(node.id) : null;
 
   const stake = async () => {
     if (!valid || !side) return;
@@ -158,13 +158,17 @@ export function StakeModal({
         </div>
 
         <dl className="market-facts">
-          <dt>Market approval</dt>
+          <dt title={MARKET_HINT}>Market</dt>
           <dd>
             <Shift before={2 * node.approval - 1} after={preview ? 2 * preview.approval - 1 : null} />
           </dd>
-          <dt title={IMPACT_HINT}>Impact on parent</dt>
+          <dt title={RATING_HINT}>Rating</dt>
           <dd>
-            <Shift before={impactBefore} after={impactAfter} />
+            <Shift before={before?.rating ?? 0} after={after ? after.rating : null} />
+          </dd>
+          <dt title={IMPACT_HINT}>Parent impact</dt>
+          <dd>
+            <Shift before={before?.impact ?? 0} after={after ? after.impact : null} />
           </dd>
           <dt>Fee to the author</dt>
           <dd className="mono">{preview ? `${preview.fee} ⬡` : '—'}</dd>

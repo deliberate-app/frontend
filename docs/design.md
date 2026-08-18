@@ -61,6 +61,24 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-08-18 — three figures, defined once: Market, Rating, Parent impact.** The headline number
+  had three different names for two different quantities — the thesis said "net impact", an argument
+  said "Market approval", and a card said nothing at all (a diverging gauge bar). They are now one
+  family of subcomponents (`components/Figures.tsx`) used by the cards, the focused claim, the
+  ancestry rail and the stake preview, so the same quantity looks the same everywhere:
+  **Market** (what an argument's own market says), **Rating** (the debate's verdict on it — that
+  market corrected by its sub-arguments, and what its shares settle against), **Parent impact**
+  (what its rating moves its parent by). Market and Rating are shown as a **pair, market first**:
+  where they agree the argument stands as priced, and where they part the sub-debate is the
+  difference — debate 1's objection reads `Market +40% · Rating −30% · Parent impact ±0%`, the
+  whole mechanism in one line. The thesis owns no market, so it shows Rating alone, on the left
+  where "Rated through its arguments" used to sit. Michael proposed "Own"/"Adjusted" for the pair;
+  countered with Market/Rating because *Rating* has to stay the word the thesis, the on-chain
+  field and the settlement all use, and *Market* names the source rather than the relationship —
+  and it points at the info chip beside it, which opens the Rating market. The approval gauge was
+  retired with its CSS: a labelled signed percentage says what the bar said, and the bar could not
+  show two figures. (Principles 8, 10; the north star's "every addition must pay for itself" —
+  this one replaced a bar and a label with two facts.)
 - **2026-08-18 — every hover is one sentence, and copy says a thing once.** Principle 9 asks for
   one-sentence hover copy and the market vocabulary had drifted past it: `IMPACT_HINT` ran four
   clauses, the info chip's tooltip listed the modal's whole contents (a tooltip is a label, not a

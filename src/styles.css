@@ -647,6 +647,22 @@ button {
   margin-top: auto;
 }
 
+/* The card's figures, kept together as one wrapping group so the lock and replies stay at the end.
+   The middots are drawn rather than written, so the JSX stays a plain list of figures. */
+.card-figures {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  color: var(--bark);
+}
+
+.card-figures > .figure:not(:last-child)::after {
+  content: ' ·';
+  color: var(--bark);
+}
+
 .card-replies {
   font-size: 0.78rem;
   color: var(--bark);
@@ -739,56 +755,15 @@ button {
   text-align: center;
 }
 
-/* ── Approval gauge ──────────────────────────────────────────────────── */
-.gauge {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.gauge-bar {
-  position: relative;
-  width: 5.5rem;
-  height: 0.4rem;
-  border-radius: 999px;
-  background: var(--hairline); /* neutral track; the fill diverges from the centre */
-  overflow: hidden;
-  flex: none;
-}
-
-.gauge-fill {
-  position: absolute;
-  top: 0;
-  height: 100%;
-}
-
-.gauge-fill-pos {
-  background: var(--pro);
-}
-
-.gauge-fill-neg {
-  background: var(--con);
-}
-
-.gauge-bar::after {
-  /* the neutral midpoint tick, painted over the fill */
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 1px;
-  margin-left: -0.5px;
-  background: var(--bark);
-  opacity: 0.4;
-}
-
-.gauge-figures {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--bark);
+/* ── Figures ─────────────────────────────────────────────────────────── */
+/* One labelled figure - Market, Rating, Parent impact, staked - wherever it appears. The label
+   recedes and the value carries the color, so a row of them scans as values with names attached. */
+.figure {
   white-space: nowrap;
+}
+
+.figure-label {
+  color: var(--bark);
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────── */
@@ -1232,7 +1207,7 @@ button {
   gap: 0.2rem;
 }
 
-/* One signed axis, like the approval gauge: a hairline track with a centre tick, filled from
+/* One signed axis, like every figure on the page: a hairline track with a centre tick, filled from
    the centre to the thumb in the stance colour of the direction chosen (--fill-from/-to/-color
    come from the component). */
 .stake-range {

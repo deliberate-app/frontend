@@ -1,39 +1,20 @@
-import { formatApproval, formatImpact, IMPACT_HINT } from '../lib/impact';
+import type { NodeTally } from '../lib/impact';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf, liveChainTime } from '../types';
+import { Market, ParentImpact, Rating, Staked } from './Figures';
 import { LockChip } from './LockChip';
-
-function ApprovalGauge({ approval, weight }: { approval: number; weight: number }) {
-  // A diverging bar anchored at the neutral midpoint (50%): the fill grows right of centre for a backed
-  // argument (green) and left of centre for a rejected one (red), matching the signed figure.
-  const percent = Math.round(approval * 100);
-  const positive = percent >= 50;
-  return (
-    <span className="gauge">
-      <span className="gauge-bar" role="img" aria-label={`Market approval ${formatApproval(approval)}`}>
-        <span
-          className={`gauge-fill ${positive ? 'gauge-fill-pos' : 'gauge-fill-neg'}`}
-          style={{ left: `${Math.min(percent, 50)}%`, width: `${Math.abs(percent - 50)}%` }}
-        />
-      </span>
-      <span className="gauge-figures">
-        {formatApproval(approval)} · <span title={`${weight} ⬡ staked on this argument`}>{weight} ⬡</span>
-      </span>
-    </span>
-  );
-}
 
 export function ArgumentCard({
   debate,
   node,
-  impact,
+  tally,
   now,
   onFocus,
 }: {
   debate: Debate;
   node: ArgumentNode;
-  /** The argument's sway on its parent: a live preview of the tally, its mirrored result once run. */
-  impact?: number;
+  /** The argument's rating and its impact on the parent: a live preview of the tally, its mirrored result once run. */
+  tally?: NodeTally;
   /** The ticking clock (unix seconds), driving the draft finalization countdown. */
   now: number;
   onFocus: (id: number) => void;
@@ -57,15 +38,14 @@ export function ArgumentCard({
     <button type="button" className={`card card-${node.side}`} onClick={() => onFocus(node.id)}>
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
-        <ApprovalGauge approval={node.approval} weight={node.weight} />
-        {impact !== undefined && (
-          <span
-            className={`card-impact ${impact > 0 ? 'impact-pos' : impact < 0 ? 'impact-neg' : ''}`}
-            title={IMPACT_HINT}
-          >
-            {formatImpact(impact)}
-          </span>
-        )}
+        <span className="card-figures">
+          <Market approval={node.approval} />
+          {tally && <Rating rating={tally.rating} />}
+          {/* Bare on a card: four labelled figures plus the lock and replies wrap onto a second
+              line, and the ⬡ unit already names the figure (its tooltip spells it out). */}
+          <Staked weight={node.weight} label={false} />
+          {tally && <ParentImpact impact={tally.impact} />}
+        </span>
         <LockChip locked={locked} finalizesIn={finalizesIn} />
         <span className="card-replies">
           {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatApproval } from '../lib/impact';
+import { formatApproval, MARKET_HINT } from '../lib/impact';
 import { reservesOf } from '../lib/market';
 import type { ArgumentNode } from '../types';
 
@@ -101,7 +101,7 @@ export function MarketDetail({
         <CurvePlot pro={pro} con={con} />
 
         <dl className="market-facts">
-          <dt>Market approval</dt>
+          <dt title={MARKET_HINT}>Market</dt>
           <dd className="mono">{formatApproval(node.approval)}</dd>
           <dt>Staked</dt>
           <dd className="mono">{node.weight} ⬡</dd>
