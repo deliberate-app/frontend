@@ -62,17 +62,29 @@ export default async function handler(request: Request): Promise<Response> {
     return new Response('only raw-codec CIDv1 content is served', { status: 400, headers: cors });
   }
 
+  // Filebase authorizes gateway reads with its own header, not `Authorization: Bearer` - the
+  // gateway answers an unauthorized read with a bare 401 and no WWW-Authenticate, so the scheme
+  // is not discoverable from the response. The token can also ride in a `filebaseGatewayToken`
+  // query parameter; the header keeps it out of URLs, and so out of logs.
   const upstream = await fetch(`${gateway.replace(/\/$/, '')}/ipfs/${cid.toString()}`, {
-    headers: { authorization: `Bearer ${token}` },
+    headers: { 'x-filebase-gateway-token': token },
   }).catch(() => null);
 
   if (upstream === null) {
     return new Response('the gateway could not be reached', { status: 502, headers: cors });
   }
+  // A private gateway answers 404 for anything it has not pinned, which is the honest answer to
+  // pass on: the content is not here. Anything else is this deployment's problem, not the
+  // caller's, and says so - collapsing an upstream 401 into a bare 502 turned a one-line
+  // misconfiguration into a debugging session.
+  if (upstream.status === 404) {
+    return new Response(null, { status: 404, headers: cors });
+  }
   if (!upstream.ok) {
-    // A private gateway answers 404 for anything it has not pinned, which is the honest answer
-    // to give the client too: the content is not here.
-    return new Response(null, { status: upstream.status === 404 ? 404 : 502, headers: cors });
+    return new Response(`the gateway refused the read with status ${upstream.status}`, {
+      status: 502,
+      headers: cors,
+    });
   }
 
   const length = Number(upstream.headers.get('content-length') ?? NaN);
