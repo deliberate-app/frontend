@@ -107,7 +107,8 @@ Project environment variables (Settings → Environment Variables):
 VITE_DELIBERATE_ADDRESS=0x…   # the live deployment (contracts/broadcast/…/runWithMockRegistry-latest.json)
 VITE_RPC_URL=https://sepolia.base.org
 VITE_INDEXER_URL=https://…   # the hosted indexer endpoint; the dev tier mints a new URL per deploy
-VITE_IPFS_GATEWAY=https://gateway.pinata.cloud,https://{cid}.ipfs.dweb.link  # raced (see below)
+VITE_IPFS_GATEWAY=https://ipfs.filebase.io,https://{cid}.ipfs.dweb.link,https://gateway.pinata.cloud
+                             # raced, holder first (see below)
 VITE_IPFS_API=/              # authoring goes through the same-origin pin proxy
 FILEBASE_ACCESS_KEY_ID=…     # server-side only (Sensitive)
 FILEBASE_SECRET_ACCESS_KEY=… # server-side only (Sensitive)

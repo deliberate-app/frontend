@@ -62,8 +62,10 @@ export default async function handler(request: Request): Promise<Response> {
 
   let file: Blob | null = null;
   try {
-    const field: unknown = (await request.formData()).get('file');
-    file = field instanceof Blob ? field : null;
+    // FormData yields File | string. Excluding the string narrows to File without naming Blob as
+    // a value - `instanceof Blob` does not narrow in the type environment the routes build under.
+    const field = (await request.formData()).get('file');
+    file = field === null || typeof field === 'string' ? null : (field as Blob);
   } catch {
     // Not a multipart body; fall through to the 400 below.
   }
