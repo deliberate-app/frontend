@@ -8,26 +8,12 @@
  * no Pinata-specific code and keeps verifying the CID against its local digest.
  */
 import { cidFromSha256Digest } from '../../src/lib/cid';
+import { corsFor } from '../../src/lib/devCors';
 import { MAX_CONTENT_BYTES } from '../../src/lib/ipfs';
 
 export const config = { runtime: 'edge' };
 
 const PINATA_UPLOAD_URL = 'https://uploads.pinata.cloud/v3/files';
-
-/**
- * The hosted app calls this same-origin, but local dev servers (`just dev-testnet`) point
- * `VITE_IPFS_API` at the deployment and arrive cross-origin. Only loopback origins are
- * reflected - anything wider would open the proxy (and the Pinata quota behind it) to
- * pinning from arbitrary websites.
- */
-const DEV_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-
-function corsFor(request: Request): Record<string, string> {
-  const origin = request.headers.get('origin');
-  return origin !== null && DEV_ORIGIN.test(origin)
-    ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' }
-    : {};
-}
 
 export default async function handler(request: Request): Promise<Response> {
   const cors = corsFor(request);

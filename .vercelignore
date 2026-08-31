@@ -1,0 +1,4 @@
+# Test files next to the routes they cover must not become routes themselves: anything Vercel
+# finds under api/ is deployed as a public endpoint, and api/v0/add.test shipped as one (890 KB)
+# until this file existed.
+api/**/*.test.ts
