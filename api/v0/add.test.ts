@@ -20,61 +20,83 @@ function addRequest(bytes: Uint8Array, origin?: string): Request {
   });
 }
 
-/** Replaces fetch with a stub answering as Pinata; returns the captured request for assertions. */
-function stubPinata(reply: { status: number; cid?: string }): { url?: string; init?: RequestInit } {
-  const captured: { url?: string; init?: RequestInit } = {};
-  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    captured.url = String(url);
-    captured.init = init;
-    return reply.status === 200
-      ? Response.json({ data: { cid: reply.cid } })
-      : new Response('nope', { status: reply.status });
+/**
+ * Replaces fetch with a stub answering as Filebase's S3 API; returns the captured request.
+ *
+ * aws4fetch signs and then calls global fetch with a Request, so the stub reads the URL and
+ * method off that - which also lets the signature itself be asserted as present.
+ */
+function stubFilebase(reply: { status: number; cid?: string }): { url?: string; method?: string; auth?: string } {
+  const captured: { url?: string; method?: string; auth?: string } = {};
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const request = input as Request;
+    captured.url = request.url ?? String(input);
+    captured.method = request.method;
+    captured.auth = request.headers?.get('authorization') ?? undefined;
+    const headers: Record<string, string> = {};
+    if (reply.cid !== undefined) headers['x-amz-meta-cid'] = reply.cid;
+    return new Response(null, { status: reply.status, headers });
   }) as typeof fetch;
   return captured;
 }
 
 describe('the /api/v0/add pin proxy', () => {
   beforeEach(() => {
-    process.env.PINATA_JWT = 'test-jwt';
+    process.env.FILEBASE_ACCESS_KEY_ID = 'test-key-id';
+    process.env.FILEBASE_SECRET_ACCESS_KEY = 'test-secret';
+    process.env.FILEBASE_BUCKET = 'test-bucket';
   });
 
   afterEach(() => {
     globalThis.fetch = realFetch;
-    delete process.env.PINATA_JWT;
+    delete process.env.FILEBASE_ACCESS_KEY_ID;
+    delete process.env.FILEBASE_SECRET_ACCESS_KEY;
+    delete process.env.FILEBASE_BUCKET;
   });
 
-  test('pins through Pinata and answers in kubo shape', async () => {
+  test('pins through Filebase and answers in kubo shape', async () => {
     const bytes = new TextEncoder().encode('An argument text.');
     const cid = await cidOf(bytes);
-    const captured = stubPinata({ status: 200, cid });
+    const captured = stubFilebase({ status: 200, cid });
 
     const response = await handler(addRequest(bytes));
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ Hash: cid });
-    expect(captured.url).toBe('https://uploads.pinata.cloud/v3/files');
-    expect((captured.init?.headers as Record<string, string>).Authorization).toBe('Bearer test-jwt');
-    const forwarded = captured.init?.body as FormData;
-    expect(forwarded.get('network')).toBe('public');
+    // The object key is the CID the content must have, so a re-publish overwrites itself.
+    expect(captured.url).toBe(`https://s3.filebase.com/test-bucket/${cid}`);
+    expect(captured.method).toBe('PUT');
+    expect(captured.auth).toContain('AWS4-HMAC-SHA256');
   });
 
-  test('rejects a Pinata CID that does not wrap the content digest', async () => {
+  test('rejects a Filebase CID that does not wrap the content digest', async () => {
+    // The assertion that establishes what Filebase emits: a UnixFS/dag-pb CID for the same
+    // bytes must fail the publish rather than put an unresolvable digest on chain.
     const bytes = new TextEncoder().encode('An argument text.');
-    stubPinata({ status: 200, cid: 'bafkreisomethingelse' });
+    stubFilebase({ status: 200, cid: 'bafybeisomethingelse' });
 
     const response = await handler(addRequest(bytes));
 
+    const message = await response.text();
     expect(response.status).toBe(502);
-    expect(await response.text()).toContain(await cidOf(bytes));
+    expect(message).toContain(await cidOf(bytes));
+    expect(message).toContain('import=car');
   });
 
-  test('passes a Pinata failure through as a 502', async () => {
-    stubPinata({ status: 401 });
+  test('fails when Filebase accepts the upload but reports no CID', async () => {
+    stubFilebase({ status: 200 });
+    const response = await handler(addRequest(new Uint8Array([1])));
+    expect(response.status).toBe(502);
+    expect(await response.text()).toContain('no CID');
+  });
+
+  test('passes a Filebase failure through as a 502', async () => {
+    stubFilebase({ status: 403 });
     expect((await handler(addRequest(new Uint8Array([1])))).status).toBe(502);
   });
 
   test('rejects content above the single-block limit before uploading', async () => {
-    const captured = stubPinata({ status: 200, cid: 'unused' });
+    const captured = stubFilebase({ status: 200, cid: 'unused' });
     const response = await handler(addRequest(new Uint8Array(MAX_CONTENT_BYTES + 1)));
     expect(response.status).toBe(413);
     expect(captured.url).toBeUndefined();
@@ -90,7 +112,7 @@ describe('the /api/v0/add pin proxy', () => {
   });
 
   test('answers 503 when no credential is configured', async () => {
-    delete process.env.PINATA_JWT;
+    delete process.env.FILEBASE_ACCESS_KEY_ID;
     expect((await handler(addRequest(new Uint8Array([1])))).status).toBe(503);
   });
 
@@ -108,7 +130,7 @@ describe('the /api/v0/add pin proxy', () => {
 
   test('lets a local dev origin read the pin response', async () => {
     const bytes = new TextEncoder().encode('An argument text.');
-    stubPinata({ status: 200, cid: await cidOf(bytes) });
+    stubFilebase({ status: 200, cid: await cidOf(bytes) });
     const response = await handler(addRequest(bytes, 'http://127.0.0.1:5173'));
     expect(response.status).toBe(200);
     expect(response.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5173');
@@ -116,7 +138,7 @@ describe('the /api/v0/add pin proxy', () => {
 
   test('does not open the proxy to foreign origins', async () => {
     const bytes = new TextEncoder().encode('An argument text.');
-    stubPinata({ status: 200, cid: await cidOf(bytes) });
+    stubFilebase({ status: 200, cid: await cidOf(bytes) });
     const response = await handler(addRequest(bytes, 'https://evil.example'));
     expect(response.headers.get('access-control-allow-origin')).toBeNull();
   });

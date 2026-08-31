@@ -3,17 +3,32 @@
  *
  * `publishText` POSTs the same multipart body to `{VITE_IPFS_API}/api/v0/add` it would
  * send to a kubo node; with `VITE_IPFS_API=/` that lands here same-origin, and the text
- * is pinned on Pinata instead. The credential (`PINATA_JWT`) stays server-side - the
- * browser never holds it. The response is kubo's `{Hash: <cid>}`, so the client needs
- * no Pinata-specific code and keeps verifying the CID against its local digest.
+ * is pinned on Filebase instead. The credentials stay server-side - the browser never
+ * holds them. The response is kubo's `{Hash: <cid>}`, so the client needs no
+ * Filebase-specific code and keeps verifying the CID against its local digest.
+ *
+ * Filebase pins through its S3-compatible API: a PUT of the raw bytes, SigV4-signed, whose
+ * response carries the resulting CID in `x-amz-meta-cid`. The object key is the CID the
+ * content must have, which makes a re-publish of the same text idempotent and makes the
+ * bucket browsable by the identifier the chain stores.
+ *
+ * The CID check below is not a formality. The contentURI scheme requires the raw-leaves CIDv1
+ * that wraps the sha-256 digest (`0x01 0x55 0x12 0x20 + digest`), and a pinning service that
+ * wraps content in UnixFS/dag-pb instead produces a different CID for identical bytes. Filebase
+ * does not document which it emits, so this assertion is what establishes it - failing the
+ * publish loudly rather than letting an unresolvable digest reach the chain. If it trips, the
+ * fix is to upload a single-block CAR (`import=car`) whose root is the CID we require, which
+ * takes the choice away from the service.
  */
+import { AwsClient } from 'aws4fetch';
+
 import { cidFromSha256Digest } from '../../src/lib/cid';
 import { corsFor } from '../../src/lib/devCors';
 import { MAX_CONTENT_BYTES } from '../../src/lib/ipfs';
 
 export const config = { runtime: 'edge' };
 
-const PINATA_UPLOAD_URL = 'https://uploads.pinata.cloud/v3/files';
+const FILEBASE_S3_ENDPOINT = 'https://s3.filebase.com';
 
 export default async function handler(request: Request): Promise<Response> {
   const cors = corsFor(request);
@@ -30,9 +45,15 @@ export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') {
     return new Response('only POST is supported', { status: 405, headers: cors });
   }
-  const jwt = process.env.PINATA_JWT;
-  if (!jwt) {
-    return new Response('pinning is not configured (PINATA_JWT is unset)', { status: 503, headers: cors });
+
+  const accessKeyId = process.env.FILEBASE_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.FILEBASE_SECRET_ACCESS_KEY;
+  const bucket = process.env.FILEBASE_BUCKET;
+  if (!accessKeyId || !secretAccessKey || !bucket) {
+    return new Response(
+      'pinning is not configured (FILEBASE_ACCESS_KEY_ID, FILEBASE_SECRET_ACCESS_KEY and FILEBASE_BUCKET are required)',
+      { status: 503, headers: cors },
+    );
   }
 
   let file: Blob | null = null;
@@ -56,26 +77,39 @@ export default async function handler(request: Request): Promise<Response> {
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   const expectedCid = cidFromSha256Digest(digest);
 
-  const upload = new FormData();
-  upload.append('file', new File([bytes], expectedCid, { type: 'application/octet-stream' }));
-  // Private files (the v3 default) would not resolve on IPFS gateways.
-  upload.append('network', 'public');
+  const client = new AwsClient({ accessKeyId, secretAccessKey, service: 's3', region: 'us-east-1' });
+  const objectUrl = `${FILEBASE_S3_ENDPOINT}/${bucket}/${expectedCid}`;
 
-  const response = await fetch(PINATA_UPLOAD_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${jwt}` },
-    body: upload,
-  });
-  if (!response.ok) {
-    return new Response(`Pinata rejected the upload with status ${response.status}`, { status: 502, headers: cors });
-  }
-  const { data } = (await response.json()) as { data: { cid: string } };
-  if (data.cid !== expectedCid) {
-    // The bytes32 contentURI scheme needs the raw-leaves CIDv1 that wraps the sha-256 digest.
-    return new Response(`Pinata pinned ${data.cid}, not the raw-leaves CID ${expectedCid}`, {
-      status: 502,
-      headers: cors,
+  let response: Response;
+  try {
+    response = await client.fetch(objectUrl, {
+      method: 'PUT',
+      body: bytes,
+      headers: { 'content-type': 'application/octet-stream' },
     });
+  } catch (error: unknown) {
+    return new Response(`Filebase could not be reached: ${String(error)}`, { status: 502, headers: cors });
   }
-  return Response.json({ Hash: data.cid }, { headers: cors });
+  if (!response.ok) {
+    return new Response(`Filebase rejected the upload with status ${response.status}`, { status: 502, headers: cors });
+  }
+
+  // The CID rides back on the PUT, but a HEAD of the object we just wrote is the documented
+  // way to read it and costs one request only when the PUT did not carry it.
+  let cid = response.headers.get('x-amz-meta-cid');
+  if (cid === null) {
+    const head = await client.fetch(objectUrl, { method: 'HEAD' }).catch(() => null);
+    cid = head?.headers.get('x-amz-meta-cid') ?? null;
+  }
+  if (cid === null) {
+    return new Response('Filebase accepted the upload but reported no CID for it', { status: 502, headers: cors });
+  }
+  if (cid !== expectedCid) {
+    return new Response(
+      `Filebase pinned ${cid}, not the raw-leaves CID ${expectedCid} the contentURI scheme requires - ` +
+        'the upload needs to go through a single-block CAR (import=car) instead',
+      { status: 502, headers: cors },
+    );
+  }
+  return Response.json({ Hash: cid }, { headers: cors });
 }

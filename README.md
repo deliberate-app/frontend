@@ -96,9 +96,9 @@ repo (installs and builds with bun via `bun.lock`); the hash-based routing needs
 
 Authoring on the hosted site publishes through [api/v0/add.ts](api/v0/add.ts), a kubo-shaped
 **pin proxy**: `publishText` sends the same multipart request it would send to a kubo node, the
-edge function pins the text on [Pinata](https://pinata.cloud) (free tier) and answers with kubo's
-`{Hash}`, and the client's digest assertion keeps holding — a mispinned CID fails loudly. The
-Pinata credential never reaches the browser. The route is origin-open like any public API;
+edge function pins the text on [Filebase](https://filebase.com) through its S3-compatible API and answers with
+kubo's `{Hash}`, and the client's digest assertion keeps holding — a mispinned CID fails loudly. The
+Filebase credentials never reach the browser. The route is origin-open like any public API;
 the 256 KiB cap bounds abuse, and the client-side digest check bounds damage.
 
 Project environment variables (Settings → Environment Variables):
@@ -109,7 +109,9 @@ VITE_RPC_URL=https://sepolia.base.org
 VITE_INDEXER_URL=https://…   # the hosted indexer endpoint; the dev tier mints a new URL per deploy
 VITE_IPFS_GATEWAY=https://gateway.pinata.cloud,https://{cid}.ipfs.dweb.link  # raced (see below)
 VITE_IPFS_API=/              # authoring goes through the same-origin pin proxy
-PINATA_JWT=…                 # server-side only (Sensitive): a v3 key scoped to Files: Write
+FILEBASE_ACCESS_KEY_ID=…     # server-side only (Sensitive)
+FILEBASE_SECRET_ACCESS_KEY=… # server-side only (Sensitive)
+FILEBASE_BUCKET=…            # the IPFS-network bucket the texts are pinned into
 ```
 
 `VITE_*` values are baked into the public bundle at build time — they must never hold secrets.

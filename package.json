@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "aws4fetch": "^1.0.20",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "viem": "^2.31.0"
