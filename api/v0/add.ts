@@ -28,7 +28,7 @@ import { AwsClient } from 'aws4fetch';
 import { singleBlockCar } from '../../src/lib/car';
 import { cidFromSha256Digest } from '../../src/lib/cid';
 import { corsFor } from '../../src/lib/devCors';
-import { MAX_CONTENT_BYTES } from '../../src/lib/ipfs';
+import { MAX_CONTENT_CHARS, MAX_PUBLISH_BYTES } from '../../src/lib/ipfs';
 
 export const config = { runtime: 'edge' };
 
@@ -60,6 +60,17 @@ export default async function handler(request: Request): Promise<Response> {
     );
   }
 
+  // Refused on the declared length, before the body is read. `formData()` buffers the whole
+  // request into the isolate first, so checking a parsed file's size spends the bandwidth and the
+  // memory it was meant to save. The envelope allowance covers multipart boundaries and headers.
+  // A declared length that is already too large is refused here; an absent one (a chunked body)
+  // falls through to the parsed check below, since rejecting on a missing header would turn a
+  // legitimate transfer encoding into a failed publish.
+  const declared = Number(request.headers.get('content-length') ?? NaN);
+  if (Number.isFinite(declared) && declared > MAX_PUBLISH_BYTES + 1024) {
+    return new Response(`a publish carries at most ${MAX_PUBLISH_BYTES} bytes`, { status: 413, headers: cors });
+  }
+
   let file: Blob | null = null;
   try {
     // FormData yields File | string. Excluding the string narrows to File without naming Blob as
@@ -72,14 +83,31 @@ export default async function handler(request: Request): Promise<Response> {
   if (file === null) {
     return new Response("expected a multipart body with a 'file' field", { status: 400, headers: cors });
   }
-  if (file.size > MAX_CONTENT_BYTES) {
-    return new Response(
-      `content is ${file.size} bytes - a single raw-leaves block holds at most ${MAX_CONTENT_BYTES}`,
-      { status: 413, headers: cors },
-    );
+  if (file.size > MAX_PUBLISH_BYTES) {
+    return new Response(`content is ${file.size} bytes - a publish carries at most ${MAX_PUBLISH_BYTES}`, {
+      status: 413,
+      headers: cors,
+    });
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
+
+  // This endpoint exists to pin authored argument text and nothing else. Decoding strictly, then
+  // holding the result to the same character bound the composer enforces, is what keeps it from
+  // being storage for arbitrary bytes: a payload smuggled as base64 pays 33% inflation against a
+  // 250-character ceiling, which is not a useful place to put anything.
+  let text: string;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return new Response('content must be UTF-8 text', { status: 400, headers: cors });
+  }
+  if (text.length > MAX_CONTENT_CHARS) {
+    return new Response(`content is ${text.length} characters - at most ${MAX_CONTENT_CHARS}`, {
+      status: 413,
+      headers: cors,
+    });
+  }
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   const expectedCid = cidFromSha256Digest(digest);
 

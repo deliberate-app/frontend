@@ -30,6 +30,16 @@ export const MAX_CONTENT_BYTES = 256 * 1024;
  */
 export const MAX_CONTENT_CHARS = 250;
 
+/**
+ * What one publish request may carry, in bytes.
+ *
+ * `MAX_CONTENT_CHARS` at its worst UTF-8 expansion is 750 bytes, so this has headroom and still
+ * bounds the pin proxy at roughly a thousandth of `MAX_CONTENT_BYTES`. They are different limits
+ * for different jobs, and reusing the transport bound as the request bound is what left the
+ * public pin endpoint accepting 256 KiB of anything.
+ */
+export const MAX_PUBLISH_BYTES = 1024;
+
 /** The sha-256 digest of the text - the raw bytes of the on-chain contentURI. */
 export async function sha256DigestOf(text: string): Promise<Uint8Array> {
   return sha256(new TextEncoder().encode(text));
@@ -93,17 +103,8 @@ export async function fetchTextByDigest(
   timeoutMs = 8000,
 ): Promise<string | null> {
   const cid = cidFromSha256Digest(digest);
-  // Two gateway shapes, because only one of them is usable from a browser at some hosts. Path
-  // style (`https://host/ipfs/<cid>`) is the common form, but the big public gateways answer it
-  // with a redirect to their subdomain form, and that redirect carries no CORS headers - so the
-  // fetch is blocked before the content is ever reached. A URL containing `{cid}` is used
-  // verbatim, which is how a subdomain gateway (`https://{cid}.ipfs.dweb.link`) gets addressed
-  // directly and passes.
-  const url = gatewayUrl.includes('{cid}')
-    ? gatewayUrl.replace('{cid}', cid)
-    : `${gatewayUrl.replace(/\/$/, '')}/ipfs/${cid}`;
   try {
-    const response = await fetch(url, {
+    const response = await fetch(`${gatewayUrl.replace(/\/$/, '')}/ipfs/${cid}`, {
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) {

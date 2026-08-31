@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { singleBlockCar } from '../../src/lib/car';
 import { cidFromSha256Digest } from '../../src/lib/cid';
-import { MAX_CONTENT_BYTES } from '../../src/lib/ipfs';
+import { MAX_CONTENT_CHARS, MAX_PUBLISH_BYTES } from '../../src/lib/ipfs';
 import handler from './add';
 
 const realFetch = globalThis.fetch;
@@ -112,9 +112,9 @@ describe('the /api/v0/add pin proxy', () => {
     expect((await handler(addRequest(new Uint8Array([1])))).status).toBe(502);
   });
 
-  test('rejects content above the single-block limit before uploading', async () => {
+  test('rejects content above the publish limit before uploading', async () => {
     const captured = stubFilebase({ status: 200, cid: 'unused' });
-    const response = await handler(addRequest(new Uint8Array(MAX_CONTENT_BYTES + 1)));
+    const response = await handler(addRequest(new Uint8Array(MAX_PUBLISH_BYTES + 1)));
     expect(response.status).toBe(413);
     expect(captured.url).toBeUndefined();
   });
@@ -153,10 +153,44 @@ describe('the /api/v0/add pin proxy', () => {
     expect(response.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:5173');
   });
 
-  test('does not open the proxy to foreign origins', async () => {
+  test('withholds CORS headers from a foreign origin - which does not stop the pin', async () => {
+    // Named for what it actually verifies. A multipart POST is CORS-safelisted, so no preflight
+    // fires and the upload runs regardless; the assertion below is that the *response* stays
+    // unreadable, not that the request was refused. The gate against abuse is the size, UTF-8
+    // and character checks in the route, not this.
     const bytes = new TextEncoder().encode('An argument text.');
-    stubFilebase({ status: 200, cid: await cidOf(bytes) });
+    const captured = stubFilebase({ status: 200, cid: await cidOf(bytes) });
+
     const response = await handler(addRequest(bytes, 'https://evil.example'));
-    expect(response.headers.get('access-control-allow-origin')).toBeNull();
+
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    expect(captured.url).toBeDefined();
+  });
+
+  test('refuses a body that declares more than a publish may carry, before reading it', async () => {
+    const captured = stubFilebase({ status: 200, cid: 'unused' });
+    const request = new Request('http://localhost/api/v0/add', {
+      method: 'POST',
+      headers: { 'content-type': 'multipart/form-data; boundary=x', 'content-length': '999999' },
+      body: 'x',
+    });
+    expect((await handler(request)).status).toBe(413);
+    expect(captured.url).toBeUndefined();
+  });
+
+  test('refuses content that is not UTF-8 text', async () => {
+    const captured = stubFilebase({ status: 200, cid: 'unused' });
+    // A lone 0xFF is not valid UTF-8 - the shape a binary payload would arrive in.
+    const response = await handler(addRequest(new Uint8Array([0xff, 0xfe, 0xfd])));
+    expect(response.status).toBe(400);
+    expect(await response.text()).toContain('UTF-8');
+    expect(captured.url).toBeUndefined();
+  });
+
+  test('refuses text past the composer character bound', async () => {
+    const captured = stubFilebase({ status: 200, cid: 'unused' });
+    const response = await handler(addRequest(new TextEncoder().encode('x'.repeat(MAX_CONTENT_CHARS + 1))));
+    expect(response.status).toBe(413);
+    expect(captured.url).toBeUndefined();
   });
 });

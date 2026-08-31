@@ -112,35 +112,23 @@ export function decodeInlineContent(contentURI: Hex): ResolvedContent {
 }
 
 /**
- * Resolves content from every configured gateway at once, taking the first that answers.
+ * Resolves an argument's text from the deployment's gateway, verified against its digest.
  *
- * One gateway is one point of failure, and the failure is routine rather than exotic: freshly
- * pinned content is reachable through whoever holds it long before a given public gateway has
- * found a provider for it. Both texts of the first debate authored on the hosted app read as
- * bare digests for minutes because `ipfs.io` could not serve them inside the timeout, while
- * other gateways returned them immediately - the content was never missing.
+ * This used to race a list of public gateways, because a public gateway must first find a
+ * provider for freshly pinned content and routinely could not do so inside the timeout - both
+ * texts of the first debate authored on the hosted app read as bare digests for minutes while
+ * other gateways served them instantly. Racing hid that behind whichever gateway happened to
+ * already know.
  *
- * Racing is safe here for the same reason the gateway is untrusted at all: every response must
- * hash back to the on-chain digest, so the winner is the fastest gateway that told the truth,
- * and a liar loses by failing that check rather than by being asked second. Set
- * `VITE_IPFS_GATEWAY` to a comma-separated list to widen the field.
+ * The gateway now sits in front of the pins themselves (`/api/ipfs`, this deployment's own
+ * authorized gateway), so there is no provider to discover and nothing for a second opinion to
+ * add - and a page no longer opens one request per gateway per argument. What made the race
+ * necessary was the gap between who stores the content and who serves it; closing that gap is
+ * what makes one gateway enough.
  */
 export async function resolveContent(contentURI: Hex, gateway: string | undefined): Promise<ResolvedContent> {
-  const gateways = (gateway ?? '')
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
-
-  if (gateways.length > 0) {
-    const digest = hexToBytes(contentURI);
-    const attempts = gateways.map(async (url) => {
-      const text = await fetchTextByDigest(url, digest);
-      // Rejecting rather than returning null is what lets Promise.any take the first success
-      // instead of the first answer - a gateway that 404s must not settle the race.
-      if (text === null) throw new Error(`no content from ${url}`);
-      return text;
-    });
-    const text = await Promise.any(attempts).catch(() => null);
+  if (gateway) {
+    const text = await fetchTextByDigest(gateway, hexToBytes(contentURI));
     if (text !== null) return { text };
   }
   return decodeInlineContent(contentURI);

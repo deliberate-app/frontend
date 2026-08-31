@@ -37,61 +37,42 @@ describe('resolveContent', () => {
   const TEXT = 'Public transport should be free';
   const DIGEST = '0x48265361d891578f4eeec7159a49600aed6305df194feca6cb7df55b7b7796ad' as Hex;
 
-  /** Serves TEXT from the named gateways only; every other host answers 504, as a miss does. */
-  const stubGateways = (serving: Record<string, number>) => {
-    globalThis.fetch = (async (input: string | URL) => {
-      const url = String(input);
-      const host = Object.keys(serving).find((candidate) => url.startsWith(candidate));
-      if (host === undefined) return new Response('not found', { status: 504 });
-      await Bun.sleep(serving[host] as number);
-      return new Response(TEXT);
-    }) as unknown as typeof fetch;
-  };
-
-  test('takes the content from whichever gateway has it, not the first one listed', async () => {
-    // The live failure: the configured gateway could not serve freshly pinned content in time.
-    stubGateways({ 'http://slow-and-empty': 0 } as Record<string, number>);
-    expect(await resolveContent(DIGEST, 'http://has-nothing,http://slow-and-empty')).toEqual({ text: TEXT });
-  });
-
-  test('a gateway that misses does not settle the race for a gateway that has it', async () => {
-    // The miss answers instantly and the holder takes 30ms: first-to-answer would lose the text.
-    stubGateways({ 'http://holder': 30 } as Record<string, number>);
-    expect(await resolveContent(DIGEST, 'http://misses-fast,http://holder')).toEqual({ text: TEXT });
-  });
-
-  test('falls back to the digest when no gateway can serve it', async () => {
-    stubGateways({} as Record<string, number>);
-    expect(await resolveContent(DIGEST, 'http://a,http://b')).toEqual({
-      text: '0x4826\u200a\u2026\u200a96ad'.replace(/\u200a/g, ''),
-      digest: DIGEST,
-    });
-  });
-
-  test('addresses a subdomain gateway verbatim through its {cid} placeholder', async () => {
-    // Path-style URLs at the big public gateways redirect to this form, and the redirect carries
-    // no CORS headers - so the placeholder is the only shape that reaches them from a browser.
-    const cid = 'bafkreiciezjwdwerk6hu53whcwnesyak5vrqlxyzj7wkns356vnxw54wvu';
+  const stubGateway = (reply: { status: number; body?: string }) => {
     const asked: string[] = [];
     globalThis.fetch = (async (input: string | URL) => {
       asked.push(String(input));
-      return new Response(TEXT);
+      return new Response(reply.body ?? null, { status: reply.status });
     }) as unknown as typeof fetch;
+    return asked;
+  };
 
-    expect(await resolveContent(DIGEST, 'https://{cid}.ipfs.dweb.link')).toEqual({ text: TEXT });
-    expect(asked).toEqual([`https://${cid}.ipfs.dweb.link`]);
+  test('reads the content from the configured gateway, path style', async () => {
+    const asked = stubGateway({ status: 200, body: TEXT });
+
+    expect(await resolveContent(DIGEST, '/api')).toEqual({ text: TEXT });
+    // The CID is derived from the digest, so the gateway is addressed the same way any IPFS
+    // gateway is - which is what lets the same code point at a local kubo in dev.
+    expect(asked).toEqual(['/api/ipfs/bafkreiciezjwdwerk6hu53whcwnesyak5vrqlxyzj7wkns356vnxw54wvu']);
   });
 
-  test('ignores blank entries and surrounding space in the list', async () => {
-    stubGateways({ 'http://holder': 0 } as Record<string, number>);
-    expect(await resolveContent(DIGEST, ' , http://holder , ')).toEqual({ text: TEXT });
+  test('falls back to the digest when the gateway does not have it', async () => {
+    stubGateway({ status: 404 });
+
+    expect(await resolveContent(DIGEST, '/api')).toEqual({ text: '0x4826…96ad', digest: DIGEST });
+  });
+
+  test('rejects bytes that do not hash to the digest, rather than showing them', async () => {
+    // The gateway is untrusted; this is the check that makes it safe to read through one.
+    stubGateway({ status: 200, body: 'not the text that was published' });
+
+    expect(await resolveContent(DIGEST, '/api')).toEqual({ text: '0x4826…96ad', digest: DIGEST });
   });
 
   test('with no gateway configured, decodes inline without any fetch', async () => {
     globalThis.fetch = (async () => {
       throw new Error('resolveContent must not reach the network without a gateway');
     }) as unknown as typeof fetch;
-    expect(await resolveContent(DIGEST, undefined)).toEqual({ text: '0x4826\u202696ad', digest: DIGEST });
+    expect(await resolveContent(DIGEST, undefined)).toEqual({ text: '0x4826…96ad', digest: DIGEST });
   });
 });
 
