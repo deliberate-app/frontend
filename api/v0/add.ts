@@ -7,21 +7,25 @@
  * holds them. The response is kubo's `{Hash: <cid>}`, so the client needs no
  * Filebase-specific code and keeps verifying the CID against its local digest.
  *
- * Filebase pins through its S3-compatible API: a PUT of the raw bytes, SigV4-signed, whose
- * response carries the resulting CID in `x-amz-meta-cid`. The object key is the CID the
- * content must have, which makes a re-publish of the same text idempotent and makes the
- * bucket browsable by the identifier the chain stores.
+ * Filebase pins through its S3-compatible API: a SigV4-signed PUT whose response carries the
+ * resulting CID in `x-amz-meta-cid`. The object key is the CID the content must have, which
+ * makes a re-publish of the same text idempotent and the bucket browsable by the identifier
+ * the chain stores.
  *
- * The CID check below is not a formality. The contentURI scheme requires the raw-leaves CIDv1
- * that wraps the sha-256 digest (`0x01 0x55 0x12 0x20 + digest`), and a pinning service that
- * wraps content in UnixFS/dag-pb instead produces a different CID for identical bytes. Filebase
- * does not document which it emits, so this assertion is what establishes it - failing the
- * publish loudly rather than letting an unresolvable digest reach the chain. If it trips, the
- * fix is to upload a single-block CAR (`import=car`) whose root is the CID we require, which
- * takes the choice away from the service.
+ * The upload is a CAR, not the loose bytes, because the CID is not Filebase's to choose. The
+ * contentURI scheme requires the raw-leaves CIDv1 wrapping the sha-256 digest
+ * (`0x01 0x55 0x12 0x20 + digest`), and Filebase re-chunks loose bytes through UnixFS: measured
+ * against the live API, it returned the dag-pb CIDv0 `QmdXgh…` for content whose raw CID is
+ * `bafkreief4v…`. A CAR carries its own block and names its own root, so the importer stores
+ * what it is given and the CID is settled before the request leaves this function.
+ *
+ * The CID check after the upload stays regardless. It costs nothing and it is the one thing
+ * standing between a service that quietly re-encodes content and a digest on chain that resolves
+ * to nothing.
  */
 import { AwsClient } from 'aws4fetch';
 
+import { singleBlockCar } from '../../src/lib/car';
 import { cidFromSha256Digest } from '../../src/lib/cid';
 import { corsFor } from '../../src/lib/devCors';
 import { MAX_CONTENT_BYTES } from '../../src/lib/ipfs';
@@ -58,7 +62,7 @@ export default async function handler(request: Request): Promise<Response> {
 
   let file: Blob | null = null;
   try {
-    const field = (await request.formData()).get('file');
+    const field: unknown = (await request.formData()).get('file');
     file = field instanceof Blob ? field : null;
   } catch {
     // Not a multipart body; fall through to the 400 below.
@@ -84,8 +88,12 @@ export default async function handler(request: Request): Promise<Response> {
   try {
     response = await client.fetch(objectUrl, {
       method: 'PUT',
-      body: bytes,
-      headers: { 'content-type': 'application/octet-stream' },
+      body: singleBlockCar(bytes, digest),
+      headers: {
+        'content-type': 'application/vnd.ipld.car',
+        // Import the archive's own block rather than re-chunking the body as a new file.
+        'x-amz-meta-import': 'car',
+      },
     });
   } catch (error: unknown) {
     return new Response(`Filebase could not be reached: ${String(error)}`, { status: 502, headers: cors });
@@ -107,7 +115,7 @@ export default async function handler(request: Request): Promise<Response> {
   if (cid !== expectedCid) {
     return new Response(
       `Filebase pinned ${cid}, not the raw-leaves CID ${expectedCid} the contentURI scheme requires - ` +
-        'the upload needs to go through a single-block CAR (import=car) instead',
+        'the CAR import did not preserve the root it was given',
       { status: 502, headers: cors },
     );
   }

@@ -1,13 +1,17 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
+import { singleBlockCar } from '../../src/lib/car';
 import { cidFromSha256Digest } from '../../src/lib/cid';
 import { MAX_CONTENT_BYTES } from '../../src/lib/ipfs';
 import handler from './add';
 
 const realFetch = globalThis.fetch;
 
+const sha256 = async (bytes: Uint8Array): Promise<Uint8Array> =>
+  new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+
 async function cidOf(bytes: Uint8Array): Promise<string> {
-  return cidFromSha256Digest(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
+  return cidFromSha256Digest(await sha256(bytes));
 }
 
 function addRequest(bytes: Uint8Array, origin?: string): Request {
@@ -26,13 +30,23 @@ function addRequest(bytes: Uint8Array, origin?: string): Request {
  * aws4fetch signs and then calls global fetch with a Request, so the stub reads the URL and
  * method off that - which also lets the signature itself be asserted as present.
  */
-function stubFilebase(reply: { status: number; cid?: string }): { url?: string; method?: string; auth?: string } {
-  const captured: { url?: string; method?: string; auth?: string } = {};
+interface Captured {
+  url?: string;
+  method?: string;
+  auth?: string;
+  importMode?: string;
+  body?: Uint8Array;
+}
+
+function stubFilebase(reply: { status: number; cid?: string }): Captured {
+  const captured: Captured = {};
   globalThis.fetch = (async (input: string | URL | Request) => {
     const request = input as Request;
     captured.url = request.url ?? String(input);
     captured.method = request.method;
     captured.auth = request.headers?.get('authorization') ?? undefined;
+    captured.importMode = request.headers?.get('x-amz-meta-import') ?? undefined;
+    captured.body = new Uint8Array(await request.arrayBuffer());
     const headers: Record<string, string> = {};
     if (reply.cid !== undefined) headers['x-amz-meta-cid'] = reply.cid;
     return new Response(null, { status: reply.status, headers });
@@ -67,6 +81,9 @@ describe('the /api/v0/add pin proxy', () => {
     expect(captured.url).toBe(`https://s3.filebase.com/test-bucket/${cid}`);
     expect(captured.method).toBe('PUT');
     expect(captured.auth).toContain('AWS4-HMAC-SHA256');
+    // A CAR, imported as one - not loose bytes for Filebase to re-chunk into a dag-pb CID.
+    expect(captured.importMode).toBe('car');
+    expect([...(captured.body as Uint8Array)]).toEqual([...singleBlockCar(bytes, await sha256(bytes))]);
   });
 
   test('rejects a Filebase CID that does not wrap the content digest', async () => {
@@ -80,7 +97,7 @@ describe('the /api/v0/add pin proxy', () => {
     const message = await response.text();
     expect(response.status).toBe(502);
     expect(message).toContain(await cidOf(bytes));
-    expect(message).toContain('import=car');
+    expect(message).toContain('did not preserve the root');
   });
 
   test('fails when Filebase accepts the upload but reports no CID', async () => {
