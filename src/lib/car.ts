@@ -1,8 +1,5 @@
 import * as CarBufferWriter from '@ipld/car/buffer-writer';
 import { CID } from 'multiformats/cid';
-import * as raw from 'multiformats/codecs/raw';
-import { create as createDigest } from 'multiformats/hashes/digest';
-import { sha256 } from 'multiformats/hashes/sha2';
 
 /**
  * A CARv1 archive holding exactly one raw block.
@@ -32,10 +29,22 @@ export function singleBlockCar(data: Uint8Array, digest: Uint8Array): Uint8Array
   return writer.close();
 }
 
+/**
+ * CIDv1, raw codec (0x55), sha-256 multihash (0x12 0x20) - the prefix the contract's 32-byte
+ * digest is expanded with, written once here and nowhere else.
+ *
+ * Built by decoding the canonical bytes rather than from `multiformats`' codec and hash
+ * registries: Vercel's edge bundler rejects that package's `codecs/*` and `hashes/*` subpath
+ * exports, and a deploy is where you find that out. `CID.decode` is in the one entry point that
+ * does bundle, and it still validates the bytes and owns the base32 serialisation - which is the
+ * part worth not writing by hand.
+ */
+const RAW_CIDV1_SHA256 = [0x01, 0x55, 0x12, 0x20];
+
 /** The raw-codec CIDv1 for a sha-256 digest - the one definition of the scheme's CID. */
 export function cidOf(digest: Uint8Array): CID {
   if (digest.length !== 32) {
     throw new Error(`a sha-256 digest is 32 bytes, got ${digest.length}`);
   }
-  return CID.create(1, raw.code, createDigest(sha256.code, digest));
+  return CID.decode(new Uint8Array([...RAW_CIDV1_SHA256, ...digest]));
 }
