@@ -93,8 +93,17 @@ export async function fetchTextByDigest(
   timeoutMs = 8000,
 ): Promise<string | null> {
   const cid = cidFromSha256Digest(digest);
+  // Two gateway shapes, because only one of them is usable from a browser at some hosts. Path
+  // style (`https://host/ipfs/<cid>`) is the common form, but the big public gateways answer it
+  // with a redirect to their subdomain form, and that redirect carries no CORS headers - so the
+  // fetch is blocked before the content is ever reached. A URL containing `{cid}` is used
+  // verbatim, which is how a subdomain gateway (`https://{cid}.ipfs.dweb.link`) gets addressed
+  // directly and passes.
+  const url = gatewayUrl.includes('{cid}')
+    ? gatewayUrl.replace('{cid}', cid)
+    : `${gatewayUrl.replace(/\/$/, '')}/ipfs/${cid}`;
   try {
-    const response = await fetch(`${gatewayUrl.replace(/\/$/, '')}/ipfs/${cid}`, {
+    const response = await fetch(url, {
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) {

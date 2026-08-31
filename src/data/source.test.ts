@@ -68,6 +68,20 @@ describe('resolveContent', () => {
     });
   });
 
+  test('addresses a subdomain gateway verbatim through its {cid} placeholder', async () => {
+    // Path-style URLs at the big public gateways redirect to this form, and the redirect carries
+    // no CORS headers - so the placeholder is the only shape that reaches them from a browser.
+    const cid = 'bafkreiciezjwdwerk6hu53whcwnesyak5vrqlxyzj7wkns356vnxw54wvu';
+    const asked: string[] = [];
+    globalThis.fetch = (async (input: string | URL) => {
+      asked.push(String(input));
+      return new Response(TEXT);
+    }) as unknown as typeof fetch;
+
+    expect(await resolveContent(DIGEST, 'https://{cid}.ipfs.dweb.link')).toEqual({ text: TEXT });
+    expect(asked).toEqual([`https://${cid}.ipfs.dweb.link`]);
+  });
+
   test('ignores blank entries and surrounding space in the list', async () => {
     stubGateways({ 'http://holder': 0 } as Record<string, number>);
     expect(await resolveContent(DIGEST, ' , http://holder , ')).toEqual({ text: TEXT });
