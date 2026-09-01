@@ -40,6 +40,22 @@ export const MAX_CONTENT_CHARS = 250;
  */
 export const MAX_PUBLISH_BYTES = 1024;
 
+/**
+ * Texts this session published, by digest.
+ *
+ * The cold read that a person actually waits through is the author's own: publish, send the
+ * transaction, and the debate re-renders needing the very text the browser hashed a moment ago.
+ * A freshly pinned CID is the slowest thing a gateway can be asked for - it has to find a
+ * provider - so that is exactly the read worth never making.
+ *
+ * Safe because the key is the hash of the value: an entry cannot be stale or forged without
+ * breaking sha-256, which is the same argument that lets the gateway be untrusted. Unbounded on
+ * purpose - a session can only add entries by paying gas for each, so it is bounded by something
+ * far more expensive than memory. In-memory only: it covers publish-then-render, and a reload
+ * falls through to the gateway, which by then has been warmed.
+ */
+const publishedTexts = new Map<string, string>();
+
 /** The sha-256 digest of the text - the raw bytes of the on-chain contentURI. */
 export async function sha256DigestOf(text: string): Promise<Uint8Array> {
   return sha256(new TextEncoder().encode(text));
@@ -88,7 +104,22 @@ export async function publishText(apiUrl: string, text: string): Promise<Publish
     throw new Error(`pinned CID ${cid} does not match the content digest CID ${expectedCid}`);
   }
 
-  return { digest: toHex(digest), cid };
+  const contentURI = toHex(digest);
+  publishedTexts.set(contentURI, text);
+  return { digest: contentURI, cid };
+}
+
+/**
+ * Asks the gateway for a CID once, to prime it - and the CDN in front of it - before a reader
+ * arrives. Nothing waits on this and nothing fails because of it.
+ *
+ * A gateway serves content it has already fetched in tens of milliseconds and content it has not
+ * in tens of seconds, which is past the timeout below. Doing it here means that cost is paid by
+ * the publish that caused it, in the background, rather than by whoever reads next.
+ */
+export function warmGateway(gatewayUrl: string | undefined, cid: string): void {
+  if (!gatewayUrl) return;
+  void fetch(`${gatewayUrl.replace(/\/$/, '')}/ipfs/${cid}`).catch(() => undefined);
 }
 
 /**
@@ -102,6 +133,13 @@ export async function fetchTextByDigest(
   digest: Uint8Array,
   timeoutMs = 8000,
 ): Promise<string | null> {
+  // What this session published, it already verified - re-fetching it to hash it again would be
+  // asking the network for a text held in this very module.
+  const published = publishedTexts.get(toHex(digest));
+  if (published !== undefined) {
+    return published;
+  }
+
   const cid = cidFromSha256Digest(digest);
   try {
     const response = await fetch(`${gatewayUrl.replace(/\/$/, '')}/ipfs/${cid}`, {

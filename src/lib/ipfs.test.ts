@@ -1,8 +1,8 @@
-import { afterAll, describe, expect, test } from 'bun:test';
+import { afterAll, afterEach, describe, expect, test } from 'bun:test';
 import { hexToBytes } from 'viem';
 
 import { IPFS_GATEWAY_URL, KUBO_API_URL, kuboUp } from '../../scripts/devstack/ipfs';
-import { contentURIOf, fetchTextByDigest, publishText, sha256DigestOf, MAX_CONTENT_BYTES } from './ipfs';
+import { contentURIOf, fetchTextByDigest, publishText, sha256DigestOf, warmGateway, MAX_CONTENT_BYTES } from './ipfs';
 
 const kuboAvailable = await kuboUp();
 
@@ -68,5 +68,70 @@ describe('fetchTextByDigest', () => {
 
   test('returns null when the gateway is unreachable', async () => {
     expect(await fetchTextByDigest('http://127.0.0.1:59999', await sha256DigestOf(text), 500)).toBeNull();
+  });
+});
+
+describe('read-your-writes', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  const TEXT = 'A text this session published.';
+
+  test('serves a text this session published without asking the gateway', async () => {
+    // The publish is stubbed to answer as the pin proxy does, so the cache is populated the way
+    // a real publish populates it.
+    const digest = await sha256DigestOf(TEXT);
+    const cid = (await import('./cid')).cidFromSha256Digest(digest);
+    globalThis.fetch = (async () => Response.json({ Hash: cid })) as unknown as typeof fetch;
+    await publishText('http://pin.example', TEXT);
+
+    // Any gateway read after this must not reach the network at all.
+    let asked = false;
+    globalThis.fetch = (async () => {
+      asked = true;
+      throw new Error('the gateway must not be asked for a text this session published');
+    }) as unknown as typeof fetch;
+
+    expect(await fetchTextByDigest('http://gateway.example', digest)).toBe(TEXT);
+    expect(asked).toBe(false);
+  });
+
+  test('still reads the gateway for a text this session did not publish', async () => {
+    const other = 'A text published by somebody else.';
+    const digest = await sha256DigestOf(other);
+    globalThis.fetch = (async () => new Response(other)) as unknown as typeof fetch;
+
+    expect(await fetchTextByDigest('http://gateway.example', digest)).toBe(other);
+  });
+});
+
+describe('warmGateway', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  test('asks the gateway for the CID once', () => {
+    const asked: string[] = [];
+    globalThis.fetch = (async (url: string | URL) => {
+      asked.push(String(url));
+      return new Response('ok');
+    }) as unknown as typeof fetch;
+
+    warmGateway('http://gateway.example/', 'bafkreitest');
+
+    expect(asked).toEqual(['http://gateway.example/ipfs/bafkreitest']);
+  });
+
+  test('does nothing without a gateway, and never throws when one fails', () => {
+    globalThis.fetch = (async () => {
+      throw new Error('gateway down');
+    }) as unknown as typeof fetch;
+
+    // Warming is best-effort: a publish must not fail because priming a cache did.
+    expect(() => warmGateway(undefined, 'bafkreitest')).not.toThrow();
+    expect(() => warmGateway('http://gateway.example', 'bafkreitest')).not.toThrow();
   });
 });

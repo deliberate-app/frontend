@@ -28,7 +28,7 @@ import {
 
 import abi from '../abi/Deliberate.abi.json';
 import type { DebateSchedule } from '../lib/debateTiming';
-import { contentURIOf, publishText } from '../lib/ipfs';
+import { contentURIOf, publishText, warmGateway } from '../lib/ipfs';
 import type { Side } from '../types';
 import type { ContractConfig } from './config';
 import { waitForIndexerBlock } from './source';
@@ -216,9 +216,23 @@ export async function connectDebateActions(
     return receipt;
   };
 
-  /** Publishes authored text through the content pipeline, digest-only without an IPFS API. */
-  const publish = async (text: string): Promise<Hex> =>
-    config.ipfsApi ? (await publishText(config.ipfsApi, text)).digest : await contentURIOf(text);
+  /**
+   * Publishes authored text through the content pipeline, digest-only without an IPFS API.
+   *
+   * The pin is followed by an unawaited read of the same CID, which primes the gateway and the
+   * CDN in front of it. A gateway that has never served a CID takes tens of seconds to find a
+   * provider for it; one that has takes tens of milliseconds. Paying that here, in the
+   * background of the publish that caused it, is what keeps the next reader from paying it in
+   * front of a blank card.
+   */
+  const publish = async (text: string): Promise<Hex> => {
+    if (!config.ipfsApi) {
+      return contentURIOf(text);
+    }
+    const { digest, cid } = await publishText(config.ipfsApi, text);
+    warmGateway(config.ipfsGateway, cid);
+    return digest;
+  };
 
   /** Approves the contract for a token amount when the current allowance does not cover it. */
   const approveIfNeeded = async (token: Address, amount: bigint): Promise<void> => {
