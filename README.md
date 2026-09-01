@@ -75,7 +75,7 @@ testnet, point them at a hosted pinning service instead.
 
 The contract stores each argument's content as a `bytes32` — the **sha-256 multihash digest of an IPFS raw-leaves block**. The content pipeline lives in [src/lib/ipfs.ts](src/lib/ipfs.ts):
 
-- **Publish** (`publishText`): adds and pins the text on a kubo-compatible RPC API (`/api/v0/add?raw-leaves=true&cid-version=1&pin=true`) and returns the digest for on-chain use. The returned CID is asserted to wrap exactly the locally computed digest, so the on-chain reference and the pinned content cannot drift, and content above the single-block limit (256 KiB) is rejected up front — it could never be referenced by one digest. Publish first, then send the transaction: a failed transaction leaves only a harmless pinned text block. Today the publisher is the dev seeding tool; the upcoming authoring flow publishes to `VITE_IPFS_API` before sending `addArgument`.
+- **Publish** (`publishText`): adds and pins the text on a kubo-compatible RPC API (`/api/v0/add?raw-leaves=true&cid-version=1&pin=true`) and returns the digest for on-chain use. The returned CID is asserted to wrap exactly the locally computed digest, so the on-chain reference and the pinned content cannot drift, and content above the single-block limit (256 KiB) is rejected up front — it could never be referenced by one digest. The hosted pin proxy applies a much tighter bound of its own (see *Hosting on Vercel*). Publish first, then send the transaction: a failed transaction leaves only a harmless pinned text block. Today the publisher is the dev seeding tool; the upcoming authoring flow publishes to `VITE_IPFS_API` before sending `addArgument`.
 - **Resolve** (`fetchTextByDigest`): rebuilds the CIDv1 (`b` + base32 of `0x01 0x55 0x12 0x20 + digest`, [src/lib/cid.ts](src/lib/cid.ts)) and fetches the text from `VITE_IPFS_GATEWAY`, which takes a **comma-separated list** and is raced - the first gateway whose bytes hash to the digest wins, because one gateway not yet having freshly pinned content is routine rather than exceptional. An entry containing `{cid}` is used verbatim; anything else is treated as a path-style host (`{gateway}/ipfs/{cid}`). **Browsers need the `{cid}` form for the big public gateways**: they answer path-style requests with a redirect to their subdomain host, and that redirect carries no CORS headers, so the fetch is blocked before the content is reached. **Gateways are untrusted**: responses are size-capped while streaming and must hash back to the on-chain digest, otherwise they are discarded. Without a gateway (or when verification fails), short ASCII payloads are decoded inline and anything else is shown as the raw digest.
 
 A local [kubo](https://github.com/ipfs/kubo) node runs via Docker for a reproducible setup (`docker-compose.yml`, image version pinned). Its RPC API allowlists the dev app origins — never `*`, the Origin check is the unauthenticated API's CSRF defense ([ipfs/container-init.d](ipfs/container-init.d/010-rpc-cors.sh)) — so the authoring flow will work in development without infrastructure changes:
@@ -98,8 +98,17 @@ Authoring on the hosted site publishes through [api/v0/add.ts](api/v0/add.ts), a
 **pin proxy**: `publishText` sends the same multipart request it would send to a kubo node, the
 edge function pins the text on [Filebase](https://filebase.com) through its S3-compatible API and answers with
 kubo's `{Hash}`, and the client's digest assertion keeps holding — a mispinned CID fails loudly. The
-Filebase credentials never reach the browser. The route is origin-open like any public API;
-the 256 KiB cap bounds abuse, and the client-side digest check bounds damage.
+Filebase credentials never reach the browser.
+
+The route is unauthenticated, so what bounds abuse is what it will accept: at most
+`MAX_PUBLISH_BYTES` (1 KiB), refused on the declared `content-length` before the body is read,
+and the bytes must decode as UTF-8 within `MAX_CONTENT_CHARS`. That leaves room for an argument
+and for nothing else - a payload smuggled as base64 pays 33% inflation against a 250-character
+ceiling. Note what does **not** bound it: the loopback CORS allowlist governs whether a calling
+page may read the response, not whether the request is delivered, and a multipart POST is
+CORS-safelisted so no preflight fires. An attacker driving this route from their own page never
+needed the response. Authenticating the write against the chain - pinning only content whose
+digest a transaction already committed - is the remaining gap.
 
 Project environment variables (Settings → Environment Variables):
 
@@ -116,7 +125,7 @@ FILEBASE_BUCKET=…            # the IPFS-network bucket the texts are pinned in
 ```
 
 `VITE_*` values are baked into the public bundle at build time — they must never hold secrets.
-`PINATA_JWT` is read only by the edge function at request time. Local development ignores all of
+The `FILEBASE_*` variables are read only by the edge functions at request time. Local development ignores all of
 this: `just dev-testnet` authors against the dockerized kubo, no pinning service involved.
 
 ## Wallets
