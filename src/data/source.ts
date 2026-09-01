@@ -600,7 +600,7 @@ const INDEXER_MARKETS_QUERY = `query DebateMarkets($debateId: String!) {
 }`;
 
 const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
-  Stake(where: { argument_id: { _eq: $argumentId } }) { fee }
+  Argument(where: { id: { _eq: $argumentId } }) { feesEarned }
 }`;
 
 const CHAIN_METADATA_QUERY = `{ chain_metadata { latest_processed_block } }`;
@@ -795,12 +795,14 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
     },
 
     async feesEarned(debateId: number, argumentId: number): Promise<number> {
-      // The stake history is append-only, so the fees it records outlive the author's claim -
-      // unlike the argument's standing `fees` balance, which the claim zeroes.
-      const data = await graphql<{ Stake: Array<{ fee: string }> }>(INDEXER_ARGUMENT_FEES_QUERY, {
+      // The index folds every stake's fee into a lifetime total, which the author's claim does
+      // not zero - unlike the argument's standing `fees` balance, which it does. This used to sum
+      // the argument's whole stake history client-side, one row per stake ever placed on it.
+      const data = await graphql<{ Argument: Array<{ feesEarned: string }> }>(INDEXER_ARGUMENT_FEES_QUERY, {
         argumentId: `${debateId}_${argumentId}`,
       });
-      return data.Stake.reduce((sum, stake) => sum + Number(stake.fee), 0);
+      const [argument] = data.Argument;
+      return argument ? Number(argument.feesEarned) : 0;
     },
 
     async markets(debateId: number): Promise<ArgumentMarket[]> {
