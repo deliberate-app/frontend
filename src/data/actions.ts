@@ -54,10 +54,15 @@ export interface DebateActions {
    * bounty, which first asks for a token approval when the allowance does not cover the amount -
    * and returns the new debate's ID.
    */
+  /**
+   * Creates a debate. `identityRegistry` decides who may join: the zero address leaves it open to
+   * everyone, any other address is asked `isRegistered` on each join.
+   */
   createDebate(
     thesis: string,
     schedule: DebateSchedule,
     feePercentage: number,
+    identityRegistry: Address,
     bounty?: BountyFunding,
   ): Promise<number>;
   join(debateId: number): Promise<void>;
@@ -266,7 +271,7 @@ export async function connectDebateActions(
   return {
     account,
 
-    async createDebate(thesis, schedule, feePercentage, bounty) {
+    async createDebate(thesis, schedule, feePercentage, identityRegistry, bounty) {
       // Pin first: publishing is free and idempotent, while the approval costs a
       // transaction - a pinning outage should abort before any on-chain step.
       const contentURI = await publish(thesis);
@@ -279,6 +284,7 @@ export async function connectDebateActions(
         BigInt(schedule.editingDuration),
         BigInt(schedule.ratingDuration),
         feePercentage,
+        identityRegistry,
         bounty?.token ?? zeroAddress,
         bounty?.amount ?? 0n,
       ]);

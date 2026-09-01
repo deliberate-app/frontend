@@ -1,6 +1,8 @@
+import { zeroAddress } from 'viem';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { tallyOf, THESIS_RATING_HINT, type NodeTally } from '../lib/impact';
+import { shortAddress } from '../lib/address';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesisOf } from '../types';
@@ -269,6 +271,19 @@ export function DebateView({
               <>
                 {' '}
                 · <BountyTopUpChip debate={debate} tx={tx} />
+              </>
+            )}
+            {debate.identityRegistry !== undefined && (
+              <>
+                {' '}
+                ·{' '}
+                {debate.identityRegistry === zeroAddress ? (
+                  <span title="Anyone may join this debate.">open to everyone</span>
+                ) : (
+                  <span title={`Joining is gated by the identity registry at ${debate.identityRegistry}.`}>
+                    members of <span className="mono">{shortAddress(debate.identityRegistry)}</span>
+                  </span>
+                )}
               </>
             )}
           </p>

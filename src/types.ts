@@ -1,3 +1,4 @@
+import type { Hex } from 'viem';
 export type Side = 'pro' | 'con';
 
 export type Phase = 'editing' | 'rating' | 'tallying' | 'finished';
@@ -110,6 +111,11 @@ export interface Debate {
   bounty?: DebateBounty;
   /** The number of joined accounts - the N in the bounty payout denominator. */
   participantsCount?: number;
+  /**
+   * The identity registry gating who may join, chosen by the creator. The zero address means the debate
+   * is open to everyone. Absent for bundled sample data.
+   */
+  identityRegistry?: Hex;
 }
 
 /** A debate as it appears in the browse list. */

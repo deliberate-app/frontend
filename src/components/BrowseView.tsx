@@ -5,6 +5,7 @@ import { DEFAULT_FEE_PERCENT, feeError } from '../lib/fees';
 import { MAX_CONTENT_CHARS } from '../lib/ipfs';
 import { formatDuration } from '../lib/time';
 import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
+import type { Address } from 'viem';
 import type { DebateFilter, DebateSummary, Phase } from '../types';
 import { filterDebates } from '../types';
 import { AddressChip } from './AddressChip';
@@ -12,6 +13,7 @@ import { VerdictMark } from './VerdictMark';
 import { BountySettings, type BountyDraft } from './BountySettings';
 import { CharBudget } from './CharBudget';
 import { FeeSettings } from './FeeSettings';
+import { gateAddress, gateLabel, GateSettings, type GateDraft } from './GateSettings';
 import { ScheduleSettings } from './ScheduleSettings';
 
 const PHASE_SHORT: Record<Phase, string> = {
@@ -62,6 +64,7 @@ function CreatePanel({
   onNeedWallet,
   onCreate,
   resolveToken,
+  circlesRegistry,
 }: {
   /** Why creating is impossible here at all; null when the deployment supports it. */
   unavailableHint: string | null;
@@ -73,16 +76,21 @@ function CreatePanel({
     thesis: string,
     schedule: DebateSchedule,
     feePercentage: number,
+    identityRegistry: Address,
     bounty: BountyDraft | null,
   ) => Promise<void>;
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
+  /** The deployment's Circles preset registry; absent only in sample mode, where creating is disabled. */
+  circlesRegistry?: Address;
 }) {
   const [open, setOpen] = useState(false);
   const [thesis, setThesis] = useState('');
   const [schedule, setSchedule] = useState<DebateSchedule>(DEFAULT_SCHEDULE);
   const [fee, setFee] = useState(DEFAULT_FEE_PERCENT);
   const [bounty, setBounty] = useState<BountyDraft | null>(null);
+  const [gate, setGate] = useState<GateDraft>({ mode: 'open' });
+  const [gateOpen, setGateOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feeOpen, setFeeOpen] = useState(false);
   const [bountyOpen, setBountyOpen] = useState(false);
@@ -118,7 +126,7 @@ function CreatePanel({
     setBusy(true);
     setError(null);
     try {
-      await onCreate(thesis.trim(), schedule, fee, bounty);
+      await onCreate(thesis.trim(), schedule, fee, gateAddress(gate), bounty);
       // Success navigates away to the new debate; no local state to reset.
     } catch (cause) {
       setError(actionErrorMessage(cause));
@@ -161,6 +169,15 @@ function CreatePanel({
         <button
           type="button"
           className="schedule-chip"
+          title="Who may join: everyone, Circles humans, or the members of a registry"
+          onClick={() => setGateOpen(true)}
+        >
+          {gateLabel(gate)}
+          <GearIcon />
+        </button>
+        <button
+          type="button"
+          className="schedule-chip"
           title="Attach an ERC-20 prize for the debate's net winners"
           onClick={() => setBountyOpen(true)}
         >
@@ -176,6 +193,9 @@ function CreatePanel({
         />
       )}
       {feeOpen && <FeeSettings feePercentage={fee} onChange={setFee} onClose={() => setFeeOpen(false)} />}
+      {gateOpen && circlesRegistry && (
+        <GateSettings gate={gate} onChange={setGate} onClose={() => setGateOpen(false)} circlesRegistry={circlesRegistry} />
+      )}
       {bountyOpen && (
         <BountySettings
           bounty={bounty}
@@ -229,6 +249,7 @@ export function BrowseView({
   onOpen,
   onCreate,
   resolveToken,
+  circlesRegistry,
 }: {
   debates: DebateSummary[];
   /** The connected account, enabling the "mine" author-filter shortcut. */
@@ -247,10 +268,13 @@ export function BrowseView({
     thesis: string,
     schedule: DebateSchedule,
     feePercentage: number,
+    identityRegistry: Address,
     bounty: BountyDraft | null,
   ) => Promise<void>;
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
+  /** The deployment's Circles preset registry; absent only in sample mode, where creating is disabled. */
+  circlesRegistry?: Address;
 }) {
   const filtered = filterDebates(debates, filter);
 
@@ -262,6 +286,7 @@ export function BrowseView({
         onNeedWallet={onNeedWallet}
         onCreate={onCreate}
         resolveToken={resolveToken}
+        circlesRegistry={circlesRegistry}
       />
 
       <div className="filters">

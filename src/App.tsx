@@ -426,6 +426,7 @@ export default function App() {
     thesis: string,
     schedule: DebateSchedule,
     feePercentage: number,
+    identityRegistry: Address,
     bounty: BountyDraft | null,
   ) => {
     if (!actions) throw new Error('Connect a wallet first.');
@@ -433,6 +434,7 @@ export default function App() {
       thesis,
       schedule,
       feePercentage,
+      identityRegistry,
       bounty ? { token: bounty.token.address, amount: bounty.amount } : undefined,
     );
     // The receipt is mined, so the debate exists; mark it so the reader waits out any
@@ -542,6 +544,7 @@ export default function App() {
             onOpen={openDebate}
             onCreate={createDebate}
             resolveToken={resolveToken}
+            circlesRegistry={deployment?.circlesRegistry}
           />
         )
       ) : debate ? (

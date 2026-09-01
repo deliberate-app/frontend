@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createWalletClient, custom, defineChain } from 'viem';
+import { createWalletClient, custom, defineChain, zeroAddress } from 'viem';
 import type { Abi, Address, EIP1193Provider, Hex } from 'viem';
 
 import { rpcUp } from '../../scripts/devstack/anvil';
@@ -89,7 +89,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
 
     // The author starts the debate through the action layer and gets its ID back.
     const timeUnit = 60;
-    expect(await author.createDebate('Test thesis', classicSchedule(timeUnit), 5)).toBe(0);
+    expect(await author.createDebate('Test thesis', classicSchedule(timeUnit), 5, zeroAddress)).toBe(0);
 
     // Join.
     expect((await reads.userState(0, author.account)).joined).toBe(false);
@@ -159,7 +159,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
 
     const timeUnit = 60;
-    await author.createDebate('A movable thesis', classicSchedule(timeUnit), 5);
+    await author.createDebate('A movable thesis', classicSchedule(timeUnit), 5, zeroAddress);
     await author.join(0);
 
     // A draft directly under the thesis, edited while still inside its editing window.
@@ -219,7 +219,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     const reads = contractSource(address, RPC_URL);
 
     const timeUnit = 60;
-    await author.createDebate('Batch redeem thesis', classicSchedule(timeUnit), 5);
+    await author.createDebate('Batch redeem thesis', classicSchedule(timeUnit), 5, zeroAddress);
     await author.join(0);
 
     // Two arguments at 50% approval (reserves 5/5 each), the minimum deposit.

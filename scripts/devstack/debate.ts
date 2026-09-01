@@ -7,6 +7,8 @@
  */
 
 import { createTestClient, http, publicActions, walletActions, type Abi, type Address, type Hex } from 'viem';
+import { zeroAddress } from 'viem';
+import { DEFAULT_FEE_PERCENT } from '../../src/lib/fees';
 import { mnemonicToAccount, type HDAccount } from 'viem/accounts';
 import { foundry } from 'viem/chains';
 
@@ -135,7 +137,9 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
     script.timeUnitSeconds,
     7 * script.timeUnitSeconds,
     3 * script.timeUnitSeconds,
-    '0x0000000000000000000000000000000000000000', // no bounty in the seed script
+    DEFAULT_FEE_PERCENT,
+    zeroAddress, // open to everyone: the seed script's participants are anvil accounts
+    zeroAddress, // no bounty in the seed script
     0n,
   ])) as bigint;
   argumentIds.set('thesis', 0);

@@ -260,13 +260,13 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
       // Derive the live phase from the same clock the contract uses; only the terminal Finished latch is read raw.
       const finished = currentPhase === PHASE_FINISHED;
       const phase = phaseOf(Number(editingEndTime), Number(ratingEndTime), finished, chainTime);
-      const [approved, bounty, [, , participantsCount, feePercentage]] = await Promise.all([
+      const [approved, bounty, [, , participantsCount, feePercentage, identityRegistry]] = await Promise.all([
         finished
           ? (client.readContract({ address, abi, functionName: 'outcome', args: [id] }) as Promise<boolean>)
           : Promise.resolve(undefined),
         readBounty(client, address, id),
         client.readContract({ address, abi, functionName: 'debates', args: [id] }) as Promise<
-          [number, number, number, number]
+          [number, number, number, number, Hex]
         >,
       ]);
 
@@ -274,6 +274,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         id: debateId,
         phase,
         feePercentage: Number(feePercentage),
+        identityRegistry,
         nodes,
         timing: {
           editingEndTime: Number(editingEndTime),
@@ -316,7 +317,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
                 abi,
                 functionName: 'debates',
                 args: [id],
-              }) as Promise<[number, number, number]>,
+              }) as Promise<[number, number, number, number, Hex]>,
               readBounty(client, address, id),
             ]);
           const content = await resolveContent(thesis.contentURI, ipfsGateway);
@@ -367,7 +368,7 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         abi,
         functionName: 'debates',
         args: [id],
-      })) as [number, number, number];
+      })) as [number, number, number, number, Hex];
 
       // Argument ids are contiguous 1..argumentsCount-1 (id 0 is the market-less thesis).
       const ids = Array.from({ length: Math.max(0, Number(argumentsCount) - 1) }, (_, i) => i + 1);
@@ -448,6 +449,7 @@ export interface IndexedDebateRow extends IndexedBountyColumns {
   approved: boolean | null;
   participantsCount: string;
   feePercentage: string;
+  identityRegistry: string;
 }
 
 export interface IndexedArgumentRow {
@@ -571,7 +573,7 @@ export function summaryFromIndex(
 }
 
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
-  Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved participantsCount feePercentage finishedAt bountyToken bountyPool bountyClaimed bountySwept }
+  Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved participantsCount feePercentage identityRegistry finishedAt bountyToken bountyPool bountyClaimed bountySwept }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
     argumentId parent_id isSupporting contentURI finalizationTime pro con votes creator rating
   }
@@ -716,6 +718,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
         id: debateId,
         phase: phaseOf(Number(debate.editingEndTime), Number(debate.ratingEndTime), debate.finished, chainTime),
         feePercentage: Number(debate.feePercentage),
+        identityRegistry: debate.identityRegistry as Hex,
         nodes,
         timing: {
           editingEndTime: Number(debate.editingEndTime),

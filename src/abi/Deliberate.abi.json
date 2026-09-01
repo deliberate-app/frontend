@@ -1,16 +1,5 @@
 [
  {
-  "type": "constructor",
-  "inputs": [
-   {
-    "name": "identityRegistry",
-    "type": "address",
-    "internalType": "contract IIdentityRegistry"
-   }
-  ],
-  "stateMutability": "nonpayable"
- },
- {
   "type": "function",
   "name": "addArgument",
   "inputs": [
@@ -36,8 +25,8 @@
    },
    {
     "name": "initialApproval",
-    "type": "uint32",
-    "internalType": "uint32"
+    "type": "uint8",
+    "internalType": "uint8"
    },
    {
     "name": "deposit",
@@ -178,8 +167,13 @@
    },
    {
     "name": "feePercentage",
-    "type": "uint32",
-    "internalType": "uint32"
+    "type": "uint8",
+    "internalType": "uint8"
+   },
+   {
+    "name": "identityRegistry",
+    "type": "address",
+    "internalType": "contract IIdentityRegistry"
    },
    {
     "name": "bountyToken",
@@ -229,8 +223,13 @@
    },
    {
     "name": "feePercentage",
-    "type": "uint32",
-    "internalType": "uint32"
+    "type": "uint8",
+    "internalType": "uint8"
+   },
+   {
+    "name": "identityRegistry",
+    "type": "address",
+    "internalType": "contract IIdentityRegistry"
    }
   ],
   "stateMutability": "view"
@@ -354,8 +353,8 @@
      },
      {
       "name": "votesSeconds",
-      "type": "uint88",
-      "internalType": "uint88"
+      "type": "uint80",
+      "internalType": "uint80"
      },
      {
       "name": "lastAccrualTime",
@@ -514,8 +513,8 @@
    },
    {
     "name": "initialApproval",
-    "type": "uint32",
-    "internalType": "uint32"
+    "type": "uint8",
+    "internalType": "uint8"
    }
   ],
   "outputs": [],
@@ -1077,9 +1076,15 @@
    },
    {
     "name": "feePercentage",
-    "type": "uint32",
+    "type": "uint8",
     "indexed": false,
-    "internalType": "uint32"
+    "internalType": "uint8"
+   },
+   {
+    "name": "identityRegistry",
+    "type": "address",
+    "indexed": false,
+    "internalType": "contract IIdentityRegistry"
    }
   ],
   "anonymous": false
@@ -1422,13 +1427,13 @@
   "inputs": [
    {
     "name": "limit",
-    "type": "uint32",
-    "internalType": "uint32"
+    "type": "uint8",
+    "internalType": "uint8"
    },
    {
     "name": "actual",
-    "type": "uint32",
-    "internalType": "uint32"
+    "type": "uint8",
+    "internalType": "uint8"
    }
   ]
  },
@@ -1443,13 +1448,13 @@
   "inputs": [
    {
     "name": "limit",
-    "type": "uint32",
-    "internalType": "uint32"
+    "type": "uint8",
+    "internalType": "uint8"
    },
    {
     "name": "actual",
-    "type": "uint32",
-    "internalType": "uint32"
+    "type": "uint8",
+    "internalType": "uint8"
    }
   ]
  },

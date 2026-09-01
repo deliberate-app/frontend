@@ -7,6 +7,7 @@ const network = (slug: string | null, chainId: number | null): Deployment => ({
   chainId,
   address: '0x00000000000000000000000000000000000000ff',
   rpcUrl: 'https://rpc.example',
+  circlesRegistry: '0x00000000000000000000000000000000000000cc',
 });
 
 const GNOSIS = network('gnosis', 100);

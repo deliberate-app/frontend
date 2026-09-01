@@ -42,6 +42,11 @@ export interface Deployment extends ContractConfig {
   slug: string | null;
   /** Null only in legacy single-network mode, where it is discovered from the RPC instead. */
   chainId: number | null;
+  /**
+   * The deployment's `CirclesIdentityRegistry` admitting any Circles human, offered as a preset gate
+   * when creating a debate. Deployed beside the contract, so every deployment has one.
+   */
+  circlesRegistry: Address;
 }
 
 const env = import.meta.env as unknown as Record<string, string | undefined>;
@@ -101,7 +106,8 @@ export function deployments(): Deployment[] {
       return [];
     }
     const rpcUrl = envFor(slug, 'VITE_RPC_URL') ?? knownChain(chainId)?.rpcUrls.default.http[0];
-    if (!rpcUrl) {
+    const circlesRegistry = envFor(slug, 'VITE_CIRCLES_REGISTRY') as Address | undefined;
+    if (!rpcUrl || !circlesRegistry) {
       return [];
     }
     return [
@@ -114,6 +120,7 @@ export function deployments(): Deployment[] {
         ipfsApi: sharedEnv(slug, 'VITE_IPFS_API'),
         // Each network has its own indexer, and the same-origin proxy routes to it by slug.
         indexerUrl: envFor(slug, 'VITE_INDEXER_URL') ?? `/api/graphql/${slug}`,
+        circlesRegistry,
       },
     ];
   });
@@ -122,7 +129,8 @@ export function deployments(): Deployment[] {
 function legacyDeployment(): Deployment | null {
   const address = env.VITE_DELIBERATE_ADDRESS as Address | undefined;
   const rpcUrl = env.VITE_RPC_URL;
-  if (!address || !rpcUrl) {
+  const circlesRegistry = env.VITE_CIRCLES_REGISTRY as Address | undefined;
+  if (!address || !rpcUrl || !circlesRegistry) {
     return null;
   }
   return {
@@ -133,6 +141,7 @@ function legacyDeployment(): Deployment | null {
     ipfsGateway: env.VITE_IPFS_GATEWAY || undefined,
     ipfsApi: env.VITE_IPFS_API || undefined,
     indexerUrl: env.VITE_INDEXER_URL || undefined,
+    circlesRegistry,
   };
 }
 
