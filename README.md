@@ -91,7 +91,7 @@ just ipfs-down   # stop it
 
 ## Hosting on Vercel
 
-The app deploys as a static Vite build plus one serverless route. Vercel detects Vite from the
+The app deploys as a static Vite build plus two serverless routes. Vercel detects Vite from the
 repo (installs and builds with bun via `bun.lock`); the hash-based routing needs no rewrites.
 
 Authoring on the hosted site publishes through [api/v0/add.ts](api/v0/add.ts), a kubo-shaped
@@ -110,22 +110,37 @@ CORS-safelisted so no preflight fires. An attacker driving this route from their
 needed the response. Authenticating the write against the chain - pinning only content whose
 digest a transaction already committed - is the remaining gap.
 
+Indexer reads go through [api/graphql.ts](api/graphql.ts), a same-origin **query proxy** that
+forwards to `INDEXER_UPSTREAM_URL`. The envio endpoint is CORS-configured correctly; what made
+calling it directly fragile is its rate limit - a refused response carries no CORS headers, so
+throttling reached the browser as a missing `Access-Control-Allow-Origin` and dropped the app into
+its chain fallback rather than surfacing as what it was. Behind the proxy a throttle arrives as the
+429 it is. Responses are deliberately not cached: `waitForIndexerBlock` and the stake modal's market
+poll both need reads that are not stale. **Repointing the app at a new indexer deployment is a
+change to `INDEXER_UPSTREAM_URL` alone** - `VITE_INDEXER_URL` stays `/api/graphql`.
+
 Project environment variables (Settings → Environment Variables):
 
 ```sh
 VITE_DELIBERATE_ADDRESS=0x…   # the live deployment (contracts/broadcast/…/runWithMockRegistry-latest.json)
 VITE_RPC_URL=https://sepolia.base.org
-VITE_INDEXER_URL=https://…   # the hosted indexer endpoint; the dev tier mints a new URL per deploy
+VITE_INDEXER_URL=/api/graphql # indexer reads go through the same-origin query proxy
 VITE_IPFS_GATEWAY=https://ipfs.filebase.io,https://{cid}.ipfs.dweb.link,https://gateway.pinata.cloud
                              # raced, holder first (see below)
 VITE_IPFS_API=/              # authoring goes through the same-origin pin proxy
 FILEBASE_ACCESS_KEY_ID=…     # server-side only (Sensitive)
 FILEBASE_SECRET_ACCESS_KEY=… # server-side only (Sensitive)
 FILEBASE_BUCKET=…            # the IPFS-network bucket the texts are pinned into
+INDEXER_UPSTREAM_URL=https://… # server-side only; the hosted indexer endpoint the query proxy
+                             # forwards to. The dev tier mints a new URL per deployment, and its id
+                             # is envio-internal rather than the git sha - read it from the
+                             # deployment page, or with `envio-cloud deployment endpoint
+                             # <indexer> <commit> <organisation>`.
 ```
 
 `VITE_*` values are baked into the public bundle at build time — they must never hold secrets.
-The `FILEBASE_*` variables are read only by the edge functions at request time. Local development ignores all of
+The `FILEBASE_*` and `INDEXER_UPSTREAM_URL` variables are read only by the edge functions at
+request time. Local development ignores all of
 this: `just dev-testnet` authors against the dockerized kubo, no pinning service involved.
 
 ## Wallets
