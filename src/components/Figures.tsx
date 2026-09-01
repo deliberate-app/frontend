@@ -1,4 +1,5 @@
 import { formatApproval, formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT } from '../lib/impact';
+import { formatVotes } from '../lib/votes';
 
 /**
  * The debate's figures, defined once and used wherever they appear - cards, the focused claim, the
@@ -46,7 +47,7 @@ export function SignedFigure({
       {stake !== undefined && (
         <span className="figure-stake" title={stakeHint}>
           ,{' '}
-          <span className="mono">{stake}</span>
+          <span className="mono">{formatVotes(stake)}</span>
           <span className="unit">⬡</span>
         </span>
       )}
@@ -61,7 +62,7 @@ export const Market = ({ approval, stake, bare }: { approval: number; stake?: nu
     value={2 * approval - 1}
     hint={MARKET_HINT}
     stake={stake}
-    stakeHint={stake === undefined ? undefined : `${stake} ⬡ staked on this argument's own market`}
+    stakeHint={stake === undefined ? undefined : `${formatVotes(stake)} ⬡ staked on this argument's own market`}
     bare={bare}
   />
 );
@@ -86,7 +87,7 @@ export const Rating = ({
     value={rating}
     hint={hint}
     stake={stake}
-    stakeHint={stake === undefined ? undefined : `${stake} ⬡ staked across this argument and its sub-arguments`}
+    stakeHint={stake === undefined ? undefined : `${formatVotes(stake)} ⬡ staked across this argument and its sub-arguments`}
     bare={bare}
   />
 );

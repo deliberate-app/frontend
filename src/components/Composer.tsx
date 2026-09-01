@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
 import { MAX_CONTENT_CHARS } from '../lib/ipfs';
+import { formatVotes, MIN_DEPOSIT_UNITS, toTokens, toUnits } from '../lib/votes';
 import type { Side } from '../types';
 import { CharBudget } from './CharBudget';
 
 /** The minimum argument deposit, mirroring the contract's `_MIN_DEBATE_DEPOSIT`. */
-const MIN_DEPOSIT = 10;
 
 /** The authoring form: writes an argument beneath the focused claim during Editing. */
 export function Composer({
@@ -22,28 +22,28 @@ export function Composer({
   // 75% is the midpoint of the clamped sway scale (ADR-0012): half sway, with symmetric room
   // for the market to double the argument or erase it. 50% would seed at zero sway.
   const [approval, setApproval] = useState(75);
-  const [deposit, setDeposit] = useState(MIN_DEPOSIT);
+  const [deposit, setDeposit] = useState(MIN_DEPOSIT_UNITS);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!open) {
-    const affordable = tokens >= MIN_DEPOSIT;
+    const affordable = tokens >= MIN_DEPOSIT_UNITS;
     return (
       <button
         type="button"
         className="composer-open"
         onClick={() => setOpen(true)}
         disabled={!affordable}
-        title={affordable ? undefined : `An argument costs at least ${MIN_DEPOSIT} vote tokens`}
+        title={affordable ? undefined : `An argument costs at least ${formatVotes(MIN_DEPOSIT_UNITS)} vote tokens`}
       >
-        + Add {side} argument · min stake {MIN_DEPOSIT} ⬡
+        + Add {side} argument · min stake {formatVotes(MIN_DEPOSIT_UNITS)} ⬡
       </button>
     );
   }
 
   // The deposit seeds the market and is the stake the argument starts with: at least
   // the minimum, at most the balance.
-  const depositValid = Number.isInteger(deposit) && deposit >= MIN_DEPOSIT && deposit <= tokens;
+  const depositValid = Number.isInteger(deposit) && deposit >= MIN_DEPOSIT_UNITS && deposit <= tokens;
   const canSubmit = !busy && text.trim().length > 0 && depositValid;
 
   const submit = async (event: FormEvent) => {
@@ -83,26 +83,26 @@ export function Composer({
         />
       </label>
       <label className="composer-approval composer-deposit">
-        Stake <strong className="mono">{deposit} ⬡</strong>
+        Stake <strong className="mono">{formatVotes(deposit)} ⬡</strong>
         <input
           type="number"
-          min={MIN_DEPOSIT}
-          max={tokens}
-          step={1}
-          value={deposit}
-          onChange={(event) => setDeposit(Math.floor(Number(event.target.value)))}
+          min={toTokens(MIN_DEPOSIT_UNITS)}
+          max={toTokens(tokens)}
+          step={0.01}
+          value={toTokens(deposit)}
+          onChange={(event) => setDeposit(toUnits(Number(event.target.value)))}
         />
       </label>
       <p className={`composer-hint${depositValid ? '' : ' composer-hint-error'}`}>
         {depositValid
           ? 'A larger deposit deepens the market and puts more stake behind the argument from the start.'
           : deposit > tokens
-            ? `You only have ${tokens} ⬡ in this debate.`
-            : `The minimum stake is ${MIN_DEPOSIT} ⬡.`}
+            ? `You only have ${formatVotes(tokens)} ⬡ in this debate.`
+            : `The minimum stake is ${formatVotes(MIN_DEPOSIT_UNITS)} ⬡.`}
       </p>
       <div className="action-row">
         <button type="submit" className="btn btn-solid" disabled={!canSubmit}>
-          {busy ? 'Publishing…' : `Publish · ${deposit} ⬡`}
+          {busy ? 'Publishing…' : `Publish · ${formatVotes(deposit)} ⬡`}
         </button>
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
           Cancel

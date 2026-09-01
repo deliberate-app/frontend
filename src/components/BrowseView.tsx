@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
 import { DEFAULT_SCHEDULE, scheduleError, type DebateSchedule } from '../lib/debateTiming';
+import { formatVotes } from '../lib/votes';
 import { DEFAULT_FEE_PERCENT, feeError } from '../lib/fees';
 import { MAX_CONTENT_CHARS } from '../lib/ipfs';
 import { formatDuration } from '../lib/time';
@@ -360,7 +361,7 @@ export function BrowseView({
                 <span className="debate-thesis">{debate.thesis}</span>
                 <span className="debate-meta">
                   {debate.argumentsCount} {debate.argumentsCount === 1 ? 'argument' : 'arguments'} ·{' '}
-                  <span className="mono">{debate.stake} ⬡</span> staked
+                  <span className="mono">{formatVotes(debate.stake)} ⬡</span> staked
                   {debate.bounty && (
                     <>
                       {' '}

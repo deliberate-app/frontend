@@ -21,6 +21,7 @@ import type { DebateSchedule } from './lib/debateTiming';
 import { withMarkets } from './lib/market';
 import { tokenInfo } from './lib/tokens';
 import { useNow } from './lib/time';
+import { formatVotes, INITIAL_UNITS } from './lib/votes';
 import type { AccountPosition, Debate, DebateFilter, DebateSummary } from './types';
 import { availablePhasePoke, livePhaseOf, PHASE_LABEL } from './types';
 import { useWallet } from './wallet/useWallet';
@@ -35,10 +36,6 @@ const NETWORKS = deployments();
 // serve a node that has not seen its block yet - so the reader waits it out with a spinner.
 const SYNC_RETRY_MS = 2000;
 const SYNC_MAX_RETRIES = 15; // ~30 s, comfortably longer than the usual lag
-
-// The vote tokens the contract grants on joining (Parameters.INITIAL_TOKENS); lets a join reflect
-// immediately without waiting on the indexer to process the Joined event.
-const INITIAL_TOKENS = 100;
 
 export default function App() {
   const [route, setRoute] = useState<Route>(() => routeFromHash(window.location.hash));
@@ -287,7 +284,9 @@ export default function App() {
       // Joining grants a fixed token allotment; reflect it immediately rather than waiting on the
       // indexer to catch up with the Joined event (the tree is unchanged, so no reload is needed).
       optimisticJoinRef.current = true;
-      setUserState({ joined: true, bountyClaimed: false, tokens: INITIAL_TOKENS });
+      // The grant the contract makes on joining, applied immediately so a join reflects without waiting on
+      // the indexer to process the Joined event.
+      setUserState({ joined: true, bountyClaimed: false, tokens: INITIAL_UNITS });
     } catch (cause) {
       setJoinError(actionErrorMessage(cause));
     } finally {
@@ -503,7 +502,7 @@ export default function App() {
         <span className="topbar-spacer" />
         {!browsing && userState?.joined && (
           <span className="tokens" title="Your vote token balance in this debate">
-            <strong className="mono">{userState.tokens}</strong> ⬡
+            <strong className="mono">{formatVotes(userState.tokens)}</strong> ⬡
           </span>
         )}
         {!browsing && joinable && (

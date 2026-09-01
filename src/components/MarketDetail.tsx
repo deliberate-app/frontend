@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatApproval, MARKET_HINT } from '../lib/impact';
+import { formatVotes } from '../lib/votes';
 import { reservesOf } from '../lib/market';
 import type { ArgumentNode } from '../types';
 
@@ -104,7 +105,7 @@ export function MarketDetail({
           <dt title={MARKET_HINT}>Market</dt>
           <dd className="mono">{formatApproval(node.approval)}</dd>
           <dt>Staked</dt>
-          <dd className="mono">{node.weight} ⬡</dd>
+          <dd className="mono">{formatVotes(node.weight)} ⬡</dd>
           <dt>Reserves</dt>
           <dd className="mono">
             {pro} <span className="market-pro">good</span> / {con} <span className="market-con">bad</span>
@@ -123,7 +124,7 @@ export function MarketDetail({
             <>
               <dt>Author earned</dt>
               <dd>
-                <span className="mono">{feesEarned} ⬡</span> so far
+                <span className="mono">{formatVotes(feesEarned)} ⬡</span> so far
               </dd>
             </>
           )}

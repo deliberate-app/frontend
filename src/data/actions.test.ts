@@ -68,9 +68,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       if (!receipt.contractAddress) throw new Error('no contract address');
       return receipt.contractAddress;
     };
-
-    const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
-    const address = await deploy('Deliberate.sol', 'Deliberate', [poh]);
+    const address = await deploy('Deliberate.sol', 'Deliberate', []);
 
     const warp = async (seconds: number) => {
       await client.increaseTime({ seconds });
@@ -94,12 +92,11 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     // Join.
     expect((await reads.userState(0, author.account)).joined).toBe(false);
     await author.join(0);
-    expect(await reads.userState(0, author.account)).toEqual({ joined: true, tokens: 100, bountyClaimed: false });
+    expect(await reads.userState(0, author.account)).toEqual({ joined: true, tokens: 10_000, bountyClaimed: false });
 
-    // Author an argument at 80% initial approval with the minimum 10-token deposit
-    // (market reserves 2 pro / 8 con).
-    await author.addArgument(0, 0, 'pro', 80, 10, 'A machine-authored argument');
-    expect((await reads.userState(0, author.account)).tokens).toBe(90);
+    // Author an argument at 80% initial approval with the minimum deposit (market reserves 200 pro / 800 con).
+    await author.addArgument(0, 0, 'pro', 80, 1000, 'A machine-authored argument');
+    expect((await reads.userState(0, author.account)).tokens).toBe(9000);
 
     // Time passes: the argument finalizes automatically once its window elapses, and the debate enters
     // Rating by the clock alone - no poke. The rater joins beforehand and stakes in the window's opening
@@ -108,15 +105,15 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await warpTo(ratingOpens(await reads.load(0)));
 
     // The rater disagrees: 20 tokens on con (fee 1, net 19) buy 8 + 19 - ceil(16/21) = 26 shares.
-    await rater.stake(0, 1, 'con', 20);
+    await rater.stake(0, 1, 'con', 2000);
     const raterPosition = await reads.argumentPosition(0, 1, rater.account);
-    expect(raterPosition.conShares).toBe(26);
+    expect(raterPosition.conShares).toBe(2623);
     expect(raterPosition.proShares).toBe(0);
     expect(raterPosition.claimableFees).toBe(0); // not the creator
 
-    // The market refetch reads the moved market as the full load does: 21 pro / 1 con, 29 staked.
+    // The market refetch reads the moved market as the full load does: 2100 pro / 77 con, 2900 staked.
     const [, market] = await reads.markets(0);
-    expect(market).toEqual({ id: 1, approval: 1 / 22, proReserve: 21, conReserve: 1, weight: 29, rating: null });
+    expect(market).toEqual({ id: 1, approval: 77 / 2177, proReserve: 2100, conReserve: 77, weight: 2900, rating: null });
     expect((await reads.load(0)).nodes.find((node) => node.id === 1)).toMatchObject(market);
 
     // The rating window closes by the clock; the keeper finishes the debate with the tally.
@@ -128,13 +125,13 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     // (-0.91) held for all but the window's first second or two, so 26 shares x 0.95 = 24 tokens
     // back on 20 staked.
     await rater.redeemShares(0, 1);
-    expect((await reads.userState(0, rater.account)).tokens).toBe(104);
+    expect((await reads.userState(0, rater.account)).tokens).toBe(10519);
 
     // The author claims the accrued market fee - the one fee the argument has earned so far.
-    expect(await reads.feesEarned(0, 1)).toBe(1);
-    expect((await reads.argumentPosition(0, 1, author.account)).claimableFees).toBe(1);
+    expect(await reads.feesEarned(0, 1)).toBe(100);
+    expect((await reads.argumentPosition(0, 1, author.account)).claimableFees).toBe(100);
     await author.claimFees(0, 1);
-    expect((await reads.userState(0, author.account)).tokens).toBe(91);
+    expect((await reads.userState(0, author.account)).tokens).toBe(9100);
   }, 30_000);
 
   test.skipIf(!anvilAvailable)('edits and moves a draft argument through the action layer', async () => {
@@ -152,8 +149,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       if (!receipt.contractAddress) throw new Error('no contract address');
       return receipt.contractAddress;
     };
-    const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
-    const address = await deploy('Deliberate.sol', 'Deliberate', [poh]);
+    const address = await deploy('Deliberate.sol', 'Deliberate', []);
 
     const config = { address, rpcUrl: RPC_URL };
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
@@ -163,7 +159,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.join(0);
 
     // A draft directly under the thesis, edited while still inside its editing window.
-    await author.addArgument(0, 0, 'pro', 60, 10, 'first draft'); // argument 1
+    await author.addArgument(0, 0, 'pro', 60, 1000, 'first draft'); // argument 1
     await author.alterArgument(0, 1, 'first draft, edited');
     const edited = (await client.readContract({
       address,
@@ -178,7 +174,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     // at 80% approval (reserves become 2 pro / 8 con).
     await client.increaseTime({ seconds: 2 * timeUnit });
     await client.mine({ blocks: 1 });
-    await author.addArgument(0, 0, 'con', 60, 10, 'second draft'); // argument 2, a fresh draft
+    await author.addArgument(0, 0, 'con', 60, 1000, 'second draft'); // argument 2, a fresh draft
     await author.moveArgument(0, 2, 1, 80);
 
     const moved = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 2);
@@ -202,8 +198,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       if (!receipt.contractAddress) throw new Error('no contract address');
       return receipt.contractAddress;
     };
-    const poh = await deploy('MockIdentityRegistry.m.sol', 'MockIdentityRegistry', []);
-    const address = await deploy('Deliberate.sol', 'Deliberate', [poh]);
+    const address = await deploy('Deliberate.sol', 'Deliberate', []);
 
     const warp = async (seconds: number) => {
       await client.increaseTime({ seconds });
@@ -222,19 +217,19 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.createDebate('Batch redeem thesis', classicSchedule(timeUnit), 5, zeroAddress);
     await author.join(0);
 
-    // Two arguments at 50% approval (reserves 5/5 each), the minimum deposit.
-    await author.addArgument(0, 0, 'pro', 50, 10, 'first argument'); // id 1
-    await author.addArgument(0, 0, 'pro', 50, 10, 'second argument'); // id 2
+    // Two arguments at 50% approval (reserves 500/500 each), the minimum deposit.
+    await author.addArgument(0, 0, 'pro', 50, 1000, 'first argument'); // id 1
+    await author.addArgument(0, 0, 'pro', 50, 1000, 'second argument'); // id 2
 
     // The arguments finalize automatically once their editing windows elapse, and the debate enters
     // Rating by the clock. The rater joins beforehand and stakes as the window opens.
     await rater.join(0);
     await warpTo(ratingOpens(await reads.load(0)));
 
-    // The rater takes a con position in both arguments (22 con shares, 20 tokens each).
-    await rater.stake(0, 1, 'con', 20);
-    await rater.stake(0, 2, 'con', 20);
-    expect((await reads.userState(0, rater.account)).tokens).toBe(60);
+    // The rater takes a con position in both arguments, twenty tokens each.
+    await rater.stake(0, 1, 'con', 2000);
+    await rater.stake(0, 2, 'con', 2000);
+    expect((await reads.userState(0, rater.account)).tokens).toBe(6000);
 
     // The source reads the account's positions straight from the chain.
     const held = await reads.positions(0, anvilAccount(8).address);
@@ -252,7 +247,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     // A con share settles at (1 - rating) / 2 of a token; each market closed at 2/26 (-0.85) for
     // all but the window's opening seconds, so 22 shares x 0.92 = 20 tokens back per argument:
     // 60 + 20 + 20 = 100.
-    expect((await reads.userState(0, rater.account)).tokens).toBe(100);
+    expect((await reads.userState(0, rater.account)).tokens).toBe(10384);
     expect(await reads.positions(0, anvilAccount(8).address)).toEqual([]);
 
     // Every transaction went to the wallet with its limit decided by the app, none left to the

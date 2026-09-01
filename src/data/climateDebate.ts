@@ -13,7 +13,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: null,
     text: 'Humans should take significant action to fight climate change.',
     approval: 0.68,
-    weight: 412,
+    weight: 41200,
   },
 
   // ── Pros of the thesis ────────────────────────────────────────────────
@@ -23,7 +23,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Unmitigated climate change threatens the habitability of large parts of the planet.',
     approval: 0.74,
-    weight: 86,
+    weight: 8600,
   },
   {
     id: 2,
@@ -31,7 +31,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Acting now is far cheaper than paying for the damages later.',
     approval: 0.66,
-    weight: 64,
+    weight: 6400,
   },
   {
     id: 3,
@@ -39,7 +39,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Those who caused the problem have a moral responsibility to fix it.',
     approval: 0.58,
-    weight: 41,
+    weight: 4100,
   },
   {
     id: 4,
@@ -47,7 +47,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'The energy transition creates jobs and cleaner, healthier cities.',
     approval: 0.61,
-    weight: 37,
+    weight: 3700,
   },
 
   // ── Cons of the thesis ────────────────────────────────────────────────
@@ -57,7 +57,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Drastic action would slow the growth poor countries need to escape poverty.',
     approval: 0.44,
-    weight: 52,
+    weight: 5200,
   },
   {
     id: 6,
@@ -65,7 +65,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Without global enforcement, single actors who act alone only hurt themselves.',
     approval: 0.39,
-    weight: 46,
+    weight: 4600,
   },
   {
     id: 7,
@@ -73,7 +73,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Technological innovation will outpace the problem without forced intervention.',
     approval: 0.35,
-    weight: 33,
+    weight: 3300,
   },
   {
     id: 8,
@@ -81,7 +81,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Climate models overstate certainty; policy should wait for better evidence.',
     approval: 0.22,
-    weight: 25,
+    weight: 2500,
   },
 
   // ── Beneath pro #1 (habitability) ─────────────────────────────────────
@@ -91,7 +91,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Heatwaves, droughts, and rising seas already displace millions of people every year.',
     approval: 0.71,
-    weight: 28,
+    weight: 2800,
   },
   {
     id: 10,
@@ -99,7 +99,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Feedback loops such as permafrost thaw risk locking in irreversible warming.',
     approval: 0.63,
-    weight: 19,
+    weight: 1900,
   },
   {
     id: 11,
@@ -107,7 +107,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Human societies have adapted to major environmental shifts throughout history.',
     approval: 0.41,
-    weight: 14,
+    weight: 1400,
   },
 
   // ── Beneath pro #2 (cheaper now) ──────────────────────────────────────
@@ -117,7 +117,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Damage estimates for unchecked warming reach a large share of global GDP by 2100, dwarfing mitigation costs.',
     approval: 0.64,
-    weight: 22,
+    weight: 2200,
   },
   {
     id: 13,
@@ -125,7 +125,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Cost projections spanning a century are too uncertain to justify specific spending today.',
     approval: 0.45,
-    weight: 17,
+    weight: 1700,
   },
 
   // ── Beneath pro #4 (transition benefits) ──────────────────────────────
@@ -135,7 +135,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Renewables are now the cheapest source of new electricity in most of the world.',
     approval: 0.72,
-    weight: 15,
+    weight: 1500,
   },
   {
     id: 15,
@@ -143,7 +143,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Fossil-fuel regions face concentrated job losses that transition programs rarely replace.',
     approval: 0.49,
-    weight: 12,
+    weight: 1200,
   },
 
   // ── Beneath con #5 (development) ──────────────────────────────────────
@@ -153,7 +153,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Cheap fossil energy underpinned every industrialization to date.',
     approval: 0.55,
-    weight: 16,
+    weight: 1600,
   },
   {
     id: 17,
@@ -161,7 +161,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Distributed renewables can leapfrog fossil grids, as mobile networks leapfrogged landlines.',
     approval: 0.6,
-    weight: 18,
+    weight: 1800,
   },
 
   // ── Beneath con #6 (free riding) ──────────────────────────────────────
@@ -171,7 +171,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Coordination problems argue for building enforcement mechanisms, not for doing nothing.',
     approval: 0.62,
-    weight: 15,
+    weight: 1500,
   },
 
   // ── Beneath con #7 (innovation) ───────────────────────────────────────
@@ -181,7 +181,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'pro',
     text: 'Solar power costs fell by roughly ninety percent within a decade.',
     approval: 0.69,
-    weight: 13,
+    weight: 1300,
   },
   {
     id: 20,
@@ -189,7 +189,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'That cost fall was itself the product of decades of public subsidies and policy support.',
     approval: 0.58,
-    weight: 14,
+    weight: 1400,
   },
 
   // ── Beneath con #8 (uncertainty) ──────────────────────────────────────
@@ -199,7 +199,7 @@ const nodes: Array<Omit<ArgumentNode, 'state' | 'finalizationTime'>> = [
     side: 'con',
     text: 'Waiting for certainty is itself a bet — and the downside of being wrong is catastrophic.',
     approval: 0.67,
-    weight: 16,
+    weight: 1600,
   },
 ];
 
@@ -245,7 +245,7 @@ export const confirmedDebate: Debate = {
       'Publishing feeds costs money that could go into service instead.',
     ],
     [0.71, 0.82, 0.31],
-    [58, 34, 12],
+    [5800, 3400, 1200],
   ),
   participantsCount: 12,
   // Swept, so no clock-dependent claim countdown renders on sample data.
@@ -283,7 +283,7 @@ export const editingDebate: Debate = {
       side: null,
       text: 'School days should start later.',
       approval: 0.5,
-      weight: 30,
+      weight: 3000,
       state: 'final',
       finalizationTime: 0,
     },
@@ -293,7 +293,7 @@ export const editingDebate: Debate = {
       side: 'pro',
       text: 'Teenagers demonstrably learn better after nine.',
       approval: 0.64,
-      weight: 20,
+      weight: 2000,
       state: 'final',
       finalizationTime: 0,
     },
@@ -303,7 +303,7 @@ export const editingDebate: Debate = {
       side: 'con',
       text: 'Buses, parents, and sports all key off the early bell.',
       approval: 0.5,
-      weight: 10,
+      weight: 1000,
       state: 'created',
       finalizationTime: 0,
     },
@@ -320,5 +320,5 @@ export const objectedDebate: Debate = finishedDebate(
     'A forced ballot measures attendance, not conviction.',
   ],
   [0.38, 0.35, 0.78],
-  [64, 15, 41],
+  [6400, 1500, 4100],
 );

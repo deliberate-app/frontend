@@ -9,6 +9,7 @@
 import { createTestClient, http, publicActions, walletActions, type Abi, type Address, type Hex } from 'viem';
 import { zeroAddress } from 'viem';
 import { DEFAULT_FEE_PERCENT } from '../../src/lib/fees';
+import { formatVotes, MIN_DEPOSIT_UNITS } from '../../src/lib/votes';
 import { mnemonicToAccount, type HDAccount } from 'viem/accounts';
 import { foundry } from 'viem/chains';
 
@@ -24,7 +25,7 @@ export interface AddStep {
   side: Side;
   /** The author's initial approval of the own argument in percent, 50..100. */
   approval: number;
-  /** The vote token deposit that seeds the market and sets the starting weight; defaults to the minimum (10). */
+  /** The deposit seeding the market and setting the starting weight, in units; defaults to the minimum. */
   deposit?: number;
   text: string;
 }
@@ -191,7 +192,7 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
           throw new Error(`parent "${step.parent}" of "${step.key}" is not final yet - add a wait step first`);
         }
         await join(step.user);
-        const deposit = step.deposit ?? 10;
+        const deposit = step.deposit ?? MIN_DEPOSIT_UNITS;
         const newId = (await act(step.user, 'addArgument', [
           debateId,
           parentId,
@@ -202,7 +203,7 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
         ])) as number;
         argumentIds.set(step.key, newId);
         log(
-          `${step.user} adds ${step.side} "${step.key}" (${step.approval}%, ${deposit} ⬡) under "${step.parent}" -> id ${newId}`,
+          `${step.user} adds ${step.side} "${step.key}" (${step.approval}%, ${formatVotes(deposit)} ⬡) under "${step.parent}" -> id ${newId}`,
         );
         break;
       }

@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { formatVotes, toTokens, toUnits } from '../lib/votes';
 import { actionErrorMessage } from '../data/actions';
 import { formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT, tallyOf } from '../lib/impact';
 import { previewStake, withPreviewedStake } from '../lib/market';
@@ -117,7 +118,7 @@ export function StakeModal({
         </div>
 
         <div className="stake-amount">
-          <span className="stake-amount-label">Available {tokens} ⬡</span>
+          <span className="stake-amount-label">Available {formatVotes(tokens)} ⬡</span>
           <span className="stake-amount-inputs">
             <span className="stake-slider">
               <input
@@ -143,11 +144,11 @@ export function StakeModal({
             </span>
             <input
               type="number"
-              min={-tokens}
-              max={tokens}
-              step={1}
-              value={signed}
-              onChange={(event) => setSigned(Number(event.target.value))}
+              min={-toTokens(tokens)}
+              max={toTokens(tokens)}
+              step={0.01}
+              value={toTokens(signed)}
+              onChange={(event) => setSigned(toUnits(Number(event.target.value)))}
               disabled={busy || tokens < 1}
               aria-label="Stake in vote tokens: negative calls the argument overrated, positive underrated"
             />
@@ -169,7 +170,7 @@ export function StakeModal({
             <Shift before={before?.impact ?? 0} after={after ? after.impact : null} />
           </dd>
           <dt>Fee to the author</dt>
-          <dd className="mono">{preview ? `${preview.fee} ⬡` : '—'}</dd>
+          <dd className="mono">{preview ? `${formatVotes(preview.fee)} ⬡` : '—'}</dd>
         </dl>
 
         <button
@@ -183,10 +184,10 @@ export function StakeModal({
           ) : side === null ? (
             'Move the slider to stake'
           ) : !valid ? (
-            `You only have ${tokens} ⬡ in this debate`
+            `You only have ${formatVotes(tokens)} ⬡ in this debate`
           ) : (
             <>
-              Stake {amount} ⬡ · {side === 'pro' ? 'Underrated' : 'Overrated'} <DirectionArrow side={side} />
+              Stake {formatVotes(amount)} ⬡ · {side === 'pro' ? 'Underrated' : 'Overrated'} <DirectionArrow side={side} />
             </>
           )}
         </button>

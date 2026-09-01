@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatVotes } from '../lib/votes';
 import { actionErrorMessage, type ArgumentPosition } from '../data/actions';
 
 /** Post-debate controls for the focused argument: redeem shares, claim creator fees. */
@@ -75,7 +76,7 @@ export function PositionPanel({
         )}
         {position.claimableFees > 0 && (
           <button type="button" className="btn" onClick={() => run(onClaimFees)} disabled={busy}>
-            Claim {position.claimableFees} ⬡ creator fees
+            Claim {formatVotes(position.claimableFees)} ⬡ creator fees
           </button>
         )}
       </div>
