@@ -52,6 +52,35 @@ automatically when the indexer repo is checked out. Transactions always go throu
 The ABI is synced from `contracts/out/Deliberate.sol/Deliberate.json` into `src/abi/Deliberate.abi.json`
 with `just sync-abi` after any contract interface change.
 
+## Several networks at once
+
+Name the networks in `VITE_CHAINS` and give each one its own variables, suffixed with the slug
+uppercased and hyphens turned into underscores:
+
+```sh
+VITE_CHAINS=gnosis,chiado                      # slugs, in the order the network menu lists them
+VITE_DELIBERATE_ADDRESS_GNOSIS=0x…
+VITE_DELIBERATE_ADDRESS_CHIADO=0x…
+VITE_RPC_URL_GNOSIS=https://…                  # optional; defaults to the chain's public endpoint
+VITE_INDEXER_URL_GNOSIS=https://…              # optional; defaults to /api/graphql/gnosis
+INDEXER_UPSTREAM_URL_GNOSIS=https://…          # server-side, what that proxy route forwards to
+```
+
+Known slugs are `mainnet`, `sepolia`, `base`, `base-sepolia`, `gnosis`, `chiado` and `anvil`
+([src/data/config.ts](src/data/config.ts)). A slug listed without an address is skipped rather than
+offered, so a network can be staged before its contract exists.
+
+Per-chain variables **never** fall back to the unsuffixed ones — a network without its own address
+would otherwise silently read the default network's contract. `VITE_IPFS_GATEWAY` and
+`VITE_IPFS_API` do fall back, because content addressing is the same on every chain.
+
+The selected network lives in the URL: `#/gnosis/debate/5` names the network a link was copied
+from, so debate 5 on Gnosis and debate 5 on Chiado cannot be confused. Links written before the
+segment existed (`#/debate/5`) resolve to the first network in `VITE_CHAINS`.
+
+Leaving `VITE_CHAINS` unset keeps the single-network build described above: no slug in URLs, no
+network menu, and the unsuffixed variables used directly.
+
 ## Base Sepolia
 
 ```sh
@@ -145,7 +174,11 @@ this: `just dev-testnet` authors against the dockerized kubo, no pinning service
 
 ## Wallets
 
-Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi-provider discovery via viem, so any announcing browser wallet (MetaMask, Rabby, Coinbase Wallet, …) appears in the connect menu. Once connected against an on-chain deployment, the app is fully interactive ([src/data/actions.ts](src/data/actions.ts)):
+Wallet connection uses [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) multi-provider discovery via viem, so any announcing browser wallet (MetaMask, Rabby, Coinbase Wallet, …) appears in the connect menu. An action that needs a wallet opens that menu rather than presenting a disabled control — *Start a debate* opens the composer and the wallet picker together, so the thesis can be written while the wallet is chosen.
+
+The menu names the chain the wallet is on, and says so when that is not the deployment's chain: a wallet on the wrong network fails every write, and until it was shown here that only surfaced as a switch prompt at signing time. *Switch to …* moves it (adding the chain first if the wallet does not know it, EIP-3085). Chain definitions come from viem's registry rather than a local table, so the prompt describes each chain correctly — Gnosis pays gas in xDAI, and a prompt claiming otherwise mislabels every fee the wallet shows afterwards ([src/lib/chains.ts](src/lib/chains.ts)).
+
+Once connected against an on-chain deployment, the app is fully interactive ([src/data/actions.ts](src/data/actions.ts)):
 
 - **Join** the debate from the header (the token balance replaces the button once joined).
 - **Author arguments** during Editing: a composer beneath each column publishes the text through the content pipeline, then commits the digest with `addArgument`. The author picks the deposit (at least the minimum) — a larger deposit deepens the market and puts more stake behind the argument from the start.

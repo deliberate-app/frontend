@@ -57,12 +57,18 @@ function GearIcon() {
  * behind the cogwheel so the happy path stays one field and one button.
  */
 function CreatePanel({
-  disabledHint,
+  unavailableHint,
+  needsWallet,
+  onNeedWallet,
   onCreate,
   resolveToken,
 }: {
-  /** Why creating is unavailable; null when it is possible. */
-  disabledHint: string | null;
+  /** Why creating is impossible here at all; null when the deployment supports it. */
+  unavailableHint: string | null;
+  /** Whether the only thing still missing is a connected wallet. */
+  needsWallet: boolean;
+  /** Opens the wallet picker. */
+  onNeedWallet: () => void;
   onCreate: (
     thesis: string,
     schedule: DebateSchedule,
@@ -84,13 +90,20 @@ function CreatePanel({
   const [error, setError] = useState<string | null>(null);
 
   if (!open) {
+    // A missing wallet is not a reason to refuse the click. Disabling the button would leave the
+    // visitor with a dead control and a tooltip that a touch device never shows, so instead the
+    // form opens - they can write the thesis while they decide - and the wallet picker opens with
+    // it. Only a deployment that cannot create debates at all disables anything.
     return (
       <button
         type="button"
         className="composer-open create-open"
-        onClick={() => setOpen(true)}
-        disabled={disabledHint !== null}
-        title={disabledHint ?? undefined}
+        onClick={() => {
+          setOpen(true);
+          if (needsWallet) onNeedWallet();
+        }}
+        disabled={unavailableHint !== null}
+        title={unavailableHint ?? undefined}
       >
         + Start a debate
       </button>
@@ -172,20 +185,28 @@ function CreatePanel({
         />
       )}
       <div className="action-row">
-        <button
-          type="submit"
-          className="btn btn-solid"
-          disabled={busy || thesis.trim().length === 0 || invalidSchedule !== null || invalidFee !== null}
-          title={
-            invalidSchedule ??
-            invalidFee ??
-            (bounty && bounty.amount > 0n
-              ? 'Funding the bounty may ask for two confirmations: the token approval, then the creation.'
-              : undefined)
-          }
-        >
-          {busy ? 'Creating…' : 'Create debate'}
-        </button>
+        {/* One button in two roles rather than a disabled submit beside a connect prompt: until a
+            wallet is connected there is exactly one thing to do here, and it says so. */}
+        {needsWallet ? (
+          <button type="button" className="btn btn-solid" onClick={onNeedWallet}>
+            Connect wallet
+          </button>
+        ) : (
+          <button
+            type="submit"
+            className="btn btn-solid"
+            disabled={busy || thesis.trim().length === 0 || invalidSchedule !== null || invalidFee !== null}
+            title={
+              invalidSchedule ??
+              invalidFee ??
+              (bounty && bounty.amount > 0n
+                ? 'Funding the bounty may ask for two confirmations: the token approval, then the creation.'
+                : undefined)
+            }
+          >
+            {busy ? 'Creating…' : 'Create debate'}
+          </button>
+        )}
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
           Cancel
         </button>
@@ -202,7 +223,9 @@ export function BrowseView({
   account,
   filter,
   onFilter,
-  createDisabledHint,
+  createUnavailableHint,
+  needsWallet,
+  onNeedWallet,
   onOpen,
   onCreate,
   resolveToken,
@@ -213,7 +236,12 @@ export function BrowseView({
   /** Filter/sort state is owned by the parent so it survives navigating into a debate and back. */
   filter: DebateFilter;
   onFilter: (filter: DebateFilter) => void;
-  createDisabledHint: string | null;
+  /** Why this deployment cannot create debates at all; null when it can. */
+  createUnavailableHint: string | null;
+  /** Whether creating is possible but no wallet is connected yet. */
+  needsWallet: boolean;
+  /** Opens the wallet picker. */
+  onNeedWallet: () => void;
   onOpen: (debateId: number) => void;
   onCreate: (
     thesis: string,
@@ -228,7 +256,13 @@ export function BrowseView({
 
   return (
     <main className="browse">
-      <CreatePanel disabledHint={createDisabledHint} onCreate={onCreate} resolveToken={resolveToken} />
+      <CreatePanel
+        unavailableHint={createUnavailableHint}
+        needsWallet={needsWallet}
+        onNeedWallet={onNeedWallet}
+        onCreate={onCreate}
+        resolveToken={resolveToken}
+      />
 
       <div className="filters">
         <label className="filter filter-thesis">

@@ -16,7 +16,7 @@ import type { AccountPosition, ArgumentMarket, ArgumentNode, Debate, DebateBount
 import { CLAIM_WINDOW_SECONDS, phaseOf, shortDigest, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
 import { climateDebate, confirmedDebate, editingDebate, objectedDebate } from './climateDebate';
-import { contractConfig } from './config';
+import type { ContractConfig } from './config';
 
 /** The `User.Role` enum value for a joined participant (Unassigned = 0, Participant = 1). */
 const PARTICIPANT_ROLE = 1;
@@ -841,8 +841,15 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
  * Picks the debate source: the indexer (with the chain as fallback) when configured,
  * plain chain reads otherwise, and the bundled sample debate without any deployment.
  */
-export function defaultSource(): DebateSource {
-  const config = contractConfig();
+/**
+ * The read source for a deployment - the indexer where one is configured, backed by the chain, and
+ * the bundled sample debate when there is no deployment at all.
+ *
+ * Takes the config rather than reading it, because which deployment is in play is now a property
+ * of the route: switching network has to build a new source pointed at that network's contract and
+ * indexer, and a source that read the environment for itself could only ever be the first one.
+ */
+export function sourceFor(config: ContractConfig | null): DebateSource {
   if (!config) {
     return mockSource;
   }

@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPublicClient, http, type Address } from 'viem';
+import { createPublicClient, createWalletClient, custom, http, type Address } from 'viem';
 import { type BountyDraft } from './components/BountySettings';
 import { BrowseView } from './components/BrowseView';
 import { DebateView, type DebateTx } from './components/DebateView';
+import { NetworkMenu } from './components/NetworkMenu';
 import { PhaseClock } from './components/PhaseClock';
 import { WalletMenu } from './components/WalletMenu';
 import {
   actionErrorMessage,
   connectDebateActions,
+  ensureWalletChain,
   type DebateActions,
   type UserState,
 } from './data/actions';
-import { contractConfig } from './data/config';
-import { defaultSource } from './data/source';
+import { deploymentFor, deployments } from './data/config';
+import { sourceFor } from './data/source';
+import { deploymentChain } from './lib/chains';
+import { hashFor, routeFromHash, type Route } from './lib/route';
 import type { DebateSchedule } from './lib/debateTiming';
 import { withMarkets } from './lib/market';
 import { tokenInfo } from './lib/tokens';
@@ -21,14 +25,11 @@ import type { AccountPosition, Debate, DebateFilter, DebateSummary } from './typ
 import { availablePhasePoke, livePhaseOf, PHASE_LABEL } from './types';
 import { useWallet } from './wallet/useWallet';
 
-const source = defaultSource();
-const config = contractConfig();
-// Sample data has no markets to have earned anything; the deployed sources answer from the index.
-const feesEarnedOf = config ? source.feesEarned.bind(source) : undefined;
-
-// One shared read client for resolving custom bounty tokens; absent in sample mode.
-const tokenClient = config ? createPublicClient({ transport: http(config.rpcUrl) }) : null;
-const resolveToken = tokenClient ? (address: string) => tokenInfo(address, tokenClient) : undefined;
+/**
+ * Every network this build is configured for, in menu order. Read once: it comes from the build's
+ * environment, which cannot change while the app is open.
+ */
+const NETWORKS = deployments();
 
 // A just-created debate is mined, but the load-balanced RPC / hosted indexer can briefly
 // serve a node that has not seen its block yet - so the reader waits it out with a spinner.
@@ -39,14 +40,28 @@ const SYNC_MAX_RETRIES = 15; // ~30 s, comfortably longer than the usual lag
 // immediately without waiting on the indexer to process the Joined event.
 const INITIAL_TOKENS = 100;
 
-/** `#/debate/N` opens a debate; anything else is the browse home. */
-function routeFromHash(): number | null {
-  const match = /^#\/debate\/(\d+)$/.exec(window.location.hash);
-  return match ? Number(match[1]) : null;
-}
-
 export default function App() {
-  const [debateId, setDebateId] = useState<number | null>(routeFromHash);
+  const [route, setRoute] = useState<Route>(() => routeFromHash(window.location.hash));
+  const debateId = route.debateId;
+  // Which network the route names - and with it every endpoint the app reads and writes through.
+  const deployment = useMemo(() => deploymentFor(route.slug, NETWORKS), [route.slug]);
+  // Rebuilt per network rather than held as module constants: switching network has to repoint the
+  // whole read path at that network's contract and indexer, and a constant can only be the first.
+  const source = useMemo(() => sourceFor(deployment), [deployment]);
+  // Sample data has no markets to have earned anything; the deployed sources answer from the index.
+  const feesEarnedOf = useMemo(
+    () => (deployment ? source.feesEarned.bind(source) : undefined),
+    [deployment, source],
+  );
+  // One shared read client per network for resolving custom bounty tokens; absent in sample mode.
+  const tokenClient = useMemo(
+    () => (deployment ? createPublicClient({ transport: http(deployment.rpcUrl) }) : null),
+    [deployment],
+  );
+  const resolveToken = useMemo(
+    () => (tokenClient ? (address: string) => tokenInfo(address, tokenClient) : undefined),
+    [tokenClient],
+  );
   const [debate, setDebate] = useState<Debate | null>(null);
   const [debates, setDebates] = useState<DebateSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,24 +74,61 @@ export default function App() {
   const wallet = useWallet();
   const now = useNow();
 
+  // A named network declares its chain id, which is what lets the route resolve and the menu render
+  // without a network round trip. A legacy single-network build declares nothing, so there the id
+  // is asked of the deployment's own RPC - the one source that cannot disagree with itself.
+  const [discoveredChainId, setDiscoveredChainId] = useState<number | null>(null);
   useEffect(() => {
-    const onHashChange = () => setDebateId(routeFromHash());
+    setDiscoveredChainId(null);
+    if (!tokenClient || deployment?.chainId != null) return;
+    let cancelled = false;
+    void tokenClient
+      .getChainId()
+      .then((id) => {
+        if (!cancelled) setDiscoveredChainId(id);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [tokenClient, deployment]);
+  const deploymentChainId = deployment?.chainId ?? discoveredChainId;
+
+  // Moving the wallet to the deployment's chain on request, rather than only at signing time. The
+  // wallet client is built here and not held by useWallet: which chain is the right one is a fact
+  // about the deployment, and the wallet hook knows nothing about deployments.
+  const switchToDeployment = useMemo(() => {
+    const provider = wallet.provider;
+    if (!deployment || !provider || deploymentChainId === null) return undefined;
+    const chain = deploymentChain(deploymentChainId, deployment.rpcUrl);
+    return async () => {
+      await ensureWalletChain(createWalletClient({ transport: custom(provider) }), chain);
+    };
+  }, [wallet.provider, deployment, deploymentChainId]);
+
+  useEffect(() => {
+    const onHashChange = () => setRoute(routeFromHash(window.location.hash));
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
   const openDebate = (id: number) => {
-    window.location.hash = `#/debate/${id}`;
+    window.location.hash = hashFor(route.slug, id);
+  };
+  // Switching network lands on that network's browse home rather than the same debate id: ids are
+  // per-contract, so carrying one across would open an unrelated debate, or nothing.
+  const openNetwork = (slug: string | null) => {
+    window.location.hash = hashFor(slug, null);
   };
 
   // The action layer exists once a wallet is connected against an on-chain deployment.
   const [actions, setActions] = useState<DebateActions | null>(null);
   useEffect(() => {
-    if (!config || !wallet.account || !wallet.provider) {
+    if (!deployment || !wallet.account || !wallet.provider) {
       setActions(null);
       return;
     }
     let cancelled = false;
-    connectDebateActions(config, wallet.provider, wallet.account)
+    connectDebateActions(deployment, wallet.provider, wallet.account)
       .then((connected) => {
         if (!cancelled) setActions(connected);
       })
@@ -87,7 +139,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [wallet.account, wallet.provider]);
+  }, [deployment, wallet.account, wallet.provider]);
 
   // Reloads are awaited by the actions, so their buttons stay busy until the
   // view is fresh - releasing on the transaction receipt alone would leave a
@@ -99,6 +151,9 @@ export default function App() {
   // refresh() must reload the CURRENT route, never write the old debate's data
   // under the new one. loadSeq still drops out-of-order responses within a route.
   const debateIdRef = useRef(debateId);
+  // The live read source, for the same reason debateIdRef exists: refresh must stay stable, and an
+  // action started before a network switch must not resolve into a reload against the old network.
+  const sourceRef = useRef(source);
   const actionsRef = useRef<DebateActions | null>(null);
   const loadSeq = useRef(0);
   // The id of a debate we just created (its receipt is mined, so it definitely exists);
@@ -115,7 +170,7 @@ export default function App() {
 
     if (target === null) {
       try {
-        const list = await source.list();
+        const list = await sourceRef.current.list();
         if (seq !== loadSeq.current) return;
         setDebates(list);
         setError(null);
@@ -128,8 +183,8 @@ export default function App() {
 
     const connected = actionsRef.current;
     const [debateResult, stateResult] = await Promise.allSettled([
-      source.load(target),
-      connected ? source.userState(target, connected.account) : Promise.resolve(null),
+      sourceRef.current.load(target),
+      connected ? sourceRef.current.userState(target, connected.account) : Promise.resolve(null),
     ]);
     // Drop the response if a newer refresh started or the route changed underneath us.
     if (seq !== loadSeq.current || debateIdRef.current !== target) return;
@@ -172,7 +227,7 @@ export default function App() {
     if (target === null) return;
     const seq = loadSeq.current;
     try {
-      const markets = await source.markets(target);
+      const markets = await sourceRef.current.markets(target);
       if (seq !== loadSeq.current || debateIdRef.current !== target) return;
       setDebate((current) => (current && current.id === target ? withMarkets(current, markets) : current));
     } catch {
@@ -180,9 +235,19 @@ export default function App() {
     }
   }, []);
 
+  // A network change invalidates the browse list, which a route change alone does not: navigating
+  // into a debate and back deliberately keeps the list, so returning is instant. Across networks
+  // that same list is another chain's debates under this chain's name - and since it is only
+  // replaced once the new network answers, leaving it would show the wrong debates for as long as
+  // the new network takes to load, or for ever if it never does.
+  useEffect(() => {
+    setDebates(null);
+  }, [deployment]);
+
   // Route changes drop the previous view's data and reload for the new route.
   useEffect(() => {
     debateIdRef.current = debateId;
+    sourceRef.current = source;
     setDebate(null);
     setUserState(null);
     setError(null);
@@ -192,7 +257,7 @@ export default function App() {
     // Keep the just-created marker only while it matches the route we are landing on.
     if (awaitingCreateRef.current !== debateId) awaitingCreateRef.current = null;
     void refresh();
-  }, [debateId, refresh]);
+  }, [debateId, source, refresh]);
 
   // Cancel any pending sync retry when the app unmounts.
   useEffect(() => () => clearTimeout(retryTimerRef.current), []);
@@ -206,10 +271,10 @@ export default function App() {
   // Poll on-chain state so other participants' moves and newly opened
   // time gates (phase pokes, finalizable drafts) show up on their own.
   useEffect(() => {
-    if (!config) return;
+    if (!deployment) return;
     const timer = setInterval(() => void refresh(), 30_000);
     return () => clearInterval(timer);
-  }, [refresh]);
+  }, [deployment, refresh]);
 
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -316,7 +381,7 @@ export default function App() {
         await refresh();
       },
     };
-  }, [actions, userState, debateId, debate, refresh]);
+  }, [actions, userState, debateId, debate, source, refresh]);
 
   // The finished debate's one-click settle, living in the top bar next to the Finished label:
   // redeem the account's shares across every argument it still holds a position in, one
@@ -375,11 +440,13 @@ export default function App() {
     awaitingCreateRef.current = id;
     openDebate(id);
   };
-  const createDisabledHint = !config
-    ? 'Browsing the bundled sample debate - configure a deployment to create debates.'
-    : !actions
-      ? 'Connect a wallet to create a debate.'
-      : null;
+  // Two reasons creating can be unavailable, and they deserve opposite treatments: no deployment
+  // is a dead end the visitor cannot act on, while no wallet is simply the next step - so the
+  // latter never disables anything, it asks.
+  const createUnavailableHint = deployment
+    ? null
+    : 'Browsing the bundled sample debate - configure a deployment to create debates.';
+  const needsWallet = deployment !== null && actions === null;
 
   const browsing = debateId === null;
 
@@ -442,7 +509,12 @@ export default function App() {
             {joining ? 'Joining…' : 'Join debate'}
           </button>
         )}
-        <WalletMenu wallet={wallet} />
+        <NetworkMenu networks={NETWORKS} selected={deployment} onSelect={openNetwork} />
+        <WalletMenu
+          wallet={wallet}
+          deploymentChainId={deploymentChainId}
+          onSwitchChain={switchToDeployment}
+        />
       </header>
 
       {joinError && <p className="load-error">Could not join: {joinError}</p>}
@@ -464,7 +536,9 @@ export default function App() {
             account={actions?.account}
             filter={filter}
             onFilter={setFilter}
-            createDisabledHint={createDisabledHint}
+            createUnavailableHint={createUnavailableHint}
+            needsWallet={needsWallet}
+            onNeedWallet={wallet.promptConnect}
             onOpen={openDebate}
             onCreate={createDebate}
             resolveToken={resolveToken}
@@ -476,7 +550,7 @@ export default function App() {
           debate={debate}
           tx={tx}
           feesEarnedOf={feesEarnedOf}
-          onRefreshMarkets={config ? refreshMarkets : undefined}
+          onRefreshMarkets={deployment ? refreshMarkets : undefined}
         />
       ) : (
         !error && (

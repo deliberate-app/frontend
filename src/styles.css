@@ -255,6 +255,127 @@ button {
   color: var(--bark);
 }
 
+/* The connected wallet's network. A quiet line rather than a chip - it is a plain fact about the
+   connection, and earns emphasis only when it disagrees with the deployment. */
+.wallet-chain {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0 0.7rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.wallet-chain-dot {
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--pro);
+}
+
+.wallet-chain-warn {
+  color: var(--con);
+}
+
+.wallet-chain-warn .wallet-chain-dot {
+  background: var(--con);
+}
+
+.wallet-chain-tag {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bark);
+}
+
+/* The mismatch shows on the button as well as inside the menu: a warning that exists only behind
+   a click warns nobody, and this one costs a reverted transaction to discover any other way. */
+.wallet-button-warn {
+  border-color: var(--con);
+  color: var(--con);
+}
+
+.wallet-menu-action {
+  font-weight: 600;
+  color: var(--con);
+}
+
+.wallet-menu-error {
+  color: var(--con);
+}
+
+/* ── Network menu ────────────────────────────────────────────────────── */
+/* Shares the wallet's dropdown chrome deliberately: they sit side by side and together answer one
+   question - where a transaction is about to go - so looking like two different controls would be
+   the lie. */
+.network-button {
+  font-weight: 500;
+}
+
+.network-dot {
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--pro);
+}
+
+/* Play money reads as an outline rather than a fill - present, but not asserting solidity. */
+.network-dot-testnet {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--bark);
+}
+
+.network-current {
+  font-weight: 700;
+}
+
+.network-toggle {
+  justify-content: space-between;
+  margin-top: 0.2rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0;
+  font-size: 0.8rem;
+  color: var(--bark);
+}
+
+.network-toggle:disabled {
+  cursor: default;
+}
+
+.network-switch {
+  flex: none;
+  width: 1.6rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: var(--hairline);
+  position: relative;
+  transition: background 120ms ease;
+}
+
+.network-switch::after {
+  content: '';
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--card);
+  transition: transform 120ms ease;
+}
+
+.network-switch-on {
+  background: var(--pro);
+}
+
+.network-switch-on::after {
+  transform: translateX(0.7rem);
+}
+
 /* ── Debate layout ───────────────────────────────────────────────────── */
 .debate {
   max-width: 64rem;

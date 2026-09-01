@@ -12,7 +12,6 @@ import {
   createPublicClient,
   createWalletClient,
   custom,
-  defineChain,
   erc20Abi,
   http,
   parseEventLogs,
@@ -27,6 +26,7 @@ import {
 } from 'viem';
 
 import abi from '../abi/Deliberate.abi.json';
+import { deploymentChain } from '../lib/chains';
 import type { DebateSchedule } from '../lib/debateTiming';
 import { contentURIOf, publishText, warmGateway } from '../lib/ipfs';
 import type { Side } from '../types';
@@ -124,13 +124,6 @@ export function gasLimitFor(estimate: bigint): bigint {
   return (estimate * 150n) / 100n;
 }
 
-/** Chains the app names in wallet prompts; anything else gets a generic label. */
-const CHAIN_NAMES: Record<number, string> = {
-  8453: 'Base',
-  84532: 'Base Sepolia',
-  31337: 'Anvil (local)',
-};
-
 /** True when the wallet rejected a switch because it does not know the chain (EIP-3085 code 4902). */
 function isUnknownChainError(cause: unknown): boolean {
   if ((cause as { code?: number } | null)?.code === 4902) {
@@ -176,12 +169,7 @@ export async function connectDebateActions(
     cacheTime: 500,
   });
   const chainId = await publicClient.getChainId();
-  const chain = defineChain({
-    id: chainId,
-    name: CHAIN_NAMES[chainId] ?? `chain ${chainId}`,
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: { default: { http: [config.rpcUrl] } },
-  });
+  const chain = deploymentChain(chainId, config.rpcUrl);
   const walletClient = createWalletClient({ account, chain, transport: custom(provider) });
 
   // Simulates (surfacing reverts before any signature), sends, and waits for the
