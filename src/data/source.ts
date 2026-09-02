@@ -90,18 +90,30 @@ interface OnChainArgument {
 /** The contract's fixed-point scale: a rating of ±MAX_APPROVAL is full conviction (±100%). */
 const MAX_APPROVAL = 4294967295;
 
-/** The events a text travels in: the thesis in the first, every other argument in the other two. */
-const CONTENT_EVENTS = ['DebateCreated', 'ArgumentCreated', 'ArgumentAltered'] as const;
+/** The ABI's definition of an event, resolved once - the log reads below filter on these. */
+const eventNamed = (name: string): AbiEvent => {
+  const item = getAbiItem({ abi: abi as Abi, name });
+  if (item?.type !== 'event') {
+    throw new Error(`the ABI has no ${name} event - run \`just sync-abi\``);
+  }
+  return item;
+};
 
-const contentEvent = (name: (typeof CONTENT_EVENTS)[number]): AbiEvent =>
-  getAbiItem({ abi: abi as Abi, name }) as AbiEvent;
+/** The events a text travels in: the thesis with its debate, an argument with its creation, and every edit. */
+const CONTENT_EVENTS = ['DebateCreated', 'ArgumentCreated', 'ArgumentAltered'].map(eventNamed);
+const DEBATE_CREATED = eventNamed('DebateCreated');
+
+/** The text an event published, and the argument it belongs to; the thesis is argument 0. */
+function publishedText(log: { eventName?: string; args: unknown }): { id: number; text: string } {
+  const { argumentId, content } = log.args as { argumentId?: number; content: string };
+  return { id: log.eventName === 'DebateCreated' ? 0 : Number(argumentId), text: content };
+}
 
 /**
  * The texts of a debate's arguments by id, read from the log - the one place the chain keeps them.
- * The thesis is in `DebateCreated`, every other argument in its `ArgumentCreated`, and an
- * `ArgumentAltered` replaces the text it names; the log is ordered, so applying the alterations
- * after the creations makes the last one win. Each event is one filtered request from the
- * deployment block, however old the chain is.
+ * An `ArgumentAltered` replaces the text it names, and the log arrives in chain order, so the last
+ * word wins by being applied last. All three events go in one request: only their signatures are
+ * filtered on the node, and this debate's are picked out here.
  */
 async function readTexts(
   client: PublicClient,
@@ -109,31 +121,39 @@ async function readTexts(
   debateId: bigint,
   fromBlock: bigint,
 ): Promise<Map<number, string>> {
-  const [created, added, altered] = await Promise.all(
-    CONTENT_EVENTS.map((name) =>
-      client.getLogs({ address, event: contentEvent(name), args: { debateId }, fromBlock, strict: true }),
-    ),
-  );
+  const logs = await client.getLogs({ address, events: CONTENT_EVENTS, fromBlock, strict: true });
   const texts = new Map<number, string>();
-  for (const log of created) {
-    texts.set(0, (log.args as { content: string }).content);
-  }
-  for (const log of [...added, ...altered]) {
-    const { argumentId, content } = log.args as { argumentId: number; content: string };
-    texts.set(Number(argumentId), content);
+  for (const log of logs) {
+    if ((log.args as { debateId: bigint }).debateId === debateId) {
+      const { id, text } = publishedText(log);
+      texts.set(id, text);
+    }
   }
   return texts;
 }
 
 /** Every debate's thesis by id, from the `DebateCreated` log - one request for the whole list. */
 async function readTheses(client: PublicClient, address: Address, fromBlock: bigint): Promise<Map<number, string>> {
-  const logs = await client.getLogs({ address, event: contentEvent('DebateCreated'), fromBlock, strict: true });
+  const logs = await client.getLogs({ address, event: DEBATE_CREATED, fromBlock, strict: true });
   return new Map(
     logs.map((log) => {
       const { debateId, content } = log.args as { debateId: bigint; content: string };
       return [Number(debateId), content];
     }),
   );
+}
+
+/**
+ * The text the log published for something the state carries. Missing means the two came from
+ * nodes at different heights: an empty card would say the argument has nothing to say, so the
+ * read fails instead and the caller retries.
+ */
+function textOf(texts: Map<number, string>, id: number, what: string): string {
+  const text = texts.get(id);
+  if (text === undefined) {
+    throw new Error(`${what} ${id} has no text in the log yet`);
+  }
+  return text;
 }
 
 /** Reads a debate's bounty from the chain; undefined when none is attached. */
@@ -191,15 +211,12 @@ export function contractSource(address: Address, rpcUrl: string, deploymentBlock
       // Traverse the debate tree: every argument lies on a path from a leaf to the
       // thesis (id 0), so walking the parent links upward from all leaves visits the
       // whole tree. Arguments are fetched once each, one parallel wave per level.
-      const [leafArgumentIds, texts] = await Promise.all([
-        client.readContract({
-          address,
-          abi,
-          functionName: 'getLeafArgumentIds',
-          args: [id],
-        }) as Promise<number[]>,
-        readTexts(client, address, id, deploymentBlock),
-      ]);
+      const leafArgumentIds = (await client.readContract({
+        address,
+        abi,
+        functionName: 'getLeafArgumentIds',
+        args: [id],
+      })) as number[];
 
       const fetched = new Map<number, OnChainArgument>();
       let wave = [...new Set([0, ...leafArgumentIds])];
@@ -220,6 +237,10 @@ export function contractSource(address: Address, rpcUrl: string, deploymentBlock
         );
       }
 
+      // Read after the state, so the scan reaches every argument the state already has: a text
+      // missing from a log scan that ended earlier would be one this debate does have.
+      const texts = await readTexts(client, address, id, deploymentBlock);
+
       const nodes: ArgumentNode[] = [...fetched.entries()]
         .sort(([a], [b]) => a - b)
         .map(([argumentId, argument]) => {
@@ -233,7 +254,7 @@ export function contractSource(address: Address, rpcUrl: string, deploymentBlock
                 : argument.isSupporting
                   ? ('pro' as const)
                   : ('con' as const),
-            text: texts.get(argumentId) ?? '',
+            text: textOf(texts, argumentId, 'argument'),
             // Approval is the pro-share price of the argument's constant-product market:
             // the scarcer the pro reserve, the higher the approval.
             approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
@@ -326,7 +347,7 @@ export function contractSource(address: Address, rpcUrl: string, deploymentBlock
             : undefined;
           return {
             id: debateId,
-            thesis: theses.get(debateId) ?? '',
+            thesis: textOf(theses, debateId, 'debate'),
             phase: phaseOf(Number(editingEndTime), Number(ratingEndTime), currentPhase === PHASE_FINISHED, chainTime),
             approved,
             stake: totalVotes,
