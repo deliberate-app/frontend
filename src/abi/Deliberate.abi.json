@@ -1,50 +1,6 @@
 [
  {
   "type": "function",
-  "name": "addArgument",
-  "inputs": [
-   {
-    "name": "debateId",
-    "type": "uint256",
-    "internalType": "uint256"
-   },
-   {
-    "name": "parentArgumentId",
-    "type": "uint16",
-    "internalType": "uint16"
-   },
-   {
-    "name": "contentURI",
-    "type": "bytes32",
-    "internalType": "bytes32"
-   },
-   {
-    "name": "isSupporting",
-    "type": "bool",
-    "internalType": "bool"
-   },
-   {
-    "name": "initialApproval",
-    "type": "uint8",
-    "internalType": "uint8"
-   },
-   {
-    "name": "deposit",
-    "type": "uint32",
-    "internalType": "uint32"
-   }
-  ],
-  "outputs": [
-   {
-    "name": "newArgumentId",
-    "type": "uint16",
-    "internalType": "uint16"
-   }
-  ],
-  "stateMutability": "nonpayable"
- },
- {
-  "type": "function",
   "name": "alterArgument",
   "inputs": [
    {
@@ -58,9 +14,9 @@
     "internalType": "uint16"
    },
    {
-    "name": "contentURI",
-    "type": "bytes32",
-    "internalType": "bytes32"
+    "name": "content",
+    "type": "string",
+    "internalType": "string"
    }
   ],
   "outputs": [],
@@ -143,12 +99,56 @@
  },
  {
   "type": "function",
+  "name": "createArgument",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "parentArgumentId",
+    "type": "uint16",
+    "internalType": "uint16"
+   },
+   {
+    "name": "content",
+    "type": "string",
+    "internalType": "string"
+   },
+   {
+    "name": "isSupporting",
+    "type": "bool",
+    "internalType": "bool"
+   },
+   {
+    "name": "initialApproval",
+    "type": "uint8",
+    "internalType": "uint8"
+   },
+   {
+    "name": "deposit",
+    "type": "uint32",
+    "internalType": "uint32"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "newArgumentId",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
   "name": "createDebate",
   "inputs": [
    {
-    "name": "contentURI",
-    "type": "bytes32",
-    "internalType": "bytes32"
+    "name": "content",
+    "type": "string",
+    "internalType": "string"
    },
    {
     "name": "lockingDuration",
@@ -286,11 +286,6 @@
     "type": "tuple",
     "internalType": "struct Argument.Data",
     "components": [
-     {
-      "name": "contentURI",
-      "type": "bytes32",
-      "internalType": "bytes32"
-     },
      {
       "name": "creator",
       "type": "address",
@@ -783,7 +778,38 @@
  },
  {
   "type": "event",
-  "name": "ArgumentAdded",
+  "name": "ArgumentAltered",
+  "inputs": [
+   {
+    "name": "debateId",
+    "type": "uint256",
+    "indexed": true,
+    "internalType": "uint256"
+   },
+   {
+    "name": "argumentId",
+    "type": "uint16",
+    "indexed": true,
+    "internalType": "uint16"
+   },
+   {
+    "name": "content",
+    "type": "string",
+    "indexed": false,
+    "internalType": "string"
+   },
+   {
+    "name": "finalizationTime",
+    "type": "uint48",
+    "indexed": false,
+    "internalType": "uint48"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
+  "name": "ArgumentCreated",
   "inputs": [
    {
     "name": "debateId",
@@ -816,10 +842,10 @@
     "internalType": "bool"
    },
    {
-    "name": "contentURI",
-    "type": "bytes32",
+    "name": "content",
+    "type": "string",
     "indexed": false,
-    "internalType": "bytes32"
+    "internalType": "string"
    },
    {
     "name": "pro",
@@ -832,37 +858,6 @@
     "type": "uint32",
     "indexed": false,
     "internalType": "uint32"
-   },
-   {
-    "name": "finalizationTime",
-    "type": "uint48",
-    "indexed": false,
-    "internalType": "uint48"
-   }
-  ],
-  "anonymous": false
- },
- {
-  "type": "event",
-  "name": "ArgumentAltered",
-  "inputs": [
-   {
-    "name": "debateId",
-    "type": "uint256",
-    "indexed": true,
-    "internalType": "uint256"
-   },
-   {
-    "name": "argumentId",
-    "type": "uint16",
-    "indexed": true,
-    "internalType": "uint16"
-   },
-   {
-    "name": "contentURI",
-    "type": "bytes32",
-    "indexed": false,
-    "internalType": "bytes32"
    },
    {
     "name": "finalizationTime",
@@ -1051,10 +1046,10 @@
     "internalType": "address"
    },
    {
-    "name": "contentURI",
-    "type": "bytes32",
+    "name": "content",
+    "type": "string",
     "indexed": false,
-    "internalType": "bytes32"
+    "internalType": "string"
    },
    {
     "name": "lockingDuration",
@@ -1375,6 +1370,27 @@
     "name": "closesAt",
     "type": "uint48",
     "internalType": "uint48"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "name": "ContentEmpty",
+  "inputs": []
+ },
+ {
+  "type": "error",
+  "name": "ContentTooLong",
+  "inputs": [
+   {
+    "name": "limit",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "actual",
+    "type": "uint256",
+    "internalType": "uint256"
    }
   ]
  },
