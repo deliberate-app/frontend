@@ -29,12 +29,6 @@ export interface ContractConfig {
   address: Address;
   rpcUrl: string;
   /**
-   * The block the contract was deployed in, where a chain read of the log starts: argument texts
-   * live in the events and nowhere else. Optional - without it the scan starts at the first block,
-   * which a dev chain does not mind and a public endpoint may refuse.
-   */
-  deploymentBlock?: bigint;
-  /**
    * GraphQL endpoint of the debate indexer; debates load from it in one query, RPC as fallback.
    * Shared by every network, because one indexer covers them all and a query names its chain.
    */
@@ -71,11 +65,6 @@ const env = import.meta.env as unknown as Record<string, string | undefined>;
  */
 function envFor(slug: string, base: string): string | undefined {
   return env[`${base}_${slug.toUpperCase().replace(/-/g, '_')}`] || undefined;
-}
-
-/** A block number from its variable, when set. */
-function blockFrom(value: string | undefined): bigint | undefined {
-  return value ? BigInt(value) : undefined;
 }
 
 /**
@@ -117,7 +106,6 @@ export function deployments(): Deployment[] {
         chainId,
         address,
         rpcUrl,
-        deploymentBlock: blockFrom(envFor(slug, 'VITE_DEPLOYMENT_BLOCK')),
         // One indexer for every network, reached through the same-origin proxy unless overridden.
         indexerUrl: env.VITE_INDEXER_URL || '/api/graphql',
         circlesRegistry,
@@ -138,7 +126,6 @@ function legacyDeployment(): Deployment | null {
     chainId: null,
     address,
     rpcUrl,
-    deploymentBlock: blockFrom(env.VITE_DEPLOYMENT_BLOCK),
     indexerUrl: env.VITE_INDEXER_URL || undefined,
     circlesRegistry,
   };

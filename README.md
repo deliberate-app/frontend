@@ -38,8 +38,6 @@ Set the address and the RPC endpoint (in `.env.local` or the environment):
 ```sh
 VITE_DELIBERATE_ADDRESS=0x…   # Deliberate contract address
 VITE_RPC_URL=https://…       # JSON-RPC endpoint
-VITE_DEPLOYMENT_BLOCK=…      # optional, the block the contract was deployed in: where a chain read
-                             # of the argument texts starts (the events are the only place they live)
 VITE_INDEXER_URL=https://…   # optional, GraphQL endpoint of the debate indexer (../indexer)
 ```
 
@@ -60,7 +58,6 @@ uppercased and hyphens turned into underscores:
 VITE_CHAINS=gnosis,chiado                      # slugs, in the order the network menu lists them
 VITE_DELIBERATE_ADDRESS_GNOSIS=0x…
 VITE_DELIBERATE_ADDRESS_CHIADO=0x…
-VITE_DEPLOYMENT_BLOCK_GNOSIS=…                 # optional; where a chain read of the argument texts starts
 VITE_RPC_URL_GNOSIS=https://…                  # optional; defaults to the chain's public endpoint
 VITE_INDEXER_URL=https://…                     # optional, shared; defaults to /api/graphql
 INDEXER_UPSTREAM_URL=https://…                 # server-side, what that proxy route forwards to
@@ -99,7 +96,7 @@ The text of a thesis or argument goes to the chain as it is: `createDebate`, `cr
 `alterArgument` take it as a string of 1 to 256 bytes of UTF-8 and publish it in their events
 (`DebateCreated`, `ArgumentCreated`, `ArgumentAltered`). Nothing is stored on-chain and nothing is
 content-addressed: the indexer folds the events and serves the text with the rest of the tree, and
-the chain source reads the same events with `eth_getLogs` from `VITE_DEPLOYMENT_BLOCK`. The bounds
+the chain source reads the same events with `eth_getLogs`. The bounds
 live in [src/lib/content.ts](src/lib/content.ts) and are checked before anything is sent; the
 budget beside every composer counts bytes, not characters, because that is what the contract counts.
 
@@ -124,7 +121,6 @@ Project environment variables (Settings → Environment Variables):
 VITE_CHAINS=gnosis           # the networks offered, by slug (see *Several networks at once*)
 VITE_DELIBERATE_ADDRESS_GNOSIS=0x… # the live deployment (contracts/broadcast/DeployDeliberate.s.sol/100/run-latest.json)
 VITE_CIRCLES_REGISTRY_GNOSIS=0x…   # the any-Circles-human registry deployed beside it
-VITE_DEPLOYMENT_BLOCK_GNOSIS=… # the deployment block, from the same broadcast record
 VITE_RPC_URL_GNOSIS=https://rpc.gnosischain.com
                              # indexer reads go through the same-origin query proxy, /api/graphql
 INDEXER_UPSTREAM_URL=https://… # server-side only; the hosted indexer endpoint the query

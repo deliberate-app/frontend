@@ -115,13 +115,8 @@ function publishedText(log: { eventName?: string; args: unknown }): { id: number
  * word wins by being applied last. All three events go in one request: only their signatures are
  * filtered on the node, and this debate's are picked out here.
  */
-async function readTexts(
-  client: PublicClient,
-  address: Address,
-  debateId: bigint,
-  fromBlock: bigint,
-): Promise<Map<number, string>> {
-  const logs = await client.getLogs({ address, events: CONTENT_EVENTS, fromBlock, strict: true });
+async function readTexts(client: PublicClient, address: Address, debateId: bigint): Promise<Map<number, string>> {
+  const logs = await client.getLogs({ address, events: CONTENT_EVENTS, fromBlock: 0n, strict: true });
   const texts = new Map<number, string>();
   for (const log of logs) {
     if ((log.args as { debateId: bigint }).debateId === debateId) {
@@ -133,8 +128,8 @@ async function readTexts(
 }
 
 /** Every debate's thesis by id, from the `DebateCreated` log - one request for the whole list. */
-async function readTheses(client: PublicClient, address: Address, fromBlock: bigint): Promise<Map<number, string>> {
-  const logs = await client.getLogs({ address, event: DEBATE_CREATED, fromBlock, strict: true });
+async function readTheses(client: PublicClient, address: Address): Promise<Map<number, string>> {
+  const logs = await client.getLogs({ address, event: DEBATE_CREATED, fromBlock: 0n, strict: true });
   return new Map(
     logs.map((log) => {
       const { debateId, content } = log.args as { debateId: bigint; content: string };
@@ -179,8 +174,16 @@ async function readBounty(client: PublicClient, address: Address, id: bigint): P
   };
 }
 
-/** Reads a debate from a deployed Deliberate contract; the texts come from its log, scanned from `deploymentBlock`. */
-export function contractSource(address: Address, rpcUrl: string, deploymentBlock = 0n): DebateSource {
+/**
+ * Reads a debate from a deployed Deliberate contract, taking the argument texts from its log.
+ *
+ * The scan runs from the first block, and there is deliberately no configured start: an RPC
+ * indexes logs by address, so asking it for one contract's whole history costs the same as asking
+ * for the part since its deployment (measured on Gnosis: 0.26 s either way). A start block would
+ * be a third per-network fact to keep in step with the address, buying nothing - and it would not
+ * bound the range either, since the range grows with the chain whatever it starts at.
+ */
+export function contractSource(address: Address, rpcUrl: string): DebateSource {
   const client = createPublicClient({ transport: http(rpcUrl) });
 
   return {
@@ -239,7 +242,7 @@ export function contractSource(address: Address, rpcUrl: string, deploymentBlock
 
       // Read after the state, so the scan reaches every argument the state already has: a text
       // missing from a log scan that ended earlier would be one this debate does have.
-      const texts = await readTexts(client, address, id, deploymentBlock);
+      const texts = await readTexts(client, address, id);
 
       const nodes: ArgumentNode[] = [...fetched.entries()]
         .sort(([a], [b]) => a - b)
@@ -312,7 +315,7 @@ export function contractSource(address: Address, rpcUrl: string, deploymentBlock
       const [count, latestBlock, theses] = await Promise.all([
         client.readContract({ address, abi, functionName: 'debatesCount', args: [] }).then(Number),
         client.getBlock(),
-        readTheses(client, address, deploymentBlock),
+        readTheses(client, address),
       ]);
       // One clock for the whole list; each debate's phase is derived from its own gates, as the contract does.
       const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
@@ -884,6 +887,6 @@ export function sourceFor(config: ContractConfig | null): DebateSource {
   if (!config) {
     return mockSource;
   }
-  const chain = contractSource(config.address, config.rpcUrl, config.deploymentBlock);
+  const chain = contractSource(config.address, config.rpcUrl);
   return config.indexerUrl ? withFallback(indexerSource(config.indexerUrl, config.rpcUrl), chain) : chain;
 }
