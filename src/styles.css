@@ -8,8 +8,11 @@
   --con-wash: #f7eee9;
   --bark: #7a7568;
   --hairline: #e3e6de;
-  /* The sub-debate's correction on a rating gauge: the stance hues held back, but well short of
-     --pro-wash / --con-wash, which vanish on a white card (DESIGN.md, "Tried / decided"). */
+  /* A sub-debate's correction on a rating gauge. Usually `stone`: the debate moved the figure
+     without changing the side it is on, which is not a stance and should not borrow a stance
+     colour. The two pale hues appear only where the correction crossed neutral, and are held well
+     short of --pro-wash / --con-wash, which vanish on a white card (DESIGN.md, "Tried / decided"). */
+  --stone: #b4b1a7;
   --pro-pale: #8cbf95;
   --con-pale: #e3cabe;
   --card: #ffffff;
@@ -927,9 +930,15 @@ button {
   background: var(--con);
 }
 
-/* The sub-debate's correction, drawn over the market's own fill: green where the children lifted
-   the price, rust where they cut into it. Pale against the saturated bar, because this is what the
-   debate did to the figure rather than the figure itself. */
+/* The sub-debate's correction, drawn over the market's own fill so it eats into the bar rather
+   than sitting beside it. Grey while the argument stays on its side of neutral - the figure moved,
+   the stance did not - and pale green or rust only where the correction carried it across, naming
+   the side it ended on. Pale throughout, because this is what the debate did to the figure rather
+   than the figure itself. */
+.gauge-corrected {
+  background: var(--stone);
+}
+
 .gauge-raised {
   background: var(--pro-pale);
 }

@@ -14,8 +14,9 @@ spent on the rail, the type, and the market-as-ledger presentation.
 | con | `#A5432C` | attacking polarity (redwood oxide) |
 | bark | `#7A7568` | metadata |
 | hairline | `#E3E6DE` | borders |
-| pro-pale | `#8CBF95` | a sub-debate raising a rating, on the gauge |
-| con-pale | `#E3CABE` | a sub-debate cutting one |
+| stone | `#B4B1A7` | a sub-debate correcting a rating without changing its side |
+| pro-pale | `#8CBF95` | a correction carrying a rating up across neutral |
+| con-pale | `#E3CABE` | one carrying it down across neutral |
 
 Type: **Fraunces** (display: wordmark, focused claim, column headers) · **Public Sans**
 (body — civic typeface) · **IBM Plex Mono** (market figures, addresses).

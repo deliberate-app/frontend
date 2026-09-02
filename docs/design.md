@@ -64,8 +64,12 @@ contouring are exactly right — treat them as the baseline to protect.)
 - **2026-09-03 — the card figures are drawn, not written; the drawing is the affordance.** Market
   and Rating became one centre-anchored gauge and the stake became a ring, both on the cards and on
   the focused claim. The gauge fills from neutral to the argument's own market price in its stance
-  colour, then draws what the sub-debate did to that price over or beyond it — `pro-pale` where the
-  children lifted it, `con-pale` where they cut into it, so direction reads without a sign. The
+  colour, then draws what the sub-debate did to that price over or beyond it. That correction is
+  `stone` grey wherever the argument stays on its side of neutral: the debate moved the figure, not
+  the stance, and a change of degree should not borrow the colour of a change of side. It takes
+  `pro-pale` or `con-pale` only where it carried the argument across neutral, naming the side it
+  ended on — the one case on a gauge where a stance colour is worth reading, and the reason
+  principle 2 still holds with the correction drawn at all. The
   corners carry meaning rather than style: a round cap is where the bar stops, a square one is where
   it continues — into the centre line it grows out of, or into the segment beside it. So a bar cut
   short by its sub-debate is distinguishable from one that simply ends there, without a number. The ring

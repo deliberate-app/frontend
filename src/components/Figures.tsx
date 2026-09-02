@@ -78,8 +78,10 @@ const span = (from: number, to: number, roundFrom: boolean, roundTo: boolean) =>
  *
  * The saturated bar runs from the centre to `market`, coloured by which side of neutral it lands.
  * The correction runs from there to `rating` and is drawn over it, so a sub-debate that cut the
- * price eats visibly into the bar rather than sitting beside it. Omit `market` for the thesis,
- * which owns no market of its own: the bar is then simply its rating, and the tooltip says so.
+ * price eats visibly into the bar rather than sitting beside it. It is grey wherever it only
+ * changes how far the argument stands from neutral, and takes the stance colour of where the
+ * argument ended up only when it carried it across. Omit `market` for the thesis, which owns no
+ * market of its own: the bar is then simply its rating, and the tooltip says so.
  */
 export function RatingGauge({
   rating,
@@ -103,6 +105,13 @@ export function RatingGauge({
   // (extending the bar), sits inside it (eating into it), or crosses neutral (replacing it).
   const sameSide = base === 0 || rating === 0 || Math.sign(rating) === Math.sign(base);
   const extendsBar = sameSide && Math.abs(rating) > Math.abs(base);
+  // A correction takes a stance colour only when it carries the argument past neutral - when the
+  // debate changed which side the argument is on, rather than only how far. Everything else is the
+  // same fact restated quieter, so it is grey: the stance hues keep one job, and the one time they
+  // appear on a correction they are worth reading. A rating landing exactly on neutral has not
+  // crossed it. (Distinct from `sameSide` above, which asks about length rather than side: a
+  // neutral market has no side to stay on, but its correction is still the whole bar.)
+  const crossesNeutral = rating !== 0 && Math.sign(rating) !== Math.sign(base);
 
   return (
     <span className="gauge" {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': gaugeLabel(rating, market) })}>
@@ -119,7 +128,9 @@ export function RatingGauge({
       />
       {correcting && (
         <span
-          className={`gauge-correction ${rating > base ? 'gauge-raised' : 'gauge-cut'}`}
+          className={`gauge-correction ${
+            crossesNeutral ? (rating > 0 ? 'gauge-raised' : 'gauge-cut') : 'gauge-corrected'
+          }`}
           // Square where it meets the market's fill, round where the bar actually stops.
           style={span(base, rating, !extendsBar, extendsBar || !sameSide)}
           title={`Rating ${formatImpact(rating)}, ${formatImpact(rating - base)} off its own market price. ${RATING_HINT}`}
