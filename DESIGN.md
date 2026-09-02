@@ -14,6 +14,7 @@ spent on the rail, the type, and the market-as-ledger presentation.
 | con | `#A5432C` | attacking polarity (redwood oxide) |
 | bark | `#7A7568` | metadata |
 | hairline | `#E3E6DE` | borders |
+| amber | `#D29A2C` | the hovered argument's share of a figure it contributes to |
 | slate | `#3C4535` | the zero mark on a signed axis (gauge, stake slider) |
 | stone | `#B4B1A7` | a sub-debate pulling a rating back toward neutral |
 | pro-pale | `#8CBF95` | one adding conviction on the pro side |

@@ -1,7 +1,7 @@
 import type { NodeTally } from '../lib/impact';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf, liveChainTime } from '../types';
-import { ArgumentFigures, ParentImpact } from './Figures';
+import { ArgumentFigures } from './Figures';
 import { LockChip } from './LockChip';
 
 export function ArgumentCard({
@@ -11,6 +11,7 @@ export function ArgumentCard({
   now,
   totalStake,
   onFocus,
+  onHover,
 }: {
   debate: Debate;
   node: ArgumentNode;
@@ -21,6 +22,8 @@ export function ArgumentCard({
   /** Every stake in the debate - what the card's ring draws its share of. */
   totalStake: number;
   onFocus: (id: number) => void;
+  /** Reports the pointer entering or leaving, so the parent's figures can show this card's share. */
+  onHover?: (id: number | null) => void;
 }) {
   const pros = childrenOf(debate, node.id, 'pro').length;
   const cons = childrenOf(debate, node.id, 'con').length;
@@ -38,14 +41,23 @@ export function ArgumentCard({
   ].filter(Boolean);
 
   return (
-    <button type="button" className={`card card-${node.side}`} onClick={() => onFocus(node.id)}>
+    <button
+      type="button"
+      className={`card card-${node.side}`}
+      onClick={() => onFocus(node.id)}
+      // Focus as well as hover: the share is part of what the card says, and a keyboard reader
+      // tabbing the column should see it too.
+      onMouseEnter={() => onHover?.(node.id)}
+      onMouseLeave={() => onHover?.(null)}
+      onFocusCapture={() => onHover?.(node.id)}
+      onBlurCapture={() => onHover?.(null)}
+    >
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
         <span className="card-figures">
           {/* The gauge answers "how does this stand", the ring "how much is behind it" - the two
               questions a column of cards is scanned for. The figures themselves are on hover. */}
           <ArgumentFigures node={node} tally={tally} total={totalStake} />
-          {tally && <ParentImpact impact={tally.impact} />}
         </span>
         <LockChip locked={locked} finalizesIn={finalizesIn} />
         <span className="card-replies">

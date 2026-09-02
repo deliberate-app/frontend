@@ -154,7 +154,7 @@ export function StakeModal({
           </span>
         </div>
 
-        <dl className="market-facts">
+        <dl className="detail-facts">
           <dt title={MARKET_HINT}>Market</dt>
           <dd>
             <Shift before={2 * node.approval - 1} after={preview ? 2 * preview.approval - 1 : null} />

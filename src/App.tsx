@@ -50,6 +50,11 @@ export default function App() {
     () => (deployment ? source.feesEarned.bind(source) : undefined),
     [deployment, source],
   );
+  // The stake history the argument detail's chart replays; sample data has none to replay.
+  const historyOfDebate = useMemo(
+    () => (deployment ? source.history.bind(source) : undefined),
+    [deployment, source],
+  );
   // One shared read client per network for resolving custom bounty tokens; absent in sample mode.
   const tokenClient = useMemo(
     () => (deployment ? createPublicClient({ transport: http(deployment.rpcUrl) }) : null),
@@ -552,6 +557,7 @@ export default function App() {
           debate={debate}
           tx={tx}
           feesEarnedOf={feesEarnedOf}
+          historyOfDebate={historyOfDebate}
           onRefreshMarkets={deployment ? refreshMarkets : undefined}
         />
       ) : (

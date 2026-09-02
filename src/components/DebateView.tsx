@@ -5,16 +5,17 @@ import { tallyOf } from '../lib/impact';
 import { shortAddress } from '../lib/address';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
+import type { StakeEvent } from '../lib/history';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ArgumentCard } from './ArgumentCard';
-import { ArgumentFigures, figuresLabel, ParentImpact, RatingGauge, TotalStake } from './Figures';
+import { ArgumentFigures, figuresLabel, RatingGauge, TotalStake } from './Figures';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
 import { LockChip } from './LockChip';
-import { MarketDetail } from './MarketDetail';
+import { ArgumentDetail } from './ArgumentDetail';
 import { StakeModal } from './StakeModal';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
@@ -141,19 +142,40 @@ export function DebateView({
   debate,
   tx,
   feesEarnedOf,
+  historyOfDebate,
   onRefreshMarkets,
 }: {
   debate: Debate;
   tx: DebateTx | null;
   /** The market fees an argument has earned its author so far; absent for sample data. */
   feesEarnedOf?: (debateId: number, argumentId: number) => Promise<number>;
+  /** Reads every stake the debate has seen, for the argument detail's chart. */
+  historyOfDebate?: (debateId: number) => Promise<StakeEvent[]>;
   /** Refetches only the markets into `debate`; polled while the stake modal is open. Absent for sample data. */
   onRefreshMarkets?: () => Promise<void>;
 }) {
   const thesis = thesisOf(debate);
   const [focusedId, setFocusedId] = useState(thesis.id);
   // The focused argument's market detail (the curve modal), opened from the rating market link.
-  const [marketOpen, setMarketOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  // The stake history, fetched once the detail view is opened - it is only ever read there, and it
+  // is the one query in this view whose size grows with the whole debate rather than one argument.
+  const [stakes, setStakes] = useState<readonly StakeEvent[]>([]);
+  useEffect(() => {
+    if (!detailOpen || !historyOfDebate) return;
+    let cancelled = false;
+    historyOfDebate(debate.id)
+      .then((history) => {
+        if (!cancelled) setStakes(history);
+      })
+      .catch(() => {
+        // A chart is not worth an error state: without history the detail simply has no chart.
+        if (!cancelled) setStakes([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detailOpen, historyOfDebate, debate.id]);
   // The stake modal, opened from the focus meta during the rating phase.
   const [stakeOpen, setStakeOpen] = useState(false);
   // While it is open, the markets behind its preview are refetched every few seconds, so a stake
@@ -194,6 +216,17 @@ export function DebateView({
     [debate],
   );
   const focusTally = tallies.get(focus.id);
+  // Which child of the focused claim the pointer is on. The share of its parent's sub-debate that
+  // child accounts for is the weight the tally gives it among its siblings, so the slice
+  // highlighted in the parent's figures is the one those figures actually owe to it.
+  const [hoveredChild, setHoveredChild] = useState<number | null>(null);
+  const hoveredShare = useMemo(() => {
+    if (hoveredChild === null) return undefined;
+    const siblings = [...pros, ...cons].filter((child) => child.state === 'final');
+    const beneath = siblings.reduce((sum, child) => sum + (tallies.get(child.id)?.subtreeWeight ?? 0), 0);
+    const own = tallies.get(hoveredChild)?.subtreeWeight ?? 0;
+    return beneath > 0 ? own / beneath : undefined;
+  }, [hoveredChild, pros, cons, tallies]);
   // What the rings are a share of. The thesis' subtree stake, not the sum of every node's, because
   // that is the same accounting the arcs themselves come from: the tally leaves drafts out, so a
   // denominator that counted them would give arcs that cannot add up to their own circle. Zero
@@ -302,18 +335,18 @@ export function DebateView({
             <button
               type="button"
               className="figure-button"
-              title="About this rating market"
-              aria-label={`${figuresLabel(focus, focusTally, talliedStake)}. About this rating market`}
-              onClick={() => setMarketOpen(true)}
+              title="Argument details"
+              aria-label={`${figuresLabel(focus, focusTally, talliedStake)}. Argument details`}
+              onClick={() => setDetailOpen(true)}
             >
-              <ArgumentFigures node={focus} tally={focusTally} total={talliedStake} presentational />
-            </button>
-            {focusTally && (
-              <>
-                {' '}
-                · <ParentImpact impact={focusTally.impact} />
-              </>
-            )}{' '}
+              <ArgumentFigures
+                node={focus}
+                tally={focusTally}
+                total={talliedStake}
+                highlight={hoveredShare}
+                presentational
+              />
+            </button>{' '}
             · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
           </p>
         )}
@@ -335,13 +368,15 @@ export function DebateView({
             </div>
           </div>
         )}
-        {marketOpen && !isThesis && (
-          <MarketDetail
+        {detailOpen && !isThesis && (
+          <ArgumentDetail
+            debate={debate}
             node={focus}
             tally={focusTally}
+            stakes={stakes}
             feePercentage={debate.feePercentage}
             loadFeesEarned={loadFeesEarned}
-            onClose={() => setMarketOpen(false)}
+            onClose={() => setDetailOpen(false)}
           />
         )}
         {ownDraft && tx && (
@@ -404,6 +439,7 @@ export function DebateView({
                 now={now}
                 totalStake={talliedStake}
                 onFocus={setFocusedId}
+                onHover={setHoveredChild}
               />
             ))
           )}
@@ -437,6 +473,7 @@ export function DebateView({
                 now={now}
                 totalStake={talliedStake}
                 onFocus={setFocusedId}
+                onHover={setHoveredChild}
               />
             ))
           )}

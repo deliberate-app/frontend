@@ -15,6 +15,11 @@
   /* The zero mark on a signed axis. Between --ink and --bark, so it reads as the one fixed point
      on the scale rather than as another of the greys the bar is made of - and short of --ink,
      which is the page's text and would put a stroke of body copy through a figure. */
+  /* What you are pointing at, wherever its contribution shows up in someone else's figure. The
+     one warm hue in the palette that is not a stance: leaf and redwood are spoken for, the greys
+     are structure, and a highlight has to be none of those or it reads as a fact rather than as a
+     pointer. Amber sits in the same natural family and survives on every ground the figures use. */
+  --amber: #d29a2c;
   --slate: #3c4535;
   /* The ring's diameter, the bar's thickness, and the space between the two figures. The zero mark
      is sized from the last two rather than given a length of its own: it stands half a gap clear of
@@ -881,6 +886,117 @@ button {
   text-align: center;
 }
 
+/* ── Argument history ────────────────────────────────────────────────── */
+/* Two pairs of series on two axes, each drawn as the kind of thing it is. A rating moves either
+   way, so it is a line, in ink, on the left axis. Stake only ever accumulates and an argument's
+   own is always part of its branch's, so that pair is two stacked washes of bark on the right.
+   The washes are laid down first and held to a low opacity: the stake is the weight behind the
+   verdict, so it belongs behind it, as a ground the rating lines are read against rather than as
+   two more lines competing with them. */
+.history {
+  margin: 0 0 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.history-plot {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.history-axis,
+.history-zero {
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.history-zero {
+  stroke: var(--slate);
+  stroke-dasharray: 2 3;
+}
+
+/* The stake pair: one hue, layered. The argument's own area is painted over its branch's, so it
+   comes out the denser of the two and the paler band left showing above it is exactly what its
+   sub-arguments hold - the ring's two segments, unrolled along the window. */
+.history-band {
+  stroke: none;
+  fill: var(--bark);
+}
+
+.history-band.history-subtree {
+  opacity: 0.14;
+}
+
+.history-band.history-stake {
+  opacity: 0.3;
+}
+
+.history-line {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.history-rating {
+  stroke: var(--ink);
+}
+
+.history-market {
+  stroke: var(--ink);
+  stroke-dasharray: 3 2.5;
+  opacity: 0.55;
+}
+
+.history-tick {
+  fill: var(--bark);
+  font-family: var(--font-mono);
+  font-size: 7px;
+}
+
+.history-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.7rem;
+  font-size: 0.7rem;
+  color: var(--bark);
+}
+
+.history-key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+/* Where the series stands now. It carries the ink because it is the figure, not the label. */
+.history-key-value {
+  color: var(--ink);
+}
+
+/* The key's swatches are the lines themselves, laid flat. */
+.history-swatch {
+  width: 0.9rem;
+  height: 0;
+  border-top-width: 1.6px;
+  border-top-style: solid;
+}
+
+/* A filled series' swatch is its wash, at the density the band comes out at on the plot - the
+   argument's own reads as the two layers it is painted from. */
+.history-swatch-area {
+  height: 0.5rem;
+  border-top: none;
+  background: var(--bark);
+}
+
+.history-swatch.history-rating { border-top-color: var(--ink); }
+.history-swatch.history-market { border-top-color: var(--ink); border-top-style: dashed; opacity: 0.55; }
+.history-swatch-area.history-stake { opacity: 0.4; }
+.history-swatch-area.history-subtree { opacity: 0.14; }
+
 /* ── Figures ─────────────────────────────────────────────────────────── */
 /* One labelled figure - Market, Rating, Parent impact, staked - wherever it appears. The label
    recedes and the value carries the color, so a row of them scans as values with names attached. */
@@ -971,6 +1087,15 @@ button {
   background: var(--con-pale);
 }
 
+/* The part of the correction that comes from the argument being pointed at, drawn from the market
+   end over whatever colour the correction took. */
+.gauge-highlight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--amber);
+}
+
 /* The figures as one control: on the focused claim they open the market that produced them, so
    they carry the affordance an info chip used to. Bare button - the figures are the whole of it. */
 .figure-button {
@@ -1018,6 +1143,11 @@ button {
 
 .ring-own {
   stroke: var(--bark);
+}
+
+/* The pointed-at argument's share of the sub-debate's arc, over it and under nothing. */
+.ring-highlight {
+  stroke: var(--amber);
 }
 
 .ring-beneath {
@@ -1385,45 +1515,6 @@ button {
 }
 
 /* The market detail's parametric constant-product curve. */
-.market-plot {
-  display: block;
-  width: min(260px, 100%);
-  margin: 0 auto;
-}
-
-.market-axis {
-  stroke: var(--hairline);
-  stroke-width: 1.5;
-}
-
-.market-diagonal {
-  stroke: var(--hairline);
-  stroke-dasharray: 4 4;
-}
-
-.market-curve {
-  stroke: var(--ink);
-  stroke-width: 1.75;
-  fill: none;
-  stroke-linecap: round;
-}
-
-.market-point {
-  fill: var(--ink);
-}
-
-.market-label {
-  font-size: 10px;
-  fill: var(--bark);
-}
-
-.market-label-pro {
-  fill: var(--pro);
-}
-
-.market-label-con {
-  fill: var(--con);
-}
 
 /* ── Stake modal ─────────────────────────────────────────────────────── */
 .stake-amount {
@@ -1554,7 +1645,7 @@ button {
 }
 
 /* The market's facts, one under the other: label column, figure column. */
-.market-facts {
+.detail-facts {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: 0.35rem 1rem;
@@ -1562,17 +1653,17 @@ button {
   font-size: 0.85rem;
 }
 
-.market-facts dt {
+.detail-facts dt {
   color: var(--bark);
 }
 
-.market-facts dd {
+.detail-facts dd {
   margin: 0;
 }
 
 /* The corrected figure sits beside the one it corrects, recessed: the market's own number is what
    the row is titled, and this is what the debate made of it. */
-.market-corrected {
+.detail-corrected {
   margin-left: 0.45rem;
   color: var(--bark);
 }

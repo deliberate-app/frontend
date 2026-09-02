@@ -61,6 +61,52 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — the argument detail view became a history, and the figures moved to where they
+  are read.** Four changes, one thread: each figure belongs where it is answered.
+
+  *Parent impact left the cards.* It is the one figure that is not about the argument you are
+  looking at — it says what this argument does to its parent's rating, which is a fact about the
+  parent. On a card, beside a gauge and a ring that are both about the argument itself, it read as
+  a third figure of the same kind. It now sits in the detail view, where the reader has already
+  asked about this argument specifically.
+
+  *Hovering a sub-argument highlights its share of the figures it feeds.* The correction on the
+  parent's gauge and the outer arc of its ring are both sums over the sub-debate; pointing at one
+  child paints the part of each that the child accounts for. The colour is `amber` — the palette's
+  greens and reds are stances and its greys are structure, so a highlight had to be none of the
+  three or it would read as a fact about the argument rather than as a pointer at it. It is the one
+  warm hue left, and it holds on every ground the figures use. (Principles 2, 5.)
+
+  *"Rating market" became "Argument details", and the constant-product curve went with the name.*
+  The curve drew the invariant the AMM is implemented with. Nobody staking needs it: what they need
+  is what the stake would do, which the stake modal's slider already shows, and what the argument
+  has done, which is the chart that replaced it. A visualisation of the mechanism is not a
+  visualisation of the decision. (North star: remove noise.)
+
+  *The chart is one plot with two axes, not two stacked plots.* Both were built; the pair with a
+  shared x-axis separated the two questions cleanly but doubled the vertical cost of an answer, and
+  the whole point is to read the verdict against the weight behind it. The left axis is the signed
+  ±100% every other figure uses — always the full range, never fitted to the series, so two
+  arguments' charts are read against one ruler. The right axis is stake from zero to the debate's
+  whole, for the same reason. Ratings are lines because a rating moves either way; stake is two
+  stacked washes because it only accumulates and an argument's own is always part of its branch's,
+  which makes the paler band exactly what its sub-arguments hold — the ring beside it, unrolled.
+  The washes are laid down first and held faint: the stake is the weight behind the verdict, so it
+  belongs behind it. Every series steps rather than slopes, because nothing accrues between stakes
+  and a filled ramp would draw an accumulation that never happened.
+
+  *The key carries the figures, so the fact list no longer repeats them.* Market, rating, own stake
+  and branch stake each sit against the line they name, which is a better place for a number than a
+  table under the picture of it. They come from the tally, not from the plot's right edge, so a
+  settled argument shows what it settled at rather than the projection its window closed on. A
+  source that keeps no stake history draws no chart and therefore has no key; there the fact list
+  still states them.
+
+  Nothing on the chart is stored. A stake is exactly invertible, so the series are rebuilt by
+  walking the indexed stakes backwards from the state we can see — no new field, on-chain or in the
+  schema. Every point is the tally's projection at that instant, never the settled figure spliced
+  onto the end, which would put a step in the line that no stake caused. (Principles 1, 8.)
+
 - **2026-09-03 — the card figures are drawn, not written; the drawing is the affordance.** Market
   and Rating became one centre-anchored gauge and the stake became a ring, both on the cards and on
   the focused claim. The gauge fills from neutral to the argument's own market price in its stance
