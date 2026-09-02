@@ -17,9 +17,9 @@ dev:
 dev-anvil:
     bun scripts/dev-anvil.ts
 
-# Start the dev server against the shared testnet (loads .env.testnet; copy .env.testnet.example first)
-dev-testnet:
-    bun run dev:testnet
+# Start the dev server against the live Gnosis deployment (loads .env.gnosis; copy .env.gnosis.example first)
+dev-gnosis:
+    bun run dev:gnosis
 
 # Sync the app ABI from the contracts build artifact
 sync-abi:

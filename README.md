@@ -10,13 +10,13 @@ Every card shows the argument's **market approval** (the pro share of its argume
 just install     # bun install
 just dev         # dev server with the bundled sample debate
 just dev-anvil   # local anvil chain: deploy + seed + serve (writes .env.local)
-just dev-testnet # the shared Base Sepolia testnet (loads .env.testnet)
+just dev-gnosis  # the live Gnosis Chain deployment (loads .env.gnosis)
 just test        # unit tests (bun test); includes a kubo round-trip when the node is up
 ```
 
 Each `dev-*` recipe selects an environment through Vite's env files: `dev-anvil` writes and uses
-`.env.local` (the local anvil deployment); `dev-testnet` runs `vite --mode testnet`, which loads
-`.env.testnet` (the shared testnet). Plain `dev` uses `.env`/`.env.local` and, with no address set,
+`.env.local` (the local anvil deployment); `dev-gnosis` runs `vite --mode gnosis`, which loads
+`.env.gnosis` (the live deployment). Plain `dev` uses `.env`/`.env.local` and, with no address set,
 shows the bundled sample. Only the `.env.*.example` templates are committed.
 
 The sample debate is modeled on kialo's ["Should humans act to fight climate change?"](https://www.kialo.com/should-humans-act-to-fight-climate-change-4540).
@@ -81,24 +81,22 @@ segment existed (`#/debate/5`) resolve to the first network in `VITE_CHAINS`.
 Leaving `VITE_CHAINS` unset keeps the single-network build described above: no slug in URLs, no
 network menu, and the unsuffixed variables used directly.
 
-## Base Sepolia
+## Gnosis Chain
 
 ```sh
-cp .env.testnet.example .env.testnet   # then edit if needed
-just dev-testnet
+cp .env.gnosis.example .env.gnosis   # then edit if needed
+just dev-gnosis
 ```
 
-`.env.testnet.example` carries the shared testnet config (the deployed Deliberate address and the
-hosted indexer's GraphQL endpoint). Copy it to `.env.testnet` (gitignored, so per-machine tweaks
-stay local) and run `just dev-testnet` — Vite's `--mode testnet` loads it, and its values override
-any local-anvil `.env.local`, so the two environments never bleed together. The app is
-chain-agnostic at runtime; wallets just need the Base Sepolia network (chain 84532).
+`.env.gnosis.example` carries the live deployment's config (the deployed Deliberate and Circles
+registry addresses, and the hosted indexer's GraphQL endpoint). Copy it to `.env.gnosis` (gitignored,
+so per-machine tweaks stay local) and run `just dev-gnosis` — Vite's `--mode gnosis` loads it, and its
+values override any local-anvil `.env.local`, so the two environments never bleed together. Wallets
+need the Gnosis Chain network (chain 100); the wallet menu offers to add and switch to it.
 
-Content resolution needs a reachable IPFS node. The template defaults to digest-only (a public
-gateway can read pre-pinned content but authoring pins nothing), so authored texts won't resolve
-elsewhere. To author resolvable content from your machine, run `just ipfs-up` and point both
-`VITE_IPFS_GATEWAY` and `VITE_IPFS_API` at the local kubo in your `.env.testnet`; for a truly shared
-testnet, point them at a hosted pinning service instead.
+Content resolution needs a reachable IPFS node. The template reads and authors through the hosted
+site's proxies, so texts resolve wherever the site's do. To work offline, run `just ipfs-up` and
+point both `VITE_IPFS_GATEWAY` and `VITE_IPFS_API` at the local kubo in your `.env.gnosis`.
 
 ## Argument content and IPFS
 
@@ -139,38 +137,40 @@ CORS-safelisted so no preflight fires. An attacker driving this route from their
 needed the response. Authenticating the write against the chain - pinning only content whose
 digest a transaction already committed - is the remaining gap.
 
-Indexer reads go through [api/graphql.ts](api/graphql.ts), a same-origin **query proxy** that
-forwards to `INDEXER_UPSTREAM_URL`. The envio endpoint is CORS-configured correctly; what made
+Indexer reads go through [api/graphql/[chain].ts](api/graphql/[chain].ts), a same-origin **query
+proxy** per network that forwards to `INDEXER_UPSTREAM_URL_<SLUG>` ([api/graphql.ts](api/graphql.ts)
+is the single-network build's unsuffixed twin). The envio endpoint is CORS-configured correctly; what made
 calling it directly fragile is its rate limit - a refused response carries no CORS headers, so
 throttling reached the browser as a missing `Access-Control-Allow-Origin` and dropped the app into
 its chain fallback rather than surfacing as what it was. Behind the proxy a throttle arrives as the
 429 it is. Responses are deliberately not cached: `waitForIndexerBlock` and the stake modal's market
 poll both need reads that are not stale. **Repointing the app at a new indexer deployment is a
-change to `INDEXER_UPSTREAM_URL` alone** - `VITE_INDEXER_URL` stays `/api/graphql`.
+change to `INDEXER_UPSTREAM_URL_GNOSIS` alone** - the client keeps calling `/api/graphql/gnosis`.
 
 Project environment variables (Settings → Environment Variables):
 
 ```sh
-VITE_DELIBERATE_ADDRESS=0x…   # the live deployment (contracts/broadcast/…/runWithMockRegistry-latest.json)
-VITE_RPC_URL=https://sepolia.base.org
-VITE_INDEXER_URL=/api/graphql # indexer reads go through the same-origin query proxy
+VITE_CHAINS=gnosis           # the networks offered, by slug (see *Several networks at once*)
+VITE_DELIBERATE_ADDRESS_GNOSIS=0x… # the live deployment (contracts/broadcast/DeployDeliberate.s.sol/100/run-latest.json)
+VITE_CIRCLES_REGISTRY_GNOSIS=0x…   # the any-Circles-human registry deployed beside it
+VITE_RPC_URL_GNOSIS=https://rpc.gnosischain.com
+                             # indexer reads go through the same-origin query proxy, /api/graphql/gnosis
 VITE_IPFS_GATEWAY=https://ipfs.filebase.io,https://{cid}.ipfs.dweb.link,https://gateway.pinata.cloud
                              # raced, holder first (see below)
 VITE_IPFS_API=/              # authoring goes through the same-origin pin proxy
 FILEBASE_ACCESS_KEY_ID=…     # server-side only (Sensitive)
 FILEBASE_SECRET_ACCESS_KEY=… # server-side only (Sensitive)
 FILEBASE_BUCKET=…            # the IPFS-network bucket the texts are pinned into
-INDEXER_UPSTREAM_URL=https://… # server-side only; the hosted indexer endpoint the query proxy
-                             # forwards to. The dev tier mints a new URL per deployment, and its id
+INDEXER_UPSTREAM_URL_GNOSIS=https://… # server-side only; the hosted indexer endpoint the query
+                             # proxy forwards to. The dev tier mints a new URL per deployment, and its id
                              # is envio-internal rather than the git sha - read it from the
                              # deployment page, or with `envio-cloud deployment endpoint
                              # <indexer> <commit> <organisation>`.
 ```
 
 `VITE_*` values are baked into the public bundle at build time — they must never hold secrets.
-The `FILEBASE_*` and `INDEXER_UPSTREAM_URL` variables are read only by the edge functions at
-request time. Local development ignores all of
-this: `just dev-testnet` authors against the dockerized kubo, no pinning service involved.
+The `FILEBASE_*` and `INDEXER_UPSTREAM_URL_*` variables are read only by the edge functions at
+request time. Local development ignores all of this: `just dev-gnosis` reads its own `.env.gnosis`.
 
 ## Wallets
 

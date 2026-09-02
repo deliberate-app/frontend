@@ -4,10 +4,10 @@ node_modules/
 # Build output
 dist/
 
-# Env files: .env.local is the local anvil config (written by dev-anvil); .env.testnet is
-# the testnet config (copied from .env.testnet.example). Only the *.example templates are committed.
+# Env files: .env.local is the local anvil config (written by dev-anvil); .env.gnosis is
+# the live Gnosis config (copied from .env.gnosis.example). Only the *.example templates are committed.
 .env.local
-.env.testnet
+.env.gnosis
 .env.*.local
 
 # Generated design-review screenshots (just screenshots)
