@@ -898,12 +898,12 @@ button {
   border-radius: 999px;
 }
 
+/* The corners are set per fill, in the component: which end is an end depends on the figures. */
 .gauge-fill,
 .gauge-correction {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: 999px;
 }
 
 /* Neutral is a place on the axis, so it is drawn whether or not anything is filled - and over the

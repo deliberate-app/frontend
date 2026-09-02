@@ -52,10 +52,26 @@ export const figuresLabel = (node: ArgumentNode, tally: NodeTally | undefined, t
 };
 
 /** The extent of one fill on the axis, as the inline position it is drawn at. */
-const span = (from: number, to: number) => ({
-  left: `${Math.min(axisPercent(from), axisPercent(to))}%`,
-  width: `${Math.abs(axisPercent(to) - axisPercent(from))}%`,
-});
+/**
+ * One fill on the axis: where it sits, and which of its two ends is an end.
+ *
+ * The corners carry meaning rather than style. A round cap says "this is where the bar stops"; a
+ * square one says "this continues" - into the centre line it grows out of, or into the segment
+ * beside it. So the reader can tell a bar that was cut short from one that simply ends there,
+ * without reading a number.
+ */
+const span = (from: number, to: number, roundFrom: boolean, roundTo: boolean) => {
+  const a = axisPercent(from);
+  const b = axisPercent(to);
+  const [left, right] = a <= b ? [a, b] : [b, a];
+  const [roundLeft, roundRight] = a <= b ? [roundFrom, roundTo] : [roundTo, roundFrom];
+  const cap = (round: boolean) => (round ? '999px' : '0');
+  return {
+    left: `${left}%`,
+    width: `${right - left}%`,
+    borderRadius: `${cap(roundLeft)} ${cap(roundRight)} ${cap(roundRight)} ${cap(roundLeft)}`,
+  };
+};
 
 /**
  * The rating on one signed axis: what the market priced, and what the sub-debate did to it.
@@ -81,11 +97,20 @@ export function RatingGauge({
   // asked through the formatter that decides what "worth reporting" means.
   const correcting = !thesis && formatImpact(rating) !== formatImpact(base);
 
+  // Which corners are ends depends on what the sub-debate did, which is not the same question as
+  // which way it moved: on a con market a rating nearer neutral is "raised" and yet the bar is
+  // shorter. What decides a corner is whether the correction reaches past the market price
+  // (extending the bar), sits inside it (eating into it), or crosses neutral (replacing it).
+  const sameSide = base === 0 || rating === 0 || Math.sign(rating) === Math.sign(base);
+  const extendsBar = sameSide && Math.abs(rating) > Math.abs(base);
+
   return (
     <span className="gauge" {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': gaugeLabel(rating, market) })}>
       <span
         className={`gauge-fill ${base > 0 ? 'gauge-pro' : base < 0 ? 'gauge-con' : ''}`}
-        style={span(0, base)}
+        // Square where it leaves the centre line; round at the far end unless the correction
+        // carries the bar further, in which case that segment owns the end.
+        style={span(0, base, false, !extendsBar)}
         title={
           thesis
             ? `Thesis rating ${formatImpact(rating)}. ${THESIS_RATING_HINT}`
@@ -95,7 +120,8 @@ export function RatingGauge({
       {correcting && (
         <span
           className={`gauge-correction ${rating > base ? 'gauge-raised' : 'gauge-cut'}`}
-          style={span(base, rating)}
+          // Square where it meets the market's fill, round where the bar actually stops.
+          style={span(base, rating, !extendsBar, extendsBar || !sameSide)}
           title={`Rating ${formatImpact(rating)}, ${formatImpact(rating - base)} off its own market price. ${RATING_HINT}`}
         />
       )}

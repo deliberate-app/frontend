@@ -65,7 +65,10 @@ contouring are exactly right — treat them as the baseline to protect.)
   and Rating became one centre-anchored gauge and the stake became a ring, both on the cards and on
   the focused claim. The gauge fills from neutral to the argument's own market price in its stance
   colour, then draws what the sub-debate did to that price over or beyond it — `pro-pale` where the
-  children lifted it, `con-pale` where they cut into it, so direction reads without a sign. The ring
+  children lifted it, `con-pale` where they cut into it, so direction reads without a sign. The
+  corners carry meaning rather than style: a round cap is where the bar stops, a square one is where
+  it continues — into the centre line it grows out of, or into the segment beside it. So a bar cut
+  short by its sub-debate is distinguishable from one that simply ends there, without a number. The ring
   runs clockwise from noon: the argument's own stake in `bark`, its sub-debate's continuing it in a
   lighter grey, the two together its share of every stake the tally counts. The figures themselves
   now open the rating market, so the info chip beside them is gone (reversing the 2026-08-18
