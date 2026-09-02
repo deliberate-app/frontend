@@ -89,11 +89,15 @@ try {
     return receipt.contractAddress;
   };
 
-  // Who may join is chosen per debate, so Deliberate takes no constructor arguments. The mock
-  // registry is deployed alongside as a gate to point a debate at when exercising the gated modes.
+  // Who may join is chosen per debate, so Deliberate takes no constructor arguments. An allowlist
+  // registry owned by the deployer is deployed alongside as a curated group to point a debate at;
+  // `cast send <registry> "setMembership(address[],bool)" "[<account>]" true` admits an account.
   const deliberateArtifact = await loadArtifact(contractsDir, 'Deliberate.sol', 'Deliberate');
   const deliberate = await deploy(deliberateArtifact, []);
-  const mockRegistry = await deploy(await loadArtifact(contractsDir, 'MockIdentityRegistry.m.sol', 'MockIdentityRegistry'), []);
+  const allowlistRegistry = await deploy(
+    await loadArtifact(contractsDir, 'AllowlistIdentityRegistry.sol', 'AllowlistIdentityRegistry'),
+    [deployer.address],
+  );
   // The Circles gate every deployment offers, here against a mock hub (anvil has no Circles). Mark an
   // account human on the mock to let it through: `cast send <hub> "setHuman(address,bool)" <account> true`.
   const mockHub = await deploy(await loadArtifact(contractsDir, 'MockCirclesHub.m.sol', 'MockCirclesHub'), []);
@@ -102,7 +106,7 @@ try {
     [mockHub, '0x0000000000000000000000000000000000000000', true],
   );
   log(`Deliberate deployed at ${deliberate}`);
-  log(`gates: MockIdentityRegistry admitting everyone at ${mockRegistry}, Circles preset at ${circlesRegistry} (mock hub ${mockHub})`);
+  log(`gates: allowlist registry owned by the deployer at ${allowlistRegistry}, Circles preset at ${circlesRegistry} (mock hub ${mockHub})`);
 
   const ipfsAvailable = await ensureKubo(frontendDir);
   if (!ipfsAvailable) {
