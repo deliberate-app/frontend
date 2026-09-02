@@ -1,7 +1,7 @@
 import { zeroAddress } from 'viem';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
-import { tallyOf, THESIS_RATING_HINT, type NodeTally } from '../lib/impact';
+import { tallyOf, THESIS_RATING_HINT } from '../lib/impact';
 import { shortAddress } from '../lib/address';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
@@ -74,19 +74,17 @@ function Chevron({ up }: { up: boolean }) {
  * The ancestry rail: the path from the thesis down to the focused claim,
  * drawn as a branch whose connectors carry the polarity of each step.
  * Collapsed, each step is one clipped line; expanded, every parent claim up to the thesis
- * is readable in full, with the rating it carries.
+ * is readable in full. Claims only: the path is for finding the way back, and each step's
+ * figures are one click away on the step itself.
  */
 function AncestryRail({
   debate,
-  tallies,
   focusedId,
   expanded,
   onExpandedChange,
   onFocus,
 }: {
   debate: Debate;
-  /** The tally mirror, so each step on the path carries the same rating figure the cards show. */
-  tallies: Map<number, NodeTally>;
   focusedId: number;
   /** Whether the parent claims read in full (the reader's choice, kept across focus changes). */
   expanded: boolean;
@@ -110,12 +108,6 @@ function AncestryRail({
           )}
           <button type="button" className="rail-node" onClick={() => onFocus(node.id)}>
             <span className="rail-claim">{node.text}</span>
-            {/* The thesis is rated through its arguments, so only the argued steps carry figures. */}
-            {expanded && node.parentId !== null && (
-              <span className="rail-figures">
-                <Rating rating={tallies.get(node.id)?.rating ?? 2 * node.approval - 1} stake={node.weight} bare />
-              </span>
-            )}
           </button>
         </div>
       ))}
@@ -235,7 +227,6 @@ export function DebateView({
       <MiniTree debate={debate} focusedId={focus.id} onFocus={setFocusedId} />
       <AncestryRail
         debate={debate}
-        tallies={tallies}
         focusedId={focus.id}
         expanded={pathExpanded}
         onExpandedChange={setPathExpanded}

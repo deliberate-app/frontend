@@ -524,13 +524,6 @@ button {
   text-decoration-color: var(--bark);
 }
 
-.rail-figures {
-  display: block;
-  margin-top: 0.15rem;
-  font-size: 0.75rem;
-  color: var(--bark);
-}
-
 /* The disclosure on the connector that meets the focused claim. */
 .rail-toggle {
   display: inline-flex;
