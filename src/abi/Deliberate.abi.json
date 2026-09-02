@@ -338,8 +338,8 @@
      },
      {
       "name": "rating",
-      "type": "int40",
-      "internalType": "int40"
+      "type": "int56",
+      "internalType": "int56"
      },
      {
       "name": "centeredApprovalSeconds",
