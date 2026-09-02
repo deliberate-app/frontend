@@ -1,9 +1,9 @@
 /**
  * The transaction layer: every state-changing debate interaction the app can perform,
  * bound to a connected wallet account. Each action simulates first (surfacing contract
- * errors before any signature prompt), sends, and waits for inclusion. Authoring goes
- * through the content pipeline: the text is published to IPFS first, then the returned
- * digest is committed on-chain - a failed transaction leaves only a pinned text block.
+ * errors before any signature prompt), sends, and waits for inclusion. Authoring sends the
+ * text itself: the contract publishes it in the event and keeps nothing, so there is no
+ * content pipeline in front of the transaction - only the bounds it would reject.
  */
 
 import {
@@ -20,7 +20,6 @@ import {
   type Address,
   type Chain,
   type EIP1193Provider,
-  type Hex,
   type TransactionReceipt,
   type WalletClient,
 } from 'viem';
@@ -28,7 +27,7 @@ import {
 import abi from '../abi/Deliberate.abi.json';
 import { deploymentChain } from '../lib/chains';
 import type { DebateSchedule } from '../lib/debateTiming';
-import { contentURIOf, publishText, warmGateway } from '../lib/ipfs';
+import { contentError } from '../lib/content';
 import type { Side } from '../types';
 import type { ContractConfig } from './config';
 import { waitForIndexerBlock } from './source';
@@ -66,7 +65,8 @@ export interface DebateActions {
     bounty?: BountyFunding,
   ): Promise<number>;
   join(debateId: number): Promise<void>;
-  addArgument(
+  /** Authors an argument beneath a parent; the text goes to the chain as it is, within its bounds. */
+  createArgument(
     debateId: number,
     parentArgumentId: number,
     side: Side,
@@ -209,22 +209,13 @@ export async function connectDebateActions(
     return receipt;
   };
 
-  /**
-   * Publishes authored text through the content pipeline, digest-only without an IPFS API.
-   *
-   * The pin is followed by an unawaited read of the same CID, which primes the gateway and the
-   * CDN in front of it. A gateway that has never served a CID takes tens of seconds to find a
-   * provider for it; one that has takes tens of milliseconds. Paying that here, in the
-   * background of the publish that caused it, is what keeps the next reader from paying it in
-   * front of a blank card.
-   */
-  const publish = async (text: string): Promise<Hex> => {
-    if (!config.ipfsApi) {
-      return contentURIOf(text);
+  /** The text as content, or the reason it cannot be - said here, before a simulate learns it in bytes. */
+  const checked = (text: string): string => {
+    const problem = contentError(text);
+    if (problem) {
+      throw new Error(problem);
     }
-    const { digest, cid } = await publishText(config.ipfsApi, text);
-    warmGateway(config.ipfsGateway, cid);
-    return digest;
+    return text;
   };
 
   /** Approves the contract for a token amount when the current allowance does not cover it. */
@@ -272,14 +263,12 @@ export async function connectDebateActions(
     account,
 
     async createDebate(thesis, schedule, feePercentage, identityRegistry, bounty) {
-      // Pin first: publishing is free and idempotent, while the approval costs a
-      // transaction - a pinning outage should abort before any on-chain step.
-      const contentURI = await publish(thesis);
+      const content = checked(thesis);
       if (bounty && bounty.amount > 0n) {
         await approveIfNeeded(bounty.token, bounty.amount);
       }
       const receipt = await write('createDebate', [
-        contentURI,
+        content,
         BigInt(schedule.lockingDuration),
         BigInt(schedule.editingDuration),
         BigInt(schedule.ratingDuration),
@@ -308,12 +297,11 @@ export async function connectDebateActions(
       await write('join', [BigInt(debateId)], { settle: false });
     },
 
-    async addArgument(debateId, parentArgumentId, side, initialApproval, deposit, text) {
-      const contentURI = await publish(text);
-      await write('addArgument', [
+    async createArgument(debateId, parentArgumentId, side, initialApproval, deposit, text) {
+      await write('createArgument', [
         BigInt(debateId),
         parentArgumentId,
-        contentURI,
+        checked(text),
         side === 'pro',
         initialApproval,
         deposit,
@@ -321,8 +309,7 @@ export async function connectDebateActions(
     },
 
     async alterArgument(debateId, argumentId, text) {
-      const contentURI = await publish(text);
-      await write('alterArgument', [BigInt(debateId), argumentId, contentURI]);
+      await write('alterArgument', [BigInt(debateId), argumentId, checked(text)]);
     },
 
     async moveArgument(debateId, argumentId, newParentArgumentId, initialApproval) {

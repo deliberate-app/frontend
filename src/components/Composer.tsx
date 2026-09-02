@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
-import { MAX_CONTENT_CHARS } from '../lib/ipfs';
+import { contentError, MAX_CONTENT_BYTES } from '../lib/content';
 import { formatVotes, MIN_DEPOSIT_UNITS, toTokens, toUnits } from '../lib/votes';
 import type { Side } from '../types';
-import { CharBudget } from './CharBudget';
+import { ContentBudget } from './ContentBudget';
 
 /** The minimum argument deposit, mirroring the contract's `_MIN_DEBATE_DEPOSIT`. */
 
@@ -44,7 +44,7 @@ export function Composer({
   // The deposit seeds the market and is the stake the argument starts with: at least
   // the minimum, at most the balance.
   const depositValid = Number.isInteger(deposit) && deposit >= MIN_DEPOSIT_UNITS && deposit <= tokens;
-  const canSubmit = !busy && text.trim().length > 0 && depositValid;
+  const canSubmit = !busy && contentError(text.trim()) === null && depositValid;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -69,7 +69,7 @@ export function Composer({
         onChange={(event) => setText(event.target.value)}
         placeholder={`Your ${side} argument…`}
         rows={3}
-        maxLength={MAX_CONTENT_CHARS}
+        maxLength={MAX_CONTENT_BYTES}
         required
       />
       <label className="composer-approval">
@@ -107,7 +107,7 @@ export function Composer({
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
           Cancel
         </button>
-        <CharBudget length={text.length} />
+        <ContentBudget text={text.trim()} />
       </div>
       {error && <p className="action-error">{error}</p>}
     </form>

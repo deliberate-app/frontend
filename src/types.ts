@@ -6,19 +6,14 @@ export type Phase = 'editing' | 'rating' | 'tallying' | 'finished';
 /** A created argument is a draft, still editable and movable; a final one is locked in. */
 export type ArgumentState = 'created' | 'final';
 
-/** Shortens a content digest to `0x2a3a…0683` - the first and last 4 hex digits. */
-export const shortDigest = (digest: string) => `${digest.slice(0, 6)}…${digest.slice(-4)}`;
-
 /** A node of the debate tree. The thesis is the node with `parentId: null`. */
 export interface ArgumentNode {
   id: number;
   parentId: number | null;
   /** Whether this argument supports or attacks its parent. `null` for the thesis. */
   side: Side | null;
-  /** The resolved content text, or - when the content could not be resolved - the shortened digest. */
+  /** The argument's text, as its creation or latest alteration published it. */
   text: string;
-  /** The on-chain content digest (`0x…`), set only when the content could not be resolved from IPFS. */
-  contentDigest?: string;
   /** The rating market's current pro share, 0..1. */
   approval: number;
   /** The market's pro share reserve; absent for bundled sample data (see `reservesOf`). */
@@ -121,10 +116,7 @@ export interface Debate {
 /** A debate as it appears in the browse list. */
 export interface DebateSummary {
   id: number;
-  /** The resolved thesis text, or - when unresolved - the shortened content digest. */
   thesis: string;
-  /** The on-chain content digest (`0x…`), set only when the thesis content could not be resolved. */
-  contentDigest?: string;
   phase: Phase;
   /** The finished debate's outcome (thesis confirmed or objected); undefined until the tally has run. */
   approved?: boolean;

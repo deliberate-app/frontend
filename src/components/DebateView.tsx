@@ -9,7 +9,6 @@ import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesis
 import { AddressChip } from './AddressChip';
 import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
-import { ContentText } from './ContentText';
 import { ArgumentCard } from './ArgumentCard';
 import { Market, ParentImpact, Rating } from './Figures';
 import { Composer } from './Composer';
@@ -26,7 +25,7 @@ export interface DebateTx {
   account: string;
   joined: boolean;
   tokens: number;
-  addArgument(
+  createArgument(
     parentArgumentId: number,
     side: Side,
     initialApproval: number,
@@ -110,8 +109,6 @@ function AncestryRail({
             </span>
           )}
           <button type="button" className="rail-node" onClick={() => onFocus(node.id)}>
-            {/* Raw text, as the cards render it: a rail node is a button, so it must not nest the
-                digest fallback's link. */}
             <span className="rail-claim">{node.text}</span>
             {/* The thesis is rated through its arguments, so only the argued steps carry figures. */}
             {expanded && node.parentId !== null && (
@@ -254,9 +251,7 @@ export function DebateView({
           </p>
           {focus.creator && <AddressChip address={focus.creator} />}
         </div>
-        <h1 className="focus-text">
-          <ContentText text={focus.text} digest={focus.contentDigest} />
-        </h1>
+        <h1 className="focus-text">{focus.text}</h1>
         {isThesis && phase === 'finished' && debate.approved !== undefined && (
           <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
             {debate.approved ? 'Thesis confirmed ' : 'Thesis objected '}
@@ -412,7 +407,7 @@ export function DebateView({
                 side="pro"
                 tokens={tx.tokens}
                 onAdd={(side, approval, deposit, text) =>
-                  tx.addArgument(focus.id, side, approval, deposit, text)
+                  tx.createArgument(focus.id, side, approval, deposit, text)
                 }
               />
             </div>
@@ -444,7 +439,7 @@ export function DebateView({
                 side="con"
                 tokens={tx.tokens}
                 onAdd={(side, approval, deposit, text) =>
-                  tx.addArgument(focus.id, side, approval, deposit, text)
+                  tx.createArgument(focus.id, side, approval, deposit, text)
                 }
               />
             </div>

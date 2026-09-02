@@ -1,7 +1,7 @@
 /**
  * The sample climate debate, written as its participants' actions. This file is the single
- * source of truth for the seeded texts: the runner hashes each text into the on-chain
- * contentURI and pins the same bytes to IPFS, so content can never drift.
+ * source of truth for the seeded texts: the runner sends each one to the chain, which publishes
+ * it in the argument's creation event.
  *
  * Budgets: every persona holds 100 vote tokens and each argument here stakes the
  * minimum 10-token deposit - alice authors 6, bob 10, carol 2, and dan 6 arguments. In the rating phase,

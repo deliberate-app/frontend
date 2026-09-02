@@ -1096,28 +1096,15 @@ button {
   color: var(--bark);
 }
 
-/* The character budget sits at the far end of the action row. */
-.char-budget {
+/* The byte budget sits at the far end of the action row; over the cap it takes the con contour. */
+.content-budget {
   margin-left: auto;
   font-size: 0.7rem;
   color: var(--bark);
 }
 
-/* Placeholder for content that could not be resolved from IPFS: the shortened digest, click to copy.
-   Inherits the surrounding size (large in the focus heading) but stays muted and monospace. */
-.content-missing {
-  font: inherit;
-  font-family: var(--font-mono);
-  color: var(--bark);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.content-missing:hover {
-  color: var(--ink);
+.content-budget-over {
+  color: var(--con);
 }
 
 /* ── Browse (home) ───────────────────────────────────────────────────── */

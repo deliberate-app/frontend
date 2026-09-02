@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import type { Hex } from 'viem';
 import { rpcUp } from '../../scripts/devstack/anvil';
 import type { AccountPosition, ArgumentMarket, Debate, DebateSummary } from '../types';
 import {
   contractSource,
-  decodeInlineContent,
-  resolveContent,
   indexerSource,
   marketFromIndex,
   nodeFromIndex,
@@ -14,67 +11,6 @@ import {
   withFallback,
   type DebateSource,
 } from './source';
-
-describe('decodeInlineContent', () => {
-  test('decodes short ASCII content stored on-chain inline (resolved, no digest)', () => {
-    // "Hello" as a right-zero-padded bytes32.
-    expect(decodeInlineContent((`0x48656c6c6f${'00'.repeat(27)}`) as Hex)).toEqual({ text: 'Hello' });
-  });
-
-  test('surfaces an unresolvable digest shortened, keeping the full value to copy', () => {
-    const digest = '0x2a3a8cf5cb8e05cd7b6f9ac881adafe1fb14030dba846233f211d4ce051d0683';
-    expect(decodeInlineContent(digest as Hex)).toEqual({ text: '0x2a3a…0683', digest });
-  });
-});
-
-describe('resolveContent', () => {
-  const realFetch = globalThis.fetch;
-  afterEach(() => {
-    globalThis.fetch = realFetch;
-  });
-
-  // "Public transport should be free" - the thesis that read as a bare digest on the live app.
-  const TEXT = 'Public transport should be free';
-  const DIGEST = '0x48265361d891578f4eeec7159a49600aed6305df194feca6cb7df55b7b7796ad' as Hex;
-
-  const stubGateway = (reply: { status: number; body?: string }) => {
-    const asked: string[] = [];
-    globalThis.fetch = (async (input: string | URL) => {
-      asked.push(String(input));
-      return new Response(reply.body ?? null, { status: reply.status });
-    }) as unknown as typeof fetch;
-    return asked;
-  };
-
-  test('reads the content from the configured gateway, path style', async () => {
-    const asked = stubGateway({ status: 200, body: TEXT });
-
-    expect(await resolveContent(DIGEST, '/api')).toEqual({ text: TEXT });
-    // The CID is derived from the digest, so the gateway is addressed the same way any IPFS
-    // gateway is - which is what lets the same code point at a local kubo in dev.
-    expect(asked).toEqual(['/api/ipfs/bafkreiciezjwdwerk6hu53whcwnesyak5vrqlxyzj7wkns356vnxw54wvu']);
-  });
-
-  test('falls back to the digest when the gateway does not have it', async () => {
-    stubGateway({ status: 404 });
-
-    expect(await resolveContent(DIGEST, '/api')).toEqual({ text: '0x4826…96ad', digest: DIGEST });
-  });
-
-  test('rejects bytes that do not hash to the digest, rather than showing them', async () => {
-    // The gateway is untrusted; this is the check that makes it safe to read through one.
-    stubGateway({ status: 200, body: 'not the text that was published' });
-
-    expect(await resolveContent(DIGEST, '/api')).toEqual({ text: '0x4826…96ad', digest: DIGEST });
-  });
-
-  test('with no gateway configured, decodes inline without any fetch', async () => {
-    globalThis.fetch = (async () => {
-      throw new Error('resolveContent must not reach the network without a gateway');
-    }) as unknown as typeof fetch;
-    expect(await resolveContent(DIGEST, undefined)).toEqual({ text: '0x4826…96ad', digest: DIGEST });
-  });
-});
 
 describe('waitForIndexerBlock', () => {
   const realFetch = globalThis.fetch;
@@ -115,7 +51,7 @@ describe('nodeFromIndex', () => {
     argumentId: '1',
     parent_id: '0_0',
     isSupporting: true,
-    contentURI: '0xabc1',
+    content: 'An argument',
     finalizationTime: '90',
     pro: '21',
     con: '1',
@@ -129,7 +65,7 @@ describe('nodeFromIndex', () => {
       id: 1,
       parentId: 0,
       side: 'pro',
-      contentURI: '0xabc1',
+      text: 'An argument',
       approval: 1 / 22,
       proReserve: 21,
       conReserve: 1,
@@ -167,7 +103,7 @@ describe('nodeFromIndex', () => {
         argumentId: '0',
         parent_id: null,
         isSupporting: null,
-        contentURI: '0xabc0',
+        content: 'A thesis',
         finalizationTime: '0',
         pro: '0',
         con: '0',
@@ -187,7 +123,7 @@ describe('summaryFromIndex', () => {
   const row = {
     id: '2',
     creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-    contentURI: '0xabc2',
+    content: 'A thesis',
     finished: false,
     approved: null,
     editingEndTime: '700',
@@ -206,7 +142,7 @@ describe('summaryFromIndex', () => {
     // Chain time 800 is past editing (700) and within rating (1000): rating.
     expect(summaryFromIndex(row, 800)).toEqual({
       id: 2,
-      contentURI: '0xabc2',
+      thesis: 'A thesis',
       phase: 'rating',
       approved: undefined,
       stake: 291,
@@ -335,7 +271,6 @@ const stackUp = indexerUp && address !== undefined && (await rpcUp(RPC_URL));
 
 describe('indexerSource (against the local dev stack)', () => {
   test.skipIf(!stackUp)('serves the same debate as the chain traversal', async () => {
-    // No gateway on either side: texts decode identically without kubo in play.
     const fromIndex = await indexerSource(INDEXER_URL, RPC_URL).load(0);
     const fromChain = await contractSource(address!, RPC_URL).load(0);
 

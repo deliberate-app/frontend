@@ -1,19 +1,19 @@
 import {
   createPublicClient,
+  getAbiItem,
   getAddress,
   http,
-  hexToBytes,
-  hexToString,
   zeroAddress,
+  type Abi,
+  type AbiEvent,
   type Address,
   type Hex,
   type PublicClient,
 } from 'viem';
 import abi from '../abi/Deliberate.abi.json';
-import { fetchTextByDigest } from '../lib/ipfs';
 import { tokenInfo } from '../lib/tokens';
 import type { AccountPosition, ArgumentMarket, ArgumentNode, Debate, DebateBounty, DebateSummary } from '../types';
-import { CLAIM_WINDOW_SECONDS, phaseOf, shortDigest, thesisOf } from '../types';
+import { CLAIM_WINDOW_SECONDS, phaseOf, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
 import { climateDebate, confirmedDebate, editingDebate, objectedDebate } from './climateDebate';
 import type { ContractConfig } from './config';
@@ -77,7 +77,6 @@ const PHASE_UNINITIALIZED = 0;
 const PHASE_FINISHED = 4;
 
 interface OnChainArgument {
-  contentURI: Hex;
   creator: Address;
   isSupporting: boolean;
   parentArgumentId: number;
@@ -91,47 +90,50 @@ interface OnChainArgument {
 /** The contract's fixed-point scale: a rating of ±MAX_APPROVAL is full conviction (±100%). */
 const MAX_APPROVAL = 4294967295;
 
-/** Resolved argument content: the text, plus the on-chain digest when it could not be resolved. */
-export interface ResolvedContent {
-  text: string;
-  /** Set only when the content could not be resolved - the shortened digest is shown, copyable. */
-  digest?: Hex;
-}
+/** The events a text travels in: the thesis in the first, every other argument in the other two. */
+const CONTENT_EVENTS = ['DebateCreated', 'ArgumentCreated', 'ArgumentAltered'] as const;
+
+const contentEvent = (name: (typeof CONTENT_EVENTS)[number]): AbiEvent =>
+  getAbiItem({ abi: abi as Abi, name }) as AbiEvent;
 
 /**
- * Falls back for content that is not on IPFS: short ASCII payloads are decoded inline (and count as
- * resolved), anything else surfaces the digest itself - shortened for display, the full value kept
- * so the UI can offer it for copying.
+ * The texts of a debate's arguments by id, read from the log - the one place the chain keeps them.
+ * The thesis is in `DebateCreated`, every other argument in its `ArgumentCreated`, and an
+ * `ArgumentAltered` replaces the text it names; the log is ordered, so applying the alterations
+ * after the creations makes the last one win. Each event is one filtered request from the
+ * deployment block, however old the chain is.
  */
-export function decodeInlineContent(contentURI: Hex): ResolvedContent {
-  const text = hexToString(contentURI).replaceAll('\0', '');
-  const printable = /^[\x20-\x7E]+$/.test(text);
-  return printable && text.length > 0
-    ? { text }
-    : { text: shortDigest(contentURI), digest: contentURI };
-}
-
-/**
- * Resolves an argument's text from the deployment's gateway, verified against its digest.
- *
- * This used to race a list of public gateways, because a public gateway must first find a
- * provider for freshly pinned content and routinely could not do so inside the timeout - both
- * texts of the first debate authored on the hosted app read as bare digests for minutes while
- * other gateways served them instantly. Racing hid that behind whichever gateway happened to
- * already know.
- *
- * The gateway now sits in front of the pins themselves (`/api/ipfs`, this deployment's own
- * authorized gateway), so there is no provider to discover and nothing for a second opinion to
- * add - and a page no longer opens one request per gateway per argument. What made the race
- * necessary was the gap between who stores the content and who serves it; closing that gap is
- * what makes one gateway enough.
- */
-export async function resolveContent(contentURI: Hex, gateway: string | undefined): Promise<ResolvedContent> {
-  if (gateway) {
-    const text = await fetchTextByDigest(gateway, hexToBytes(contentURI));
-    if (text !== null) return { text };
+async function readTexts(
+  client: PublicClient,
+  address: Address,
+  debateId: bigint,
+  fromBlock: bigint,
+): Promise<Map<number, string>> {
+  const [created, added, altered] = await Promise.all(
+    CONTENT_EVENTS.map((name) =>
+      client.getLogs({ address, event: contentEvent(name), args: { debateId }, fromBlock, strict: true }),
+    ),
+  );
+  const texts = new Map<number, string>();
+  for (const log of created) {
+    texts.set(0, (log.args as { content: string }).content);
   }
-  return decodeInlineContent(contentURI);
+  for (const log of [...added, ...altered]) {
+    const { argumentId, content } = log.args as { argumentId: number; content: string };
+    texts.set(Number(argumentId), content);
+  }
+  return texts;
+}
+
+/** Every debate's thesis by id, from the `DebateCreated` log - one request for the whole list. */
+async function readTheses(client: PublicClient, address: Address, fromBlock: bigint): Promise<Map<number, string>> {
+  const logs = await client.getLogs({ address, event: contentEvent('DebateCreated'), fromBlock, strict: true });
+  return new Map(
+    logs.map((log) => {
+      const { debateId, content } = log.args as { debateId: bigint; content: string };
+      return [Number(debateId), content];
+    }),
+  );
 }
 
 /** Reads a debate's bounty from the chain; undefined when none is attached. */
@@ -157,8 +159,8 @@ async function readBounty(client: PublicClient, address: Address, id: bigint): P
   };
 }
 
-/** Reads a debate from a deployed Deliberate contract. */
-export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: string): DebateSource {
+/** Reads a debate from a deployed Deliberate contract; the texts come from its log, scanned from `deploymentBlock`. */
+export function contractSource(address: Address, rpcUrl: string, deploymentBlock = 0n): DebateSource {
   const client = createPublicClient({ transport: http(rpcUrl) });
 
   return {
@@ -189,12 +191,15 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
       // Traverse the debate tree: every argument lies on a path from a leaf to the
       // thesis (id 0), so walking the parent links upward from all leaves visits the
       // whole tree. Arguments are fetched once each, one parallel wave per level.
-      const leafArgumentIds = (await client.readContract({
-        address,
-        abi,
-        functionName: 'getLeafArgumentIds',
-        args: [id],
-      })) as number[];
+      const [leafArgumentIds, texts] = await Promise.all([
+        client.readContract({
+          address,
+          abi,
+          functionName: 'getLeafArgumentIds',
+          args: [id],
+        }) as Promise<number[]>,
+        readTexts(client, address, id, deploymentBlock),
+      ]);
 
       const fetched = new Map<number, OnChainArgument>();
       let wave = [...new Set([0, ...leafArgumentIds])];
@@ -215,44 +220,38 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
         );
       }
 
-      const nodes: ArgumentNode[] = (
-        await Promise.all(
-          [...fetched.entries()]
-            .sort(([a], [b]) => a - b)
-            .map(async ([argumentId, argument]) => {
-              const marketSize = argument.pro + argument.con;
-              const content = await resolveContent(argument.contentURI, ipfsGateway);
-              return {
-                id: argumentId,
-                parentId: argumentId === 0 ? null : argument.parentArgumentId,
-                side:
-                  argumentId === 0
-                    ? null
-                    : argument.isSupporting
-                      ? ('pro' as const)
-                      : ('con' as const),
-                text: content.text,
-                contentDigest: content.digest,
-                // Approval is the pro-share price of the argument's constant-product market:
-                // the scarcer the pro reserve, the higher the approval.
-                approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
-                proReserve: argument.pro,
-                conReserve: argument.con,
-                weight: argument.votes,
-                // The stored settlement rating exists once the tally has run; before that the
-                // field reads zero, which is a legal rating, so the phase decides null.
-                rating:
-                  currentPhase === PHASE_FINISHED && argumentId !== 0
-                    ? Number(argument.rating) / MAX_APPROVAL
-                    : null,
-                // Final-ness is by time: an argument locks in automatically once its editing window elapses.
-                state: chainTime >= Number(argument.finalizationTime) ? ('final' as const) : ('created' as const),
-                finalizationTime: Number(argument.finalizationTime),
-                creator: argument.creator,
-              };
-            }),
-        )
-      )
+      const nodes: ArgumentNode[] = [...fetched.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([argumentId, argument]) => {
+          const marketSize = argument.pro + argument.con;
+          return {
+            id: argumentId,
+            parentId: argumentId === 0 ? null : argument.parentArgumentId,
+            side:
+              argumentId === 0
+                ? null
+                : argument.isSupporting
+                  ? ('pro' as const)
+                  : ('con' as const),
+            text: texts.get(argumentId) ?? '',
+            // Approval is the pro-share price of the argument's constant-product market:
+            // the scarcer the pro reserve, the higher the approval.
+            approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
+            proReserve: argument.pro,
+            conReserve: argument.con,
+            weight: argument.votes,
+            // The stored settlement rating exists once the tally has run; before that the
+            // field reads zero, which is a legal rating, so the phase decides null.
+            rating:
+              currentPhase === PHASE_FINISHED && argumentId !== 0
+                ? Number(argument.rating) / MAX_APPROVAL
+                : null,
+            // Final-ness is by time: an argument locks in automatically once its editing window elapses.
+            state: chainTime >= Number(argument.finalizationTime) ? ('final' as const) : ('created' as const),
+            finalizationTime: Number(argument.finalizationTime),
+            creator: argument.creator,
+          };
+        })
         // A nonexistent argument reads back with the zero-address creator; drop it. Defensive - the tree
         // traversal only visits real nodes, but existence is no longer a stored flag to key off.
         .filter((node) => node.creator !== zeroAddress);
@@ -289,9 +288,10 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
     },
 
     async list(): Promise<DebateSummary[]> {
-      const [count, latestBlock] = await Promise.all([
+      const [count, latestBlock, theses] = await Promise.all([
         client.readContract({ address, abi, functionName: 'debatesCount', args: [] }).then(Number),
         client.getBlock(),
+        readTheses(client, address, deploymentBlock),
       ]);
       // One clock for the whole list; each debate's phase is derived from its own gates, as the contract does.
       const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
@@ -320,15 +320,13 @@ export function contractSource(address: Address, rpcUrl: string, ipfsGateway?: s
               }) as Promise<[number, number, number, number, Hex]>,
               readBounty(client, address, id),
             ]);
-          const content = await resolveContent(thesis.contentURI, ipfsGateway);
           // The outcome exists only once the debate is finished (the read reverts before the tally).
           const approved = currentPhase === PHASE_FINISHED
             ? ((await client.readContract({ address, abi, functionName: 'outcome', args: [id] })) as boolean)
             : undefined;
           return {
             id: debateId,
-            thesis: content.text,
-            contentDigest: content.digest,
+            thesis: theses.get(debateId) ?? '',
             phase: phaseOf(Number(editingEndTime), Number(ratingEndTime), currentPhase === PHASE_FINISHED, chainTime),
             approved,
             stake: totalVotes,
@@ -456,7 +454,7 @@ export interface IndexedArgumentRow {
   argumentId: string;
   parent_id: string | null;
   isSupporting: boolean | null;
-  contentURI: string;
+  content: string;
   finalizationTime: string;
   pro: string;
   con: string;
@@ -484,21 +482,17 @@ export function marketFromIndex(row: IndexedMarketRow): ArgumentMarket {
 }
 
 /**
- * Maps an indexer row to a debate node; the text still needs resolving from the contentURI.
- * Final-ness is derived from `chainTime` (the indexer stores no argument state) — an argument
- * locks in automatically once its editing window elapses.
+ * Maps an indexer row to a debate node. Final-ness is derived from `chainTime` (the indexer stores
+ * no argument state) — an argument locks in automatically once its editing window elapses.
  */
-export function nodeFromIndex(
-  row: IndexedArgumentRow,
-  chainTime: number,
-): Omit<ArgumentNode, 'text'> & { contentURI: Hex } {
+export function nodeFromIndex(row: IndexedArgumentRow, chainTime: number): ArgumentNode {
   const finalizationTime = Number(row.finalizationTime);
   return {
     ...marketFromIndex(row),
     // Argument entity IDs are `{debateId}_{argumentId}`; the thesis has no parent.
     parentId: row.parent_id === null ? null : Number(row.parent_id.split('_')[1]),
     side: row.isSupporting === null ? null : row.isSupporting ? 'pro' : 'con',
-    contentURI: row.contentURI as Hex,
+    text: row.content,
     state: chainTime >= finalizationTime ? 'final' : 'created',
     finalizationTime,
     // The index stores addresses lowercased; checksum to match the chain reads.
@@ -510,7 +504,7 @@ export function nodeFromIndex(
 export interface IndexedDebateSummaryRow extends IndexedBountyColumns {
   id: string;
   creator: string;
-  contentURI: string;
+  content: string;
   finished: boolean;
   approved: boolean | null;
   editingEndTime: string;
@@ -551,16 +545,16 @@ export function rawBountyOf(row: IndexedBountyColumns): RawBounty | undefined {
 }
 
 /**
- * Maps an indexer row to a browse-list summary; the thesis text still needs resolving. The index stores no
- * phase - only the `finished` latch and the time gates - so the live phase is derived from `chainTime`.
+ * Maps an indexer row to a browse-list summary. The index stores no phase - only the `finished`
+ * latch and the time gates - so the live phase is derived from `chainTime`.
  */
 export function summaryFromIndex(
   row: IndexedDebateSummaryRow,
   chainTime: number,
-): Omit<DebateSummary, 'thesis' | 'bounty'> & { contentURI: Hex; bountyRaw?: RawBounty } {
+): Omit<DebateSummary, 'bounty'> & { bountyRaw?: RawBounty } {
   return {
     id: Number(row.id),
-    contentURI: row.contentURI as Hex,
+    thesis: row.content,
     bountyRaw: rawBountyOf(row),
     phase: phaseOf(Number(row.editingEndTime), Number(row.ratingEndTime), row.finished, chainTime),
     // The outcome exists only once the tally has run (null in the index before that).
@@ -575,12 +569,12 @@ export function summaryFromIndex(
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
   Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved participantsCount feePercentage identityRegistry finishedAt bountyToken bountyPool bountyClaimed bountySwept }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
-    argumentId parent_id isSupporting contentURI finalizationTime pro con votes creator rating
+    argumentId parent_id isSupporting content finalizationTime pro con votes creator rating
   }
 }`;
 
 const INDEXER_LIST_QUERY = `query DebateList {
-  Debate { id creator contentURI finished approved editingEndTime ratingEndTime totalVotes argumentsCount participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
+  Debate { id creator content finished approved editingEndTime ratingEndTime totalVotes argumentsCount participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
 }`;
 
 const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!) {
@@ -658,7 +652,7 @@ export async function waitForIndexerBlock(
  * the tree leaf by leaf. The chain clock still comes from the RPC head block -
  * the index carries no notion of "now".
  */
-export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: string): DebateSource {
+export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource {
   const client = createPublicClient({ transport: http(rpcUrl) });
 
   /** Resolves a raw bounty's token identity (cached; one chain read per unknown token). */
@@ -706,13 +700,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       // at least the head, at least the wall.
       const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
 
-      const nodes: ArgumentNode[] = await Promise.all(
-        data.Argument.map(async (row) => {
-          const { contentURI, ...node } = nodeFromIndex(row, chainTime);
-          const content = await resolveContent(contentURI, ipfsGateway);
-          return { ...node, text: content.text, contentDigest: content.digest };
-        }),
-      );
+      const nodes = data.Argument.map((row) => nodeFromIndex(row, chainTime));
 
       return {
         id: debateId,
@@ -741,12 +729,8 @@ export function indexerSource(indexerUrl: string, rpcUrl: string, ipfsGateway?: 
       const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
       const summaries = await Promise.all(
         data.Debate.map(async (row) => {
-          const { contentURI, bountyRaw, ...summary } = summaryFromIndex(row, chainTime);
-          const [content, bounty] = await Promise.all([
-            resolveContent(contentURI, ipfsGateway),
-            enrichBounty(bountyRaw),
-          ]);
-          return { ...summary, thesis: content.text, contentDigest: content.digest, bounty };
+          const { bountyRaw, ...summary } = summaryFromIndex(row, chainTime);
+          return { ...summary, bounty: await enrichBounty(bountyRaw) };
         }),
       );
       // Debate entity IDs are strings, so Hasura cannot order them numerically.
@@ -856,8 +840,6 @@ export function sourceFor(config: ContractConfig | null): DebateSource {
   if (!config) {
     return mockSource;
   }
-  const chain = contractSource(config.address, config.rpcUrl, config.ipfsGateway);
-  return config.indexerUrl
-    ? withFallback(indexerSource(config.indexerUrl, config.rpcUrl, config.ipfsGateway), chain)
-    : chain;
+  const chain = contractSource(config.address, config.rpcUrl, config.deploymentBlock);
+  return config.indexerUrl ? withFallback(indexerSource(config.indexerUrl, config.rpcUrl), chain) : chain;
 }

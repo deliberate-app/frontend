@@ -1,13 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { createWalletClient, custom, defineChain, zeroAddress } from 'viem';
-import type { Abi, Address, EIP1193Provider, Hex } from 'viem';
+import type { Address, EIP1193Provider, Hex } from 'viem';
 
 import { rpcUp } from '../../scripts/devstack/anvil';
 import { loadArtifact } from '../../scripts/devstack/artifacts';
 import { anvilAccount, devChainClient } from '../../scripts/devstack/debate';
-import abi from '../abi/Deliberate.abi.json';
 import { classicSchedule } from '../lib/debateTiming';
-import { contentURIOf } from '../lib/ipfs';
 import type { Debate } from '../types';
 import { connectDebateActions, ensureWalletChain, gasLimitFor } from './actions';
 import { contractSource } from './source';
@@ -76,7 +74,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     };
     const warpTo = async (timestamp: number) => warp(timestamp - Number((await client.getBlock()).timestamp));
 
-    // The action layer, as the UI uses it: no IPFS API configured - digest-only publishing.
+    // The action layer, as the UI uses it.
     const config = { address, rpcUrl: RPC_URL };
     const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
     const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
@@ -95,7 +93,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     expect(await reads.userState(0, author.account)).toEqual({ joined: true, tokens: 10_000, bountyClaimed: false });
 
     // Author an argument at 80% initial approval with the minimum deposit (market reserves 200 pro / 800 con).
-    await author.addArgument(0, 0, 'pro', 80, 1000, 'A machine-authored argument');
+    await author.createArgument(0, 0, 'pro', 80, 1000, 'A machine-authored argument');
     expect((await reads.userState(0, author.account)).tokens).toBe(9000);
 
     // Time passes: the argument finalizes automatically once its window elapses, and the debate enters
@@ -159,22 +157,20 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.join(0);
 
     // A draft directly under the thesis, edited while still inside its editing window.
-    await author.addArgument(0, 0, 'pro', 60, 1000, 'first draft'); // argument 1
+    await author.createArgument(0, 0, 'pro', 60, 1000, 'first draft'); // argument 1
     await author.alterArgument(0, 1, 'first draft, edited');
-    const edited = (await client.readContract({
-      address,
-      abi: abi as Abi,
-      functionName: 'getArgument',
-      args: [0n, 1],
-    })) as { contentURI: Hex };
-    expect(edited.contentURI).toBe(await contentURIOf('first draft, edited'));
+    // The text lives in the log; the chain source reads it back from there.
+    const edited = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 1);
+    expect(edited?.text).toBe('first draft, edited');
+    // The bounds are checked before anything is sent.
+    await expect(author.alterArgument(0, 1, 'x'.repeat(257))).rejects.toThrow('257 bytes');
 
     // Argument 1's editing window elapses, so it finalizes automatically and becomes a valid move
     // target. A fresh draft (argument 2) is then added and moved beneath it, re-seeding its market
     // at 80% approval (reserves become 2 pro / 8 con).
     await client.increaseTime({ seconds: 2 * timeUnit });
     await client.mine({ blocks: 1 });
-    await author.addArgument(0, 0, 'con', 60, 1000, 'second draft'); // argument 2, a fresh draft
+    await author.createArgument(0, 0, 'con', 60, 1000, 'second draft'); // argument 2, a fresh draft
     await author.moveArgument(0, 2, 1, 80);
 
     const moved = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 2);
@@ -218,8 +214,8 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
     await author.join(0);
 
     // Two arguments at 50% approval (reserves 500/500 each), the minimum deposit.
-    await author.addArgument(0, 0, 'pro', 50, 1000, 'first argument'); // id 1
-    await author.addArgument(0, 0, 'pro', 50, 1000, 'second argument'); // id 2
+    await author.createArgument(0, 0, 'pro', 50, 1000, 'first argument'); // id 1
+    await author.createArgument(0, 0, 'pro', 50, 1000, 'second argument'); // id 2
 
     // The arguments finalize automatically once their editing windows elapse, and the debate enters
     // Rating by the clock. The rater joins beforehand and stakes as the window opens.

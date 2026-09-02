@@ -25,7 +25,7 @@ dev-gnosis:
 sync-abi:
     bun scripts/sync-abi.ts
 
-# Run the unit tests (includes a kubo round-trip when the node is up)
+# Run the unit tests; the lifecycle tests run only with anvil up on 127.0.0.1:8545
 test:
     bun test
 
@@ -36,14 +36,6 @@ build:
 # Preview the production build
 preview:
     bun run preview
-
-# Start the dockerized IPFS node
-ipfs-up:
-    docker compose up -d ipfs
-
-# Stop the dockerized IPFS node
-ipfs-down:
-    docker compose down
 
 # Build and capture design-review screenshots (browse, thesis, drill-down, mobile).
 # The deployment vars are blanked so a stale .env.local (dev-anvil) or .env cannot pull the

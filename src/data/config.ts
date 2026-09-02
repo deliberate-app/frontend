@@ -28,10 +28,12 @@ const CHAIN_IDS: Readonly<Record<string, number>> = {
 export interface ContractConfig {
   address: Address;
   rpcUrl: string;
-  /** Gateway to resolve argument content from (reads are digest-verified). */
-  ipfsGateway?: string;
-  /** kubo-compatible RPC API to publish argument content to when authoring. */
-  ipfsApi?: string;
+  /**
+   * The block the contract was deployed in, where a chain read of the log starts: argument texts
+   * live in the events and nowhere else. Optional - without it the scan starts at the first block,
+   * which a dev chain does not mind and a public endpoint may refuse.
+   */
+  deploymentBlock?: bigint;
   /** GraphQL endpoint of the debate indexer; debates load from it in one query, RPC as fallback. */
   indexerUrl?: string;
 }
@@ -68,13 +70,9 @@ function envFor(slug: string, base: string): string | undefined {
   return env[`${base}_${slug.toUpperCase().replace(/-/g, '_')}`] || undefined;
 }
 
-/**
- * A variable a network may override but usually shares. Content addressing is the same on every
- * chain - a digest is a digest - so one gateway and one pin proxy serve all of them, and only a
- * network that genuinely needs its own has to say so.
- */
-function sharedEnv(slug: string, base: string): string | undefined {
-  return envFor(slug, base) || env[base] || undefined;
+/** A block number from its variable, when set. */
+function blockFrom(value: string | undefined): bigint | undefined {
+  return value ? BigInt(value) : undefined;
 }
 
 /**
@@ -116,8 +114,7 @@ export function deployments(): Deployment[] {
         chainId,
         address,
         rpcUrl,
-        ipfsGateway: sharedEnv(slug, 'VITE_IPFS_GATEWAY'),
-        ipfsApi: sharedEnv(slug, 'VITE_IPFS_API'),
+        deploymentBlock: blockFrom(envFor(slug, 'VITE_DEPLOYMENT_BLOCK')),
         // Each network has its own indexer, and the same-origin proxy routes to it by slug.
         indexerUrl: envFor(slug, 'VITE_INDEXER_URL') ?? `/api/graphql/${slug}`,
         circlesRegistry,
@@ -138,8 +135,7 @@ function legacyDeployment(): Deployment | null {
     chainId: null,
     address,
     rpcUrl,
-    ipfsGateway: env.VITE_IPFS_GATEWAY || undefined,
-    ipfsApi: env.VITE_IPFS_API || undefined,
+    deploymentBlock: blockFrom(env.VITE_DEPLOYMENT_BLOCK),
     indexerUrl: env.VITE_INDEXER_URL || undefined,
     circlesRegistry,
   };

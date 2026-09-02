@@ -3,7 +3,7 @@ import { actionErrorMessage } from '../data/actions';
 import { DEFAULT_SCHEDULE, scheduleError, type DebateSchedule } from '../lib/debateTiming';
 import { formatVotes } from '../lib/votes';
 import { DEFAULT_FEE_PERCENT, feeError } from '../lib/fees';
-import { MAX_CONTENT_CHARS } from '../lib/ipfs';
+import { contentError, MAX_CONTENT_BYTES } from '../lib/content';
 import { formatDuration } from '../lib/time';
 import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
 import type { Address } from 'viem';
@@ -12,7 +12,7 @@ import { filterDebates } from '../types';
 import { AddressChip } from './AddressChip';
 import { VerdictMark } from './VerdictMark';
 import { BountySettings, type BountyDraft } from './BountySettings';
-import { CharBudget } from './CharBudget';
+import { ContentBudget } from './ContentBudget';
 import { FeeSettings } from './FeeSettings';
 import { gateAddress, gateLabel, GateSettings, type GateDraft } from './GateSettings';
 import { ScheduleSettings } from './ScheduleSettings';
@@ -143,7 +143,7 @@ function CreatePanel({
         onChange={(event) => setThesis(event.target.value)}
         placeholder="The thesis to debate…"
         rows={3}
-        maxLength={MAX_CONTENT_CHARS}
+        maxLength={MAX_CONTENT_BYTES}
         required
       />
       {/* Schedule and bounty are the two pre-creation settings; they sit side by side. */}
@@ -216,7 +216,7 @@ function CreatePanel({
           <button
             type="submit"
             className="btn btn-solid"
-            disabled={busy || thesis.trim().length === 0 || invalidSchedule !== null || invalidFee !== null}
+            disabled={busy || contentError(thesis.trim()) !== null || invalidSchedule !== null || invalidFee !== null}
             title={
               invalidSchedule ??
               invalidFee ??
@@ -231,7 +231,7 @@ function CreatePanel({
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
           Cancel
         </button>
-        <CharBudget length={thesis.length} />
+        <ContentBudget text={thesis.trim()} />
       </div>
       {error && <p className="action-error">{error}</p>}
     </form>

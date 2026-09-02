@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { actionErrorMessage } from '../data/actions';
-import { MAX_CONTENT_CHARS } from '../lib/ipfs';
-import { CharBudget } from './CharBudget';
+import { contentError, MAX_CONTENT_BYTES } from '../lib/content';
+import { ContentBudget } from './ContentBudget';
 
 /** A finalized argument a draft can be moved beneath. */
 export interface MoveTarget {
@@ -12,7 +12,7 @@ export interface MoveTarget {
 /**
  * Owner-only controls for a still-draft argument during Editing: edit its text, or
  * move it beneath a different finalized argument. Moving keeps the pro/con stance and
- * re-seeds the market at a chosen approval. Both run through the content pipeline / contract.
+ * re-seeds the market at a chosen approval. Both are contract calls.
  */
 export function DraftControls({
   text,
@@ -90,17 +90,17 @@ export function DraftControls({
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           rows={3}
-          maxLength={MAX_CONTENT_CHARS}
+          maxLength={MAX_CONTENT_BYTES}
           required
         />
         <div className="action-row">
-          <button type="submit" className="btn btn-solid" disabled={busy || draft.trim().length === 0}>
+          <button type="submit" className="btn btn-solid" disabled={busy || contentError(draft.trim()) !== null}>
             {busy ? 'Saving…' : 'Save text'}
           </button>
           <button type="button" className="btn" onClick={() => setMode('idle')} disabled={busy}>
             Cancel
           </button>
-          <CharBudget length={draft.length} />
+          <ContentBudget text={draft.trim()} />
         </div>
         {error && <p className="action-error">{error}</p>}
       </form>

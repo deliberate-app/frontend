@@ -11,7 +11,7 @@ just install     # bun install
 just dev         # dev server with the bundled sample debate
 just dev-anvil   # local anvil chain: deploy + seed + serve (writes .env.local)
 just dev-gnosis  # the live Gnosis Chain deployment (loads .env.gnosis)
-just test        # unit tests (bun test); includes a kubo round-trip when the node is up
+just test        # unit tests (bun test); the lifecycle tests need anvil on 127.0.0.1:8545
 ```
 
 Each `dev-*` recipe selects an environment through Vite's env files: `dev-anvil` writes and uses
@@ -27,20 +27,19 @@ The sample debate is modeled on kialo's ["Should humans act to fight climate cha
 just dev-anvil
 ```
 
-One typed tool ([scripts/dev-anvil.ts](scripts/dev-anvil.ts)) runs the whole stack: it starts anvil (if not already running), builds and deploys Deliberate plus a mock Proof of Humanity, replays the seed **debate script** ([scripts/seed/climateDebate.ts](scripts/seed/climateDebate.ts)) as its four personas — each acting from its own account, joining before its first action — pins the argument texts to IPFS, writes `.env.local`, and starts the dev server. To interact from a wallet, add the network `http://127.0.0.1:8545` (chain id `31337`) and import one of the persona accounts printed by the tool.
+One typed tool ([scripts/dev-anvil.ts](scripts/dev-anvil.ts)) runs the whole stack: it starts anvil (if not already running), builds and deploys Deliberate plus a mock Proof of Humanity, replays the seed **debate script** ([scripts/seed/climateDebate.ts](scripts/seed/climateDebate.ts)) as its four personas — each acting from its own account, joining before its first action — writes `.env.local`, and starts the dev server. To interact from a wallet, add the network `http://127.0.0.1:8545` (chain id `31337`) and import one of the persona accounts printed by the tool.
 
-Debate scripts are typed data (`DebateScript` in [scripts/devstack/debate.ts](scripts/devstack/debate.ts)): personas plus `add`/`wait`/`stake`/`advancePhase` steps with symbolic argument keys. Editing one file changes the seeded texts, their on-chain digests, and what gets pinned — they cannot drift apart.
+Debate scripts are typed data (`DebateScript` in [scripts/devstack/debate.ts](scripts/devstack/debate.ts)): personas plus `add`/`wait`/`stake`/`advancePhase` steps with symbolic argument keys. Editing one file changes the seeded texts; the chain publishes them as they are.
 
 ## Reading any deployment
 
-Set both variables (in `.env.local` or the environment):
+Set the address and the RPC endpoint (in `.env.local` or the environment):
 
 ```sh
 VITE_DELIBERATE_ADDRESS=0x…   # Deliberate contract address
 VITE_RPC_URL=https://…       # JSON-RPC endpoint
-VITE_IPFS_GATEWAY=https://ipfs.io   # optional, enables content resolution; comma-separated for several
-                             # (gateways are untrusted - reads are digest-verified)
-VITE_IPFS_API=https://…      # optional, kubo-compatible RPC API the authoring flow publishes content to
+VITE_DEPLOYMENT_BLOCK=…      # optional, the block the contract was deployed in: where a chain read
+                             # of the argument texts starts (the events are the only place they live)
 VITE_INDEXER_URL=https://…   # optional, GraphQL endpoint of the debate indexer (../indexer)
 ```
 
@@ -61,6 +60,7 @@ uppercased and hyphens turned into underscores:
 VITE_CHAINS=gnosis,chiado                      # slugs, in the order the network menu lists them
 VITE_DELIBERATE_ADDRESS_GNOSIS=0x…
 VITE_DELIBERATE_ADDRESS_CHIADO=0x…
+VITE_DEPLOYMENT_BLOCK_GNOSIS=…                 # optional; where a chain read of the argument texts starts
 VITE_RPC_URL_GNOSIS=https://…                  # optional; defaults to the chain's public endpoint
 VITE_INDEXER_URL_GNOSIS=https://…              # optional; defaults to /api/graphql/gnosis
 INDEXER_UPSTREAM_URL_GNOSIS=https://…          # server-side, what that proxy route forwards to
@@ -71,8 +71,7 @@ Known slugs are `mainnet`, `sepolia`, `base`, `base-sepolia`, `gnosis`, `chiado`
 offered, so a network can be staged before its contract exists.
 
 Per-chain variables **never** fall back to the unsuffixed ones — a network without its own address
-would otherwise silently read the default network's contract. `VITE_IPFS_GATEWAY` and
-`VITE_IPFS_API` do fall back, because content addressing is the same on every chain.
+would otherwise silently read the default network's contract.
 
 The selected network lives in the URL: `#/gnosis/debate/5` names the network a link was copied
 from, so debate 5 on Gnosis and debate 5 on Chiado cannot be confused. Links written before the
@@ -94,48 +93,20 @@ so per-machine tweaks stay local) and run `just dev-gnosis` — Vite's `--mode g
 values override any local-anvil `.env.local`, so the two environments never bleed together. Wallets
 need the Gnosis Chain network (chain 100); the wallet menu offers to add and switch to it.
 
-Content resolution needs a reachable IPFS node. The template reads and authors through the hosted
-site's proxies, so texts resolve wherever the site's do. To work offline, run `just ipfs-up` and
-point both `VITE_IPFS_GATEWAY` and `VITE_IPFS_API` at the local kubo in your `.env.gnosis`.
+## Argument content
 
-## Argument content and IPFS
-
-The contract stores each argument's content as a `bytes32` — the **sha-256 multihash digest of an IPFS raw-leaves block**. The content pipeline lives in [src/lib/ipfs.ts](src/lib/ipfs.ts):
-
-- **Publish** (`publishText`): adds and pins the text on a kubo-compatible RPC API (`/api/v0/add?raw-leaves=true&cid-version=1&pin=true`) and returns the digest for on-chain use. The returned CID is asserted to wrap exactly the locally computed digest, so the on-chain reference and the pinned content cannot drift, and content above the single-block limit (256 KiB) is rejected up front — it could never be referenced by one digest. The hosted pin proxy applies a much tighter bound of its own (see *Hosting on Vercel*). Publish first, then send the transaction: a failed transaction leaves only a harmless pinned text block. Today the publisher is the dev seeding tool; the upcoming authoring flow publishes to `VITE_IPFS_API` before sending `addArgument`.
-- **Resolve** (`fetchTextByDigest`): rebuilds the CIDv1 (`b` + base32 of `0x01 0x55 0x12 0x20 + digest`, [src/lib/cid.ts](src/lib/cid.ts)) and fetches the text from `VITE_IPFS_GATEWAY`, which takes a **comma-separated list** and is raced - the first gateway whose bytes hash to the digest wins, because one gateway not yet having freshly pinned content is routine rather than exceptional. An entry containing `{cid}` is used verbatim; anything else is treated as a path-style host (`{gateway}/ipfs/{cid}`). **Browsers need the `{cid}` form for the big public gateways**: they answer path-style requests with a redirect to their subdomain host, and that redirect carries no CORS headers, so the fetch is blocked before the content is reached. **Gateways are untrusted**: responses are size-capped while streaming and must hash back to the on-chain digest, otherwise they are discarded. Without a gateway (or when verification fails), short ASCII payloads are decoded inline and anything else is shown as the raw digest.
-
-A local [kubo](https://github.com/ipfs/kubo) node runs via Docker for a reproducible setup (`docker-compose.yml`, image version pinned). Its RPC API allowlists the dev app origins — never `*`, the Origin check is the unauthenticated API's CSRF defense ([ipfs/container-init.d](ipfs/container-init.d/010-rpc-cors.sh)) — so the authoring flow will work in development without infrastructure changes:
-
-```sh
-just ipfs-up     # start the node (gateway on 127.0.0.1:8080, RPC on 127.0.0.1:5001)
-just ipfs-down   # stop it
-```
-
-`dev-anvil.ts` starts the node, publishes the seed content through the same pipeline, and writes both `VITE_IPFS_GATEWAY` and `VITE_IPFS_API` into `.env.local`.
-
-**Production pinning strategy.** Argument texts are tiny immutable blocks whose digests are public on-chain, so availability has three legs: (1) at authoring time the client publishes to the deployment's `VITE_IPFS_API` — a kubo node or cluster the operator runs behind an origin-restricted, authenticated proxy; (2) any party can audit and re-pin content from the on-chain digests — the event indexer (`../indexer`, `ENVIO_PIN_IPFS_API`) re-pins everything it sees, acting as the availability backstop; (3) the inline-decode fallback keeps short payloads readable with no IPFS at all. Because reads are digest-verified, *any* gateway — public or private — is safe to resolve through; a gateway can at worst withhold content, never forge it.
+The text of a thesis or argument goes to the chain as it is: `createDebate`, `createArgument` and
+`alterArgument` take it as a string of 1 to 256 bytes of UTF-8 and publish it in their events
+(`DebateCreated`, `ArgumentCreated`, `ArgumentAltered`). Nothing is stored on-chain and nothing is
+content-addressed: the indexer folds the events and serves the text with the rest of the tree, and
+the chain source reads the same events with `eth_getLogs` from `VITE_DEPLOYMENT_BLOCK`. The bounds
+live in [src/lib/content.ts](src/lib/content.ts) and are checked before anything is sent; the
+budget beside every composer counts bytes, not characters, because that is what the contract counts.
 
 ## Hosting on Vercel
 
-The app deploys as a static Vite build plus two serverless routes. Vercel detects Vite from the
+The app deploys as a static Vite build plus one serverless route per network. Vercel detects Vite from the
 repo (installs and builds with bun via `bun.lock`); the hash-based routing needs no rewrites.
-
-Authoring on the hosted site publishes through [api/v0/add.ts](api/v0/add.ts), a kubo-shaped
-**pin proxy**: `publishText` sends the same multipart request it would send to a kubo node, the
-edge function pins the text on [Filebase](https://filebase.com) through its S3-compatible API and answers with
-kubo's `{Hash}`, and the client's digest assertion keeps holding — a mispinned CID fails loudly. The
-Filebase credentials never reach the browser.
-
-The route is unauthenticated, so what bounds abuse is what it will accept: at most
-`MAX_PUBLISH_BYTES` (1 KiB), refused on the declared `content-length` before the body is read,
-and the bytes must decode as UTF-8 within `MAX_CONTENT_CHARS`. That leaves room for an argument
-and for nothing else - a payload smuggled as base64 pays 33% inflation against a 250-character
-ceiling. Note what does **not** bound it: the loopback CORS allowlist governs whether a calling
-page may read the response, not whether the request is delivered, and a multipart POST is
-CORS-safelisted so no preflight fires. An attacker driving this route from their own page never
-needed the response. Authenticating the write against the chain - pinning only content whose
-digest a transaction already committed - is the remaining gap.
 
 Indexer reads go through [api/graphql/[chain].ts](api/graphql/[chain].ts), a same-origin **query
 proxy** per network that forwards to `INDEXER_UPSTREAM_URL_<SLUG>` ([api/graphql.ts](api/graphql.ts)
@@ -153,14 +124,9 @@ Project environment variables (Settings → Environment Variables):
 VITE_CHAINS=gnosis           # the networks offered, by slug (see *Several networks at once*)
 VITE_DELIBERATE_ADDRESS_GNOSIS=0x… # the live deployment (contracts/broadcast/DeployDeliberate.s.sol/100/run-latest.json)
 VITE_CIRCLES_REGISTRY_GNOSIS=0x…   # the any-Circles-human registry deployed beside it
+VITE_DEPLOYMENT_BLOCK_GNOSIS=… # the deployment block, from the same broadcast record
 VITE_RPC_URL_GNOSIS=https://rpc.gnosischain.com
                              # indexer reads go through the same-origin query proxy, /api/graphql/gnosis
-VITE_IPFS_GATEWAY=https://ipfs.filebase.io,https://{cid}.ipfs.dweb.link,https://gateway.pinata.cloud
-                             # raced, holder first (see below)
-VITE_IPFS_API=/              # authoring goes through the same-origin pin proxy
-FILEBASE_ACCESS_KEY_ID=…     # server-side only (Sensitive)
-FILEBASE_SECRET_ACCESS_KEY=… # server-side only (Sensitive)
-FILEBASE_BUCKET=…            # the IPFS-network bucket the texts are pinned into
 INDEXER_UPSTREAM_URL_GNOSIS=https://… # server-side only; the hosted indexer endpoint the query
                              # proxy forwards to. The dev tier mints a new URL per deployment, and its id
                              # is envio-internal rather than the git sha - read it from the
@@ -169,8 +135,7 @@ INDEXER_UPSTREAM_URL_GNOSIS=https://… # server-side only; the hosted indexer e
 ```
 
 `VITE_*` values are baked into the public bundle at build time — they must never hold secrets.
-The `FILEBASE_*` and `INDEXER_UPSTREAM_URL_*` variables are read only by the edge functions at
-request time. Local development ignores all of this: `just dev-gnosis` reads its own `.env.gnosis`.
+The `INDEXER_UPSTREAM_URL_*` variables are read only by the edge functions at request time. Local development ignores all of this: `just dev-gnosis` reads its own `.env.gnosis`.
 
 ## Wallets
 
@@ -181,7 +146,7 @@ The menu names the chain the wallet is on, and says so when that is not the depl
 Once connected against an on-chain deployment, the app is fully interactive ([src/data/actions.ts](src/data/actions.ts)):
 
 - **Join** the debate from the header (the token balance replaces the button once joined).
-- **Author arguments** during Editing: a composer beneath each column publishes the text through the content pipeline, then commits the digest with `addArgument`. The author picks the deposit (at least the minimum) — a larger deposit deepens the market and puts more stake behind the argument from the start.
+- **Author arguments** during Editing: a composer beneath each column sends the text with `createArgument`, and the chain publishes it in the argument's creation event. The author picks the deposit (at least the minimum) — a larger deposit deepens the market and puts more stake behind the argument from the start.
 - **Rate arguments** during Rating: stake vote tokens on the focused argument being under- or overrated.
 - **After the debate**: redeem your shares and claim creator fees from the focused argument, or redeem across every argument you hold at once from the finished-debate banner (`redeemArgumentSharesBatch`, its argumentIds read from the indexer's per-participant positions).
 

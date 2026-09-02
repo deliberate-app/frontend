@@ -6,7 +6,7 @@
  * simply follows a wait step past its parent's window.
  */
 
-import { createTestClient, http, publicActions, walletActions, type Abi, type Address, type Hex } from 'viem';
+import { createTestClient, http, publicActions, walletActions, type Abi, type Address } from 'viem';
 import { zeroAddress } from 'viem';
 import { DEFAULT_FEE_PERCENT } from '../../src/lib/fees';
 import { formatVotes, MIN_DEPOSIT_UNITS } from '../../src/lib/votes';
@@ -90,8 +90,6 @@ export interface DebateRunnerOptions {
   client: DevChainClient;
   deliberate: Address;
   abi: Abi;
-  /** Maps an argument text to its on-chain bytes32 contentURI (hashing plus optional pinning). */
-  contentURI: (text: string) => Promise<Hex>;
   log: (line: string) => void;
 }
 
@@ -102,7 +100,7 @@ export interface DebateRunResult {
 }
 
 export async function runDebateScript(script: DebateScript, options: DebateRunnerOptions): Promise<DebateRunResult> {
-  const { client, deliberate, abi, contentURI, log } = options;
+  const { client, deliberate, abi, log } = options;
 
   const personas = new Map<string, HDAccount>();
   const joined = new Set<string>();
@@ -134,7 +132,7 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
   // The script stays single-knob: the classic 7/3 split derives both phase durations from the
   // time unit, matching the step timeline's `wait` semantics.
   const debateId = (await act(script.creator, 'createDebate', [
-    await contentURI(script.thesis),
+    script.thesis,
     script.timeUnitSeconds,
     7 * script.timeUnitSeconds,
     3 * script.timeUnitSeconds,
@@ -193,10 +191,10 @@ export async function runDebateScript(script: DebateScript, options: DebateRunne
         }
         await join(step.user);
         const deposit = step.deposit ?? MIN_DEPOSIT_UNITS;
-        const newId = (await act(step.user, 'addArgument', [
+        const newId = (await act(step.user, 'createArgument', [
           debateId,
           parentId,
-          await contentURI(step.text),
+          step.text,
           step.side === 'pro',
           step.approval,
           deposit,
