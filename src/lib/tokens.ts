@@ -9,13 +9,13 @@ export interface TokenInfo {
 }
 
 /**
- * The Gnosis Chain tokens offered as bounty presets: the wrapped gas token, Circle's bridged
- * USDC and Monerium's EURe. The contract accepts any ERC-20 - these are just the one-click
- * choices; the custom field takes any address.
+ * The Gnosis Chain tokens offered as bounty presets: the wrapped gas token and Monerium's EURe.
+ * The contract accepts any ERC-20 - these are just the one-click choices; the custom field takes
+ * any address. Circles is not a preset yet: its tokens are ERC-1155 balances per avatar, and only
+ * their ERC-20 wrappers could serve (see TODO.md).
  */
 export const BOUNTY_TOKEN_PRESETS: readonly TokenInfo[] = [
   { address: getAddress('0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d'), symbol: 'WXDAI', decimals: 18 },
-  { address: getAddress('0x2a22f9c3b484c3629090FeED35F17Ff8F88f76F0'), symbol: 'USDC.e', decimals: 6 },
   { address: getAddress('0x420CA0f9B9b604cE0fd9C18EF134C705e5Fa3430'), symbol: 'EURe', decimals: 18 },
 ];
 
