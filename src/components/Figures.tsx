@@ -78,10 +78,11 @@ const span = (from: number, to: number, roundFrom: boolean, roundTo: boolean) =>
  *
  * The saturated bar runs from the centre to `market`, coloured by which side of neutral it lands.
  * The correction runs from there to `rating` and is drawn over it, so a sub-debate that cut the
- * price eats visibly into the bar rather than sitting beside it. It is grey wherever it only
- * changes how far the argument stands from neutral, and takes the stance colour of where the
- * argument ended up only when it carried it across. Omit `market` for the thesis, which owns no
- * market of its own: the bar is then simply its rating, and the tooltip says so.
+ * price eats visibly into the bar rather than sitting beside it. Where the sub-debate added to the
+ * bar - carrying the argument further from neutral, or across it - the correction takes the pale
+ * hue of the side it added on; where it only pulled the argument back toward neutral it is grey.
+ * Omit `market` for the thesis, which owns no market of its own: the bar is then simply its rating,
+ * and the tooltip says so.
  */
 export function RatingGauge({
   rating,
@@ -105,13 +106,13 @@ export function RatingGauge({
   // (extending the bar), sits inside it (eating into it), or crosses neutral (replacing it).
   const sameSide = base === 0 || rating === 0 || Math.sign(rating) === Math.sign(base);
   const extendsBar = sameSide && Math.abs(rating) > Math.abs(base);
-  // A correction takes a stance colour only when it carries the argument past neutral - when the
-  // debate changed which side the argument is on, rather than only how far. Everything else is the
-  // same fact restated quieter, so it is grey: the stance hues keep one job, and the one time they
-  // appear on a correction they are worth reading. A rating landing exactly on neutral has not
-  // crossed it. (Distinct from `sameSide` above, which asks about length rather than side: a
-  // neutral market has no side to stay on, but its correction is still the whole bar.)
+  // What decides the correction's colour is whether it adds to the bar or eats into it. A
+  // sub-debate that carried the argument further from neutral, or across it, put conviction on a
+  // side, and that side's pale hue says which. One that only pulled the argument back toward
+  // neutral took conviction away without putting any anywhere, so it is grey - the figure moved,
+  // nothing took a side. A rating landing exactly on neutral has not crossed it.
   const crossesNeutral = rating !== 0 && Math.sign(rating) !== Math.sign(base);
+  const addsToBar = extendsBar || crossesNeutral;
 
   return (
     <span className="gauge" {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': gaugeLabel(rating, market) })}>
@@ -129,7 +130,7 @@ export function RatingGauge({
       {correcting && (
         <span
           className={`gauge-correction ${
-            crossesNeutral ? (rating > 0 ? 'gauge-raised' : 'gauge-cut') : 'gauge-corrected'
+            addsToBar ? (rating > 0 ? 'gauge-added-pro' : 'gauge-added-con') : 'gauge-eaten'
           }`}
           // Square where it meets the market's fill, round where the bar actually stops.
           style={span(base, rating, !extendsBar, extendsBar || !sameSide)}
@@ -235,8 +236,10 @@ export const ArgumentFigures = ({
   presentational?: boolean;
 }) => {
   const market = centered(node.approval);
+  // One box around the pair, centred: the two are drawings of different heights, and a row that
+  // aligns its items on text baselines has none to give them.
   return (
-    <>
+    <span className="figure-pair">
       <RatingGauge rating={tally?.rating ?? market} market={market} presentational={presentational} />
       <StakeRing
         stake={node.weight}
@@ -244,7 +247,7 @@ export const ArgumentFigures = ({
         total={total}
         presentational={presentational}
       />
-    </>
+    </span>
   );
 };
 

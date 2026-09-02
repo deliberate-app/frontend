@@ -65,11 +65,13 @@ contouring are exactly right — treat them as the baseline to protect.)
   and Rating became one centre-anchored gauge and the stake became a ring, both on the cards and on
   the focused claim. The gauge fills from neutral to the argument's own market price in its stance
   colour, then draws what the sub-debate did to that price over or beyond it. That correction is
-  `stone` grey wherever the argument stays on its side of neutral: the debate moved the figure, not
-  the stance, and a change of degree should not borrow the colour of a change of side. It takes
-  `pro-pale` or `con-pale` only where it carried the argument across neutral, naming the side it
-  ended on — the one case on a gauge where a stance colour is worth reading, and the reason
-  principle 2 still holds with the correction drawn at all. The
+  `stone` grey where it only pulled the argument back toward neutral — conviction was taken away and
+  none of it landed on a side, so nothing borrows a stance colour. It takes `pro-pale` or `con-pale`
+  where it *added* to the bar, carrying the argument further from neutral or across it, naming the
+  side the conviction landed on. That is what keeps principle 2 intact with the correction drawn at
+  all: the stance hues still mean a side, never a direction of travel. Zero is marked in `slate`,
+  standing half a figure-gap clear of the bar top and bottom — the bar already carries two greys of
+  its own, and the axis' one fixed point must not read as a third. The
   corners carry meaning rather than style: a round cap is where the bar stops, a square one is where
   it continues — into the centre line it grows out of, or into the segment beside it. So a bar cut
   short by its sub-debate is distinguishable from one that simply ends there, without a number. The ring

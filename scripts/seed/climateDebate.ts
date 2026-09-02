@@ -4,7 +4,7 @@
  * it in the argument's creation event.
  *
  * Budgets: every persona holds 100 vote tokens and each argument here stakes the
- * minimum 10-token deposit - alice authors 6, bob 10, carol 2, and dan 6 arguments. In the rating phase,
+ * minimum 10-token deposit - alice authors 7, bob 10, carol 3, and dan 6 arguments. In the rating phase,
  * erika and frank join as pure raters, and the authors spend leftover budget. Finally the debate reaches
  * Tallying by the clock and erika tallies it, so the seeded sample ends Finished with a visible outcome.
  */
@@ -23,6 +23,9 @@ export const climateDebate: DebateScript = {
     { kind: 'add', user: 'alice', key: 'poor-countries', parent: 'thesis', side: 'con', approval: 65, text: 'Slows poor countries' },
     { kind: 'add', user: 'alice', key: 'free-rider', parent: 'thesis', side: 'con', approval: 55, text: 'Free-rider problem' },
     { kind: 'add', user: 'alice', key: 'innovation', parent: 'thesis', side: 'con', approval: 50, text: 'Innovation will fix it' },
+    // Priced modestly and then carried well past that price by the sub-debate below it: the one
+    // argument here the children make a stronger case for than its own market did.
+    { kind: 'add', user: 'alice', key: 'clean-air', parent: 'thesis', side: 'pro', approval: 55, text: 'Cleaner air saves lives now' },
 
     // Child arguments require finalized parents; finalization unlocks one time unit after creation.
     { kind: 'wait', timeUnits: 1 },
@@ -40,6 +43,7 @@ export const climateDebate: DebateScript = {
     { kind: 'add', user: 'bob', key: 'enforcement', parent: 'free-rider', side: 'con', approval: 70, text: 'Coordination problems argue for building enforcement mechanisms, not for doing nothing.' },
     { kind: 'add', user: 'carol', key: 'solar-cost-fall', parent: 'innovation', side: 'pro', approval: 75, text: 'Solar power costs fell by roughly ninety percent within a decade.' },
     { kind: 'add', user: 'carol', key: 'subsidies-drove-it', parent: 'innovation', side: 'con', approval: 65, text: 'That cost fall was itself the product of decades of public subsidies and policy support.' },
+    { kind: 'add', user: 'carol', key: 'air-deaths', parent: 'clean-air', side: 'pro', approval: 80, text: 'Fossil-fuel air pollution kills millions every year, whatever the climate does.' },
 
     { kind: 'wait', timeUnits: 1 },
 
@@ -69,6 +73,9 @@ export const climateDebate: DebateScript = {
     { kind: 'stake', user: 'carol', argument: 'subsidies-drove-it', side: 'pro', amount: 200 },
     { kind: 'stake', user: 'dan', argument: 'job-losses', side: 'con', amount: 600 },
     { kind: 'stake', user: 'dan', argument: 'mixed-causes', side: 'con', amount: 700 },
+    // Backing the supporter, not the argument it supports: what lifts `clean-air` above its own
+    // market price is the weight of the case beneath it, which is the whole point of the tally.
+    { kind: 'stake', user: 'erika', argument: 'air-deaths', side: 'pro', amount: 800 },
 
     // Rating ends ten time units after creation; the clock enters Tallying on its own and erika tallies the
     // tree so the seeded sample finishes with a computed outcome (the thesis confirmed or objected).

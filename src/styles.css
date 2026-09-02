@@ -8,10 +8,20 @@
   --con-wash: #f7eee9;
   --bark: #7a7568;
   --hairline: #e3e6de;
-  /* A sub-debate's correction on a rating gauge. Usually `stone`: the debate moved the figure
-     without changing the side it is on, which is not a stance and should not borrow a stance
-     colour. The two pale hues appear only where the correction crossed neutral, and are held well
-     short of --pro-wash / --con-wash, which vanish on a white card (DESIGN.md, "Tried / decided"). */
+  /* A sub-debate's correction on a rating gauge. `stone` where it only pulled the argument back
+     toward neutral: nothing took a side, so nothing borrows a stance colour. The two pale hues
+     appear where the correction added to the bar, and are held well short of --pro-wash /
+     --con-wash, which vanish on a white card (DESIGN.md, "Tried / decided"). */
+  /* The zero mark on a signed axis. Between --ink and --bark, so it reads as the one fixed point
+     on the scale rather than as another of the greys the bar is made of - and short of --ink,
+     which is the page's text and would put a stroke of body copy through a figure. */
+  --slate: #3c4535;
+  /* The ring's diameter, the bar's thickness, and the space between the two figures. The zero mark
+     is sized from the last two rather than given a length of its own: it stands half a gap clear of
+     the bar top and bottom, so the air around it is the same air that separates the pair. */
+  --figure-size: 1.15rem;
+  --gauge-height: 0.5rem;
+  --figure-gap: 0.4rem;
   --stone: #b4b1a7;
   --pro-pale: #8cbf95;
   --con-pale: #e3cabe;
@@ -887,6 +897,14 @@ button {
   margin-left: 0.12em;
 }
 
+/* An argument's two figures, level with each other wherever the pair appears. */
+.figure-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--figure-gap);
+  vertical-align: middle;
+}
+
 /* The rating gauge: one signed axis, neutral at its centre (principle 8). The track is a hairline
    the fill sits inside rather than on, so an argument nobody has moved still reads as a scale
    rather than as nothing. */
@@ -895,7 +913,7 @@ button {
   display: inline-block;
   vertical-align: middle;
   width: 5.5rem;
-  height: 0.5rem;
+  height: var(--gauge-height);
   flex: none;
   background: var(--hairline);
   border-radius: 999px;
@@ -910,15 +928,21 @@ button {
 }
 
 /* Neutral is a place on the axis, so it is drawn whether or not anything is filled - and over the
-   fills rather than under them, which is how the stake slider draws the same mark. */
+   fills rather than under them, which is how the stake slider draws the same mark, in the same
+   colour. It stands clear of the bar by half a gap at each end, so it reads as the scale the bar is
+   measured against rather than as a piece of the bar, and the air it claims is the same air that
+   separates the gauge from the ring; thin, because a mark that stands proud does not need weight as
+   well. In `slate`, not one of the bar's own greys: the track and a correction that took conviction
+   away are already grey, and the axis' one fixed point must not read as a third. */
 .gauge::before {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(50% - 1px);
-  width: 2px;
-  background: var(--bark);
+  top: 50%;
+  left: 50%;
+  width: 1.5px;
+  height: calc(var(--gauge-height) + var(--figure-gap));
+  transform: translate(-50%, -50%);
+  background: var(--slate);
   z-index: 1;
 }
 
@@ -930,20 +954,20 @@ button {
   background: var(--con);
 }
 
-/* The sub-debate's correction, drawn over the market's own fill so it eats into the bar rather
-   than sitting beside it. Grey while the argument stays on its side of neutral - the figure moved,
-   the stance did not - and pale green or rust only where the correction carried it across, naming
-   the side it ended on. Pale throughout, because this is what the debate did to the figure rather
-   than the figure itself. */
-.gauge-corrected {
+/* The sub-debate's correction. Where it added to the bar - carrying the argument further from
+   neutral, or across it - it takes the pale hue of the side it added on: the sub-debate put
+   conviction somewhere, and this is where. Where it only pulled the argument back toward neutral it
+   is grey: conviction was taken away, and none of it landed on a side. Pale throughout, because
+   this is what the debate did to the figure rather than the figure itself. */
+.gauge-eaten {
   background: var(--stone);
 }
 
-.gauge-raised {
+.gauge-added-pro {
   background: var(--pro-pale);
 }
 
-.gauge-cut {
+.gauge-added-con {
   background: var(--con-pale);
 }
 
@@ -952,7 +976,6 @@ button {
 .figure-button {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
   padding: 0.15rem 0.25rem;
   margin: -0.15rem -0.25rem;
   border: 0;
@@ -974,8 +997,8 @@ button {
 /* The stake ring: arcs from noon, clockwise, on a hairline track. Grey throughout - stake is
    volume, and the stance colours are spoken for (principle 2). */
 .ring {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: var(--figure-size);
+  height: var(--figure-size);
   flex: none;
   vertical-align: middle;
   /* SVG arcs start at three o'clock; the debate reads from the top. */
@@ -1437,7 +1460,7 @@ button {
   margin: 0.45rem 0;
   border-radius: 999px;
   background:
-    linear-gradient(var(--bark), var(--bark)) 50% 0 / 2px 100% no-repeat,
+    linear-gradient(var(--slate), var(--slate)) 50% 0 / 2px 100% no-repeat,
     linear-gradient(
       to right,
       var(--hairline) var(--fill-from),
