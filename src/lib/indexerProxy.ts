@@ -22,11 +22,8 @@
  * market poll that keeps an open stake modal honest. A cache short enough to be safe for those
  * would be too short to matter, and one long enough to matter would break them.
  *
- * The body lives here rather than in either route because there are two: `/api/graphql` for a
- * single-network build and `/api/graphql/<network>` for a build that names its chains. Each
- * network has its own indexer, so the only thing that differs between them is which upstream a
- * request is forwarded to - and two copies of this that drifted apart would differ in the parts
- * that took a day to get right.
+ * One route and one upstream, whatever the build names in `VITE_CHAINS`: the indexer serves every
+ * chain the contract is deployed to from a single endpoint, and a query says which chain it wants.
  */
 import { corsFor } from './devCors';
 
@@ -92,7 +89,5 @@ export async function proxyIndexer(request: Request, upstream: string | null, mi
   return new Response(response.body, { status: response.status, headers });
 }
 
-/** The environment variable naming a network's indexer. */
-export function upstreamVariable(slug: string | null): string {
-  return slug === null ? 'INDEXER_UPSTREAM_URL' : `INDEXER_UPSTREAM_URL_${slug.toUpperCase().replace(/-/g, '_')}`;
-}
+/** The environment variable naming the indexer this deployment reads. */
+export const UPSTREAM_VARIABLE = 'INDEXER_UPSTREAM_URL';

@@ -62,8 +62,8 @@ VITE_DELIBERATE_ADDRESS_GNOSIS=0x…
 VITE_DELIBERATE_ADDRESS_CHIADO=0x…
 VITE_DEPLOYMENT_BLOCK_GNOSIS=…                 # optional; where a chain read of the argument texts starts
 VITE_RPC_URL_GNOSIS=https://…                  # optional; defaults to the chain's public endpoint
-VITE_INDEXER_URL_GNOSIS=https://…              # optional; defaults to /api/graphql/gnosis
-INDEXER_UPSTREAM_URL_GNOSIS=https://…          # server-side, what that proxy route forwards to
+VITE_INDEXER_URL=https://…                     # optional, shared; defaults to /api/graphql
+INDEXER_UPSTREAM_URL=https://…                 # server-side, what that proxy route forwards to
 ```
 
 Known slugs are `mainnet`, `sepolia`, `base`, `base-sepolia`, `gnosis`, `chiado` and `anvil`
@@ -108,15 +108,15 @@ budget beside every composer counts bytes, not characters, because that is what 
 The app deploys as a static Vite build plus one serverless route per network. Vercel detects Vite from the
 repo (installs and builds with bun via `bun.lock`); the hash-based routing needs no rewrites.
 
-Indexer reads go through [api/graphql/[chain].ts](api/graphql/[chain].ts), a same-origin **query
-proxy** per network that forwards to `INDEXER_UPSTREAM_URL_<SLUG>` ([api/graphql.ts](api/graphql.ts)
-is the single-network build's unsuffixed twin). The envio endpoint is CORS-configured correctly; what made
+Indexer reads go through [api/graphql.ts](api/graphql.ts), a same-origin **query proxy** that
+forwards to `INDEXER_UPSTREAM_URL`. One route serves every network: the indexer covers each chain the
+contract is deployed to and a query names the chain it wants. The envio endpoint is CORS-configured correctly; what made
 calling it directly fragile is its rate limit - a refused response carries no CORS headers, so
 throttling reached the browser as a missing `Access-Control-Allow-Origin` and dropped the app into
 its chain fallback rather than surfacing as what it was. Behind the proxy a throttle arrives as the
 429 it is. Responses are deliberately not cached: `waitForIndexerBlock` and the stake modal's market
 poll both need reads that are not stale. **Repointing the app at a new indexer deployment is a
-change to `INDEXER_UPSTREAM_URL_GNOSIS` alone** - the client keeps calling `/api/graphql/gnosis`.
+change to `INDEXER_UPSTREAM_URL` alone** - the client keeps calling `/api/graphql`.
 
 Project environment variables (Settings → Environment Variables):
 
@@ -126,8 +126,8 @@ VITE_DELIBERATE_ADDRESS_GNOSIS=0x… # the live deployment (contracts/broadcast/
 VITE_CIRCLES_REGISTRY_GNOSIS=0x…   # the any-Circles-human registry deployed beside it
 VITE_DEPLOYMENT_BLOCK_GNOSIS=… # the deployment block, from the same broadcast record
 VITE_RPC_URL_GNOSIS=https://rpc.gnosischain.com
-                             # indexer reads go through the same-origin query proxy, /api/graphql/gnosis
-INDEXER_UPSTREAM_URL_GNOSIS=https://… # server-side only; the hosted indexer endpoint the query
+                             # indexer reads go through the same-origin query proxy, /api/graphql
+INDEXER_UPSTREAM_URL=https://… # server-side only; the hosted indexer endpoint the query
                              # proxy forwards to. The dev tier mints a new URL per deployment, and its id
                              # is envio-internal rather than the git sha - read it from the
                              # deployment page, or with `envio-cloud deployment endpoint
@@ -135,7 +135,7 @@ INDEXER_UPSTREAM_URL_GNOSIS=https://… # server-side only; the hosted indexer e
 ```
 
 `VITE_*` values are baked into the public bundle at build time — they must never hold secrets.
-The `INDEXER_UPSTREAM_URL_*` variables are read only by the edge functions at request time. Local development ignores all of this: `just dev-gnosis` reads its own `.env.gnosis`.
+The `INDEXER_UPSTREAM_URL` variable is read only by the edge function at request time. Local development ignores all of this: `just dev-gnosis` reads its own `.env.gnosis`.
 
 ## Wallets
 

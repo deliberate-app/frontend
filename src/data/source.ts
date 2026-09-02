@@ -460,6 +460,19 @@ export interface IndexedBountyColumns {
   finishedAt: string | null;
 }
 
+/**
+ * An entity's key in the index, which opens with the chain it happened on: debate ids restart at
+ * zero on every chain, and one indexer serves them all. Mirrors the indexer's own id helpers.
+ */
+const debateKey = (chainId: number, debateId: number) => `${chainId}_${debateId}`;
+const argumentKey = (chainId: number, debateId: number, argumentId: number) =>
+  `${debateKey(chainId, debateId)}_${argumentId}`;
+const participantKey = (chainId: number, debateId: number, account: string) =>
+  `${debateKey(chainId, debateId)}_${account.toLowerCase()}`;
+
+/** The trailing argument id of an `{chainId}_{debateId}_{argumentId}` key. */
+const argumentIdIn = (key: string) => Number(key.split('_')[2]);
+
 /** Raw indexer rows; Hasura serializes the BigInt fields as strings. */
 export interface IndexedDebateRow extends IndexedBountyColumns {
   finished: boolean;
@@ -510,8 +523,7 @@ export function nodeFromIndex(row: IndexedArgumentRow, chainTime: number): Argum
   const finalizationTime = Number(row.finalizationTime);
   return {
     ...marketFromIndex(row),
-    // Argument entity IDs are `{debateId}_{argumentId}`; the thesis has no parent.
-    parentId: row.parent_id === null ? null : Number(row.parent_id.split('_')[1]),
+    parentId: row.parent_id === null ? null : argumentIdIn(row.parent_id),
     side: row.isSupporting === null ? null : row.isSupporting ? 'pro' : 'con',
     text: row.content,
     state: chainTime >= finalizationTime ? 'final' : 'created',
@@ -523,7 +535,7 @@ export function nodeFromIndex(row: IndexedArgumentRow, chainTime: number): Argum
 
 /** A raw indexer debate row for the browse list. */
 export interface IndexedDebateSummaryRow extends IndexedBountyColumns {
-  id: string;
+  debateId: string;
   creator: string;
   content: string;
   finished: boolean;
@@ -534,7 +546,7 @@ export interface IndexedDebateSummaryRow extends IndexedBountyColumns {
   argumentsCount: string;
 }
 
-/** A raw indexer position row for the batch-redeem flow; `argument_id` is `{debateId}_{argumentId}`. */
+/** A raw indexer position row for the batch-redeem flow; `argument_id` is an argument key. */
 export interface IndexedPositionRow {
   argument_id: string;
   proShares: string;
@@ -574,7 +586,7 @@ export function summaryFromIndex(
   chainTime: number,
 ): Omit<DebateSummary, 'bounty'> & { bountyRaw?: RawBounty } {
   return {
-    id: Number(row.id),
+    id: Number(row.debateId),
     thesis: row.content,
     bountyRaw: rawBountyOf(row),
     phase: phaseOf(Number(row.editingEndTime), Number(row.ratingEndTime), row.finished, chainTime),
@@ -594,8 +606,8 @@ const INDEXER_QUERY = `query DebateTree($debateId: String!) {
   }
 }`;
 
-const INDEXER_LIST_QUERY = `query DebateList {
-  Debate { id creator content finished approved editingEndTime ratingEndTime totalVotes argumentsCount participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
+const INDEXER_LIST_QUERY = `query DebateList($chainId: Int!) {
+  Debate(where: { chainId: { _eq: $chainId } }) { debateId creator content finished approved editingEndTime ratingEndTime totalVotes argumentsCount participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
 }`;
 
 const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!) {
@@ -676,6 +688,15 @@ export async function waitForIndexerBlock(
 export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource {
   const client = createPublicClient({ transport: http(rpcUrl) });
 
+  /**
+   * The chain this deployment reads, asked of its own RPC once.
+   *
+   * One indexer holds every chain, so every query has to name one - and taking it from the same
+   * endpoint the app transacts against is what stops the two from ever disagreeing.
+   */
+  let chainIdOnce: Promise<number> | null = null;
+  const chainId = (): Promise<number> => (chainIdOnce ??= client.getChainId());
+
   /** Resolves a raw bounty's token identity (cached; one chain read per unknown token). */
   const enrichBounty = async (raw: RawBounty | undefined): Promise<DebateBounty | undefined> => {
     if (!raw) {
@@ -685,7 +706,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
     return { ...raw, token: info.address, symbol: info.symbol, decimals: info.decimals };
   };
 
-  const graphql = async <T>(query: string, variables?: Record<string, string>): Promise<T> => {
+  const graphql = async <T>(query: string, variables?: Record<string, string | number>): Promise<T> => {
     const response = await fetch(indexerUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -706,9 +727,10 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
 
   return {
     async load(debateId: number): Promise<Debate> {
+      const chain = await chainId();
       const [data, latestBlock] = await Promise.all([
         graphql<{ Debate: IndexedDebateRow[]; Argument: IndexedArgumentRow[] }>(INDEXER_QUERY, {
-          debateId: String(debateId),
+          debateId: debateKey(chain, debateId),
         }),
         client.getBlock(),
       ]);
@@ -744,7 +766,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
     async list(): Promise<DebateSummary[]> {
       // The index carries no notion of "now", so the phase is derived from one RPC-head clock for the whole list.
       const [data, latestBlock] = await Promise.all([
-        graphql<{ Debate: IndexedDebateSummaryRow[] }>(INDEXER_LIST_QUERY),
+        graphql<{ Debate: IndexedDebateSummaryRow[] }>(INDEXER_LIST_QUERY, { chainId: await chainId() }),
         client.getBlock(),
       ]);
       const chainTime = Math.max(Number(latestBlock.timestamp), Math.floor(Date.now() / 1000));
@@ -761,7 +783,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
     async userState(debateId: number, account: string): Promise<UserState> {
       const data = await graphql<{ Participant: Array<{ tokens: string }>; BountyClaim: Array<{ amount: string }> }>(
         INDEXER_USER_STATE_QUERY,
-        { participantId: `${debateId}_${account.toLowerCase()}` },
+        { participantId: participantKey(await chainId(), debateId, account) },
       );
       // A Participant row exists only once the account has joined; a BountyClaim row once it claimed.
       const [participant] = data.Participant;
@@ -772,12 +794,13 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
     },
 
     async argumentPosition(debateId: number, argumentId: number, account: string): Promise<ArgumentPosition> {
+      const chain = await chainId();
       const data = await graphql<{
         Position: Array<{ proShares: string; conShares: string }>;
         Argument: Array<{ creator: string; fees: string }>;
       }>(INDEXER_ARGUMENT_POSITION_QUERY, {
-        positionId: `${debateId}_${argumentId}_${account.toLowerCase()}`,
-        argumentId: `${debateId}_${argumentId}`,
+        positionId: `${argumentKey(chain, debateId, argumentId)}_${account.toLowerCase()}`,
+        argumentId: argumentKey(chain, debateId, argumentId),
       });
       const [position] = data.Position;
       const [argument] = data.Argument;
@@ -790,13 +813,13 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
     },
 
     async positions(debateId: number, account: string): Promise<AccountPosition[]> {
-      // The indexer keys positions by participant (`{debateId}_{account}`, address lowercased),
-      // exactly the account's share holdings across this debate's arguments.
+      // The indexer keys positions by participant, exactly the account's share holdings across
+      // this debate's arguments.
       const data = await graphql<{ Position: IndexedPositionRow[] }>(INDEXER_POSITIONS_QUERY, {
-        participantId: `${debateId}_${account.toLowerCase()}`,
+        participantId: participantKey(await chainId(), debateId, account),
       });
       return data.Position.map((row) => ({
-        argumentId: Number(row.argument_id.split('_')[1]),
+        argumentId: argumentIdIn(row.argument_id),
         proShares: Number(row.proShares),
         conShares: Number(row.conShares),
       })).filter((position) => position.proShares > 0 || position.conShares > 0);
@@ -807,7 +830,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
       // not zero - unlike the argument's standing `fees` balance, which it does. This used to sum
       // the argument's whole stake history client-side, one row per stake ever placed on it.
       const data = await graphql<{ Argument: Array<{ feesEarned: string }> }>(INDEXER_ARGUMENT_FEES_QUERY, {
-        argumentId: `${debateId}_${argumentId}`,
+        argumentId: argumentKey(await chainId(), debateId, argumentId),
       });
       const [argument] = data.Argument;
       return argument ? Number(argument.feesEarned) : 0;
@@ -815,7 +838,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
 
     async markets(debateId: number): Promise<ArgumentMarket[]> {
       const data = await graphql<{ Argument: IndexedMarketRow[] }>(INDEXER_MARKETS_QUERY, {
-        debateId: String(debateId),
+        debateId: debateKey(await chainId(), debateId),
       });
       return data.Argument.map(marketFromIndex);
     },

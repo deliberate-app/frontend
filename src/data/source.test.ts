@@ -49,7 +49,7 @@ describe('waitForIndexerBlock', () => {
 describe('nodeFromIndex', () => {
   const row = {
     argumentId: '1',
-    parent_id: '0_0',
+    parent_id: '100_0_0',
     isSupporting: true,
     content: 'An argument',
     finalizationTime: '90',
@@ -121,7 +121,7 @@ describe('nodeFromIndex', () => {
 
 describe('summaryFromIndex', () => {
   const row = {
-    id: '2',
+    debateId: '2',
     creator: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
     content: 'A thesis',
     finished: false,

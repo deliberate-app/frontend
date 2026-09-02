@@ -34,7 +34,10 @@ export interface ContractConfig {
    * which a dev chain does not mind and a public endpoint may refuse.
    */
   deploymentBlock?: bigint;
-  /** GraphQL endpoint of the debate indexer; debates load from it in one query, RPC as fallback. */
+  /**
+   * GraphQL endpoint of the debate indexer; debates load from it in one query, RPC as fallback.
+   * Shared by every network, because one indexer covers them all and a query names its chain.
+   */
   indexerUrl?: string;
 }
 
@@ -115,8 +118,8 @@ export function deployments(): Deployment[] {
         address,
         rpcUrl,
         deploymentBlock: blockFrom(envFor(slug, 'VITE_DEPLOYMENT_BLOCK')),
-        // Each network has its own indexer, and the same-origin proxy routes to it by slug.
-        indexerUrl: envFor(slug, 'VITE_INDEXER_URL') ?? `/api/graphql/${slug}`,
+        // One indexer for every network, reached through the same-origin proxy unless overridden.
+        indexerUrl: env.VITE_INDEXER_URL || '/api/graphql',
         circlesRegistry,
       },
     ];

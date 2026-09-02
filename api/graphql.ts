@@ -1,13 +1,14 @@
 /**
- * The single-network indexer proxy: `/api/graphql`, forwarding to `INDEXER_UPSTREAM_URL`.
+ * The indexer proxy: `/api/graphql`, forwarding to `INDEXER_UPSTREAM_URL`.
  *
- * A build that names its chains in `VITE_CHAINS` calls the per-network route next door instead.
+ * One route for every network the build offers. The indexer indexes each chain the contract is
+ * deployed to and serves them from one endpoint, so what used to be a route per network is now a
+ * `chainId` on the query.
  */
-import { proxyIndexer, upstreamVariable } from '../src/lib/indexerProxy';
+import { proxyIndexer, UPSTREAM_VARIABLE } from '../src/lib/indexerProxy';
 
 export const config = { runtime: 'edge' };
 
 export default async function handler(request: Request): Promise<Response> {
-  const variable = upstreamVariable(null);
-  return proxyIndexer(request, process.env[variable] ?? null, variable);
+  return proxyIndexer(request, process.env[UPSTREAM_VARIABLE] ?? null, UPSTREAM_VARIABLE);
 }
