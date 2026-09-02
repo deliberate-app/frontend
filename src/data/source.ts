@@ -12,6 +12,7 @@ import {
 } from 'viem';
 import abi from '../abi/Deliberate.abi.json';
 import { tokenInfo } from '../lib/tokens';
+import type { StakeEvent } from '../lib/history';
 import type { AccountPosition, ArgumentMarket, ArgumentNode, Debate, DebateBounty, DebateSummary } from '../types';
 import { CLAIM_WINDOW_SECONDS, phaseOf, thesisOf } from '../types';
 import type { ArgumentPosition, UserState } from './actions';
@@ -41,6 +42,12 @@ export interface DebateSource {
    * stake can move.
    */
   markets(debateId: number): Promise<ArgumentMarket[]>;
+  /**
+   * Every stake the debate has seen, oldest first - what the argument detail's chart replays.
+   * Empty from a source that keeps no history: only the index dates its rows, and a chain read
+   * would need a block fetch per stake to date them, which is not worth a chart.
+   */
+  history(debateId: number): Promise<StakeEvent[]>;
 }
 
 /** The market columns of a node, as a market refetch would report them. */
@@ -68,6 +75,7 @@ export const mockSource: DebateSource = {
   positions: async () => [],
   feesEarned: async () => 0,
   markets: async (debateId) => (await mockSource.load(debateId)).nodes.map(marketOf),
+  history: async () => [],
 };
 
 // Phase.Status on-chain: 0 Uninitialized … 4 Finished. Only these two boundaries are read raw - one to
@@ -451,6 +459,11 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
         };
       });
     },
+
+    // Dating a stake from the chain costs a block read per stake; the index dated them already.
+    async history(): Promise<StakeEvent[]> {
+      return [];
+    },
   };
 }
 
@@ -549,6 +562,16 @@ export interface IndexedDebateSummaryRow extends IndexedBountyColumns {
   argumentsCount: string;
 }
 
+/** A raw indexer stake row; `argument_id` is an argument key. */
+export interface IndexedStakeRow {
+  argument_id: string;
+  isPro: boolean;
+  voteTokensStaked: string;
+  fee: string;
+  sharesOut: string;
+  timestamp: string;
+}
+
 /** A raw indexer position row for the batch-redeem flow; `argument_id` is an argument key. */
 export interface IndexedPositionRow {
   argument_id: string;
@@ -629,6 +652,12 @@ const INDEXER_ARGUMENT_POSITION_QUERY = `query ArgumentPosition($positionId: Str
 
 const INDEXER_MARKETS_QUERY = `query DebateMarkets($debateId: String!) {
   Argument(where: { debate_id: { _eq: $debateId } }) { argumentId pro con stake rating }
+}`;
+
+const INDEXER_HISTORY_QUERY = `query DebateStakes($argumentPrefix: String!) {
+  Stake(where: { argument_id: { _like: $argumentPrefix } }, order_by: { timestamp: asc }) {
+    argument_id isPro voteTokensStaked fee sharesOut timestamp
+  }
 }`;
 
 const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
@@ -845,6 +874,21 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
       });
       return data.Argument.map(marketFromIndex);
     },
+
+    async history(debateId: number): Promise<StakeEvent[]> {
+      // Every stake in the debate, matched by the prefix its arguments' keys share.
+      const data = await graphql<{ Stake: IndexedStakeRow[] }>(INDEXER_HISTORY_QUERY, {
+        argumentPrefix: `${debateKey(await chainId(), debateId)}\\_%`,
+      });
+      return data.Stake.map((row) => ({
+        argumentId: argumentIdIn(row.argument_id),
+        isPro: row.isPro,
+        staked: Number(row.voteTokensStaked),
+        fee: Number(row.fee),
+        sharesOut: Number(row.sharesOut),
+        at: Number(row.timestamp),
+      }));
+    },
   };
 }
 
@@ -868,6 +912,7 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
     positions: guarded((source) => source.positions.bind(source)),
     feesEarned: guarded((source) => source.feesEarned.bind(source)),
     markets: guarded((source) => source.markets.bind(source)),
+    history: guarded((source) => source.history.bind(source)),
   };
 }
 

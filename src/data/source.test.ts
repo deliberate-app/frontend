@@ -219,6 +219,10 @@ describe('withFallback', () => {
       if (result instanceof Error) throw result;
       return markets;
     },
+    history: async () => {
+      if (result instanceof Error) throw result;
+      return [];
+    },
   });
 
   test('serves from the primary while it works', async () => {
