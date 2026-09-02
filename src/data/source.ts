@@ -83,7 +83,7 @@ interface OnChainArgument {
   finalizationTime: bigint;
   pro: number;
   con: number;
-  votes: number;
+  stake: number;
   rating: bigint;
 }
 
@@ -263,7 +263,7 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
             approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
             proReserve: argument.pro,
             conReserve: argument.con,
-            weight: argument.votes,
+            weight: argument.stake,
             // The stored settlement rating exists once the tally has run; before that the
             // field reads zero, which is a legal rating, so the phase decides null.
             rating:
@@ -322,7 +322,7 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
       return Promise.all(
         [...Array(count).keys()].map(async (debateId) => {
           const id = BigInt(debateId);
-          const [thesis, [currentPhase, editingEndTime, ratingEndTime], [totalVotes, argumentsCount], bounty] =
+          const [thesis, [currentPhase, editingEndTime, ratingEndTime], [totalStake, argumentsCount], bounty] =
             await Promise.all([
               client.readContract({
                 address,
@@ -353,7 +353,7 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
             thesis: textOf(theses, debateId, 'debate'),
             phase: phaseOf(Number(editingEndTime), Number(ratingEndTime), currentPhase === PHASE_FINISHED, chainTime),
             approved,
-            stake: totalVotes,
+            stake: totalStake,
             argumentsCount,
             bounty,
             creator: thesis.creator,
@@ -446,7 +446,7 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
           approval: marketSize === 0 ? 0.5 : argument.con / marketSize,
           proReserve: argument.pro,
           conReserve: argument.con,
-          weight: argument.votes,
+          weight: argument.stake,
           rating: currentPhase === PHASE_FINISHED && ids[i] !== 0 ? Number(argument.rating) / MAX_APPROVAL : null,
         };
       });
@@ -495,13 +495,13 @@ export interface IndexedArgumentRow {
   finalizationTime: string;
   pro: string;
   con: string;
-  votes: string;
+  stake: string;
   creator: string;
   rating: string | null;
 }
 
 /** The market columns of an indexer argument row. */
-export type IndexedMarketRow = Pick<IndexedArgumentRow, 'argumentId' | 'pro' | 'con' | 'votes' | 'rating'>;
+export type IndexedMarketRow = Pick<IndexedArgumentRow, 'argumentId' | 'pro' | 'con' | 'stake' | 'rating'>;
 
 /** Maps an indexer row's market columns the way `nodeFromIndex` maps them - one reading, two callers. */
 export function marketFromIndex(row: IndexedMarketRow): ArgumentMarket {
@@ -512,7 +512,7 @@ export function marketFromIndex(row: IndexedMarketRow): ArgumentMarket {
     approval: marketSize === 0 ? 0.5 : con / marketSize,
     proReserve: Number(row.pro),
     conReserve: con,
-    weight: Number(row.votes),
+    weight: Number(row.stake),
     // The index writes the rating when the tally emits it; null until then.
     rating: row.rating === null || row.rating === undefined ? null : Number(row.rating) / MAX_APPROVAL,
   };
@@ -545,7 +545,7 @@ export interface IndexedDebateSummaryRow extends IndexedBountyColumns {
   approved: boolean | null;
   editingEndTime: string;
   ratingEndTime: string;
-  totalVotes: string;
+  totalStake: string;
   argumentsCount: string;
 }
 
@@ -595,7 +595,7 @@ export function summaryFromIndex(
     phase: phaseOf(Number(row.editingEndTime), Number(row.ratingEndTime), row.finished, chainTime),
     // The outcome exists only once the tally has run (null in the index before that).
     approved: row.approved ?? undefined,
-    stake: Number(row.totalVotes),
+    stake: Number(row.totalStake),
     argumentsCount: Number(row.argumentsCount),
     // The index stores addresses lowercased; checksum to match the chain reads.
     creator: getAddress(row.creator),
@@ -605,12 +605,12 @@ export function summaryFromIndex(
 const INDEXER_QUERY = `query DebateTree($debateId: String!) {
   Debate(where: { id: { _eq: $debateId } }) { finished editingEndTime ratingEndTime approved participantsCount feePercentage identityRegistry finishedAt bountyToken bountyPool bountyClaimed bountySwept }
   Argument(where: { debate_id: { _eq: $debateId } }, order_by: { argumentId: asc }) {
-    argumentId parent_id isSupporting content finalizationTime pro con votes creator rating
+    argumentId parent_id isSupporting content finalizationTime pro con stake creator rating
   }
 }`;
 
 const INDEXER_LIST_QUERY = `query DebateList($chainId: Int!) {
-  Debate(where: { chainId: { _eq: $chainId } }) { debateId creator content finished approved editingEndTime ratingEndTime totalVotes argumentsCount participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
+  Debate(where: { chainId: { _eq: $chainId } }) { debateId creator content finished approved editingEndTime ratingEndTime totalStake argumentsCount participantsCount finishedAt bountyToken bountyPool bountyClaimed bountySwept }
 }`;
 
 const INDEXER_POSITIONS_QUERY = `query AccountPositions($participantId: String!) {
@@ -628,7 +628,7 @@ const INDEXER_ARGUMENT_POSITION_QUERY = `query ArgumentPosition($positionId: Str
 }`;
 
 const INDEXER_MARKETS_QUERY = `query DebateMarkets($debateId: String!) {
-  Argument(where: { debate_id: { _eq: $debateId } }) { argumentId pro con votes rating }
+  Argument(where: { debate_id: { _eq: $debateId } }) { argumentId pro con stake rating }
 }`;
 
 const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
