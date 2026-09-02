@@ -338,6 +338,7 @@ export function DebateView({
         {marketOpen && !isThesis && (
           <MarketDetail
             node={focus}
+            tally={focusTally}
             feePercentage={debate.feePercentage}
             loadFeesEarned={loadFeesEarned}
             onClose={() => setMarketOpen(false)}

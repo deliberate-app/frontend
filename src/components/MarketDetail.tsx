@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatApproval, MARKET_HINT } from '../lib/impact';
+import { formatApproval, formatImpact, MARKET_HINT, RATING_HINT, type NodeTally } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 import { reservesOf } from '../lib/market';
 import type { ArgumentNode } from '../types';
@@ -45,18 +45,26 @@ function CurvePlot({ pro, con }: { pro: number; con: number }) {
 }
 
 /**
- * The focused argument's market, opened from the rating market link: the reserves on their
- * constant-product curve, then the facts one under the other - price, stake, reserves, and the
- * fee with what it has earned the author so far - and, in words, what the reserves mean for a
- * corrector. Informational - the cross and the backdrop are the exits.
+ * The focused argument's market, opened from its figures: the reserves on their constant-product
+ * curve, then the facts one under the other - price, stake, reserves, and the fee with what it has
+ * earned the author so far - and, in words, what the reserves mean for a corrector. Informational -
+ * the cross and the backdrop are the exits.
+ *
+ * Both of the gauge's figures are stated here in words, each beside the market figure it corrects,
+ * because on the card they are shapes: this is where a reader who wants the numbers finds them, and
+ * the pair is what makes the correction legible - a price of +87% that the debate rates at +40% is
+ * two facts, and either alone misleads.
  */
 export function MarketDetail({
   node,
+  tally,
   feePercentage,
   loadFeesEarned,
   onClose,
 }: {
   node: ArgumentNode;
+  /** The tally's verdict on this argument, and the stake behind it; absent for sample data. */
+  tally?: NodeTally;
   /** The debate's market fee in percent, creator-chosen at creation. */
   feePercentage: number;
   /** The fees the argument has earned its author so far; absent for sample data without markets. */
@@ -64,6 +72,12 @@ export function MarketDetail({
   onClose: () => void;
 }) {
   const { pro, con } = reservesOf(node);
+
+  // Each correction is shown only where it says something the figure beside it does not: an
+  // undebated argument's rating is its market price and its subtree is itself, and repeating a
+  // number is how a fact list stops being read.
+  const corrected = tally && formatImpact(tally.rating) !== formatApproval(node.approval);
+  const deeper = tally && tally.subtreeWeight > node.weight;
 
   // The lifetime fee figure comes from the stake history, so it loads separately from the tree;
   // null while loading or when the source cannot say.
@@ -103,9 +117,26 @@ export function MarketDetail({
 
         <dl className="market-facts">
           <dt title={MARKET_HINT}>Market</dt>
-          <dd className="mono">{formatApproval(node.approval)}</dd>
+          <dd className="mono">
+            {formatApproval(node.approval)}
+            {corrected && (
+              <span className="market-corrected" title={RATING_HINT}>
+                · rated {formatImpact(tally.rating)}
+              </span>
+            )}
+          </dd>
           <dt>Staked</dt>
-          <dd className="mono">{formatVotes(node.weight)} ⬡</dd>
+          <dd className="mono">
+            {formatVotes(node.weight)} ⬡
+            {deeper && (
+              <span
+                className="market-corrected"
+                title="The stake the tally weighs this argument by: its own market's plus every sub-argument's."
+              >
+                · {formatVotes(tally.subtreeWeight)} ⬡ with its sub‑arguments
+              </span>
+            )}
+          </dd>
           <dt>Reserves</dt>
           <dd className="mono">
             {pro} <span className="market-pro">good</span> / {con} <span className="market-con">bad</span>
