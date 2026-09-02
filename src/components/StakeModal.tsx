@@ -1,11 +1,9 @@
 import { useState, type CSSProperties } from 'react';
 import { formatVotes, toTokens, toUnits } from '../lib/votes';
 import { actionErrorMessage } from '../data/actions';
-import { formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT, tallyOf } from '../lib/impact';
+import { axisPercent, formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT, signClassOf, tallyOf } from '../lib/impact';
 import { previewStake, withPreviewedStake } from '../lib/market';
 import type { ArgumentNode, Debate, Side } from '../types';
-
-const signClassOf = (value: number) => (value > 0 ? 'impact-pos' : value < 0 ? 'impact-neg' : '');
 
 /** A signed figure as it stands and as the stake would leave it, both on the ±100% scale. */
 function Shift({ before, after }: { before: number; after: number | null }) {
@@ -94,7 +92,7 @@ export function StakeModal({
 
   // The track fills from the centre to the thumb in the stance colour of the chosen direction.
   const max = Math.max(tokens, 1);
-  const thumbPercent = ((Math.max(-max, Math.min(max, signed)) + max) / (2 * max)) * 100;
+  const thumbPercent = axisPercent(signed / max);
   const trackStyle = {
     '--fill-from': `${Math.min(50, thumbPercent)}%`,
     '--fill-to': `${Math.max(50, thumbPercent)}%`,

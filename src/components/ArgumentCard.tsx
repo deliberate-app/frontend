@@ -1,7 +1,7 @@
 import type { NodeTally } from '../lib/impact';
 import type { ArgumentNode, Debate } from '../types';
 import { childrenOf, liveChainTime } from '../types';
-import { Market, ParentImpact, Rating } from './Figures';
+import { ArgumentFigures, ParentImpact } from './Figures';
 import { LockChip } from './LockChip';
 
 export function ArgumentCard({
@@ -9,6 +9,7 @@ export function ArgumentCard({
   node,
   tally,
   now,
+  totalStake,
   onFocus,
 }: {
   debate: Debate;
@@ -17,6 +18,8 @@ export function ArgumentCard({
   tally?: NodeTally;
   /** The ticking clock (unix seconds), driving the draft finalization countdown. */
   now: number;
+  /** Every stake in the debate - what the card's ring draws its share of. */
+  totalStake: number;
   onFocus: (id: number) => void;
 }) {
   const pros = childrenOf(debate, node.id, 'pro').length;
@@ -39,16 +42,9 @@ export function ArgumentCard({
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
         <span className="card-figures">
-          {/* Each figure carries the stake behind it: the market its own, the rating its whole
-              sub-debate's - and the latter only once that sub-debate has added something, since
-              until then it repeats the market's. */}
-          <Market approval={node.approval} stake={node.weight} />
-          {tally && (
-            <Rating
-              rating={tally.rating}
-              stake={tally.subtreeWeight > node.weight ? tally.subtreeWeight : undefined}
-            />
-          )}
+          {/* The gauge answers "how does this stand", the ring "how much is behind it" - the two
+              questions a column of cards is scanned for. The figures themselves are on hover. */}
+          <ArgumentFigures node={node} tally={tally} total={totalStake} />
           {tally && <ParentImpact impact={tally.impact} />}
         </span>
         <LockChip locked={locked} finalizesIn={finalizesIn} />

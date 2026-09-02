@@ -112,6 +112,25 @@ export const MARKET_HINT =
   'What this argument\'s market alone says, before its sub-arguments are counted: the price of a ' +
   'good-argument share, centered so an undecided market reads ±0%.';
 
+/**
+ * A market's 0..1 price on the signed scale the rest of the app speaks: 0.5 becomes ±0, a fully
+ * backed argument +1. Since ADR-0012 this is the tally's own scale rather than a display
+ * convention, which is why it lives here and not in whichever component last needed it.
+ */
+export const centered = (approval: number) => 2 * approval - 1;
+
+/**
+ * Where a signed value sits on a centre-anchored axis, as a percentage of its width: −1 at the
+ * left edge, 0 at the middle, +1 at the right. Shared by every axis on the page, so the gauge and
+ * the stake slider cannot disagree about where a figure belongs.
+ */
+export function axisPercent(value: number): number {
+  return 50 + Math.max(-1, Math.min(1, value)) * 50;
+}
+
+/** The class that colours a figure by its sign; neutral takes neither stance colour. */
+export const signClassOf = (value: number) => (value > 0 ? 'impact-pos' : value < 0 ? 'impact-neg' : '');
+
 /** Formats an impact or rating fraction as a signed percentage, e.g. "+12%". */
 export function formatImpact(impact: number): string {
   const percent = Math.round(impact * 100);
@@ -125,5 +144,5 @@ export function formatImpact(impact: number): string {
  * argument's rating IS its centered approval.
  */
 export function formatApproval(approval: number): string {
-  return formatImpact(2 * approval - 1);
+  return formatImpact(centered(approval));
 }

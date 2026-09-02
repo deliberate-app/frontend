@@ -1,7 +1,7 @@
 import { zeroAddress } from 'viem';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
-import { tallyOf, THESIS_RATING_HINT } from '../lib/impact';
+import { tallyOf } from '../lib/impact';
 import { shortAddress } from '../lib/address';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
@@ -10,7 +10,7 @@ import { AddressChip } from './AddressChip';
 import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ArgumentCard } from './ArgumentCard';
-import { Market, ParentImpact, Rating } from './Figures';
+import { ArgumentFigures, figuresLabel, ParentImpact, RatingGauge, TotalStake } from './Figures';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
 import { LockChip } from './LockChip';
@@ -183,9 +183,22 @@ export function DebateView({
   // A live, client-side preview of the tally in every phase - during editing arguments start
   // counting as they lock in (drafts contribute nothing, like the tally treats them) - and the
   // mirrored result once run.
-  const tallies = tallyOf(debate);
+  // Memoized on the debate, not left to every render: the clock ticks once a second and the tally
+  // walks the tree per node, so recomputing it with the countdown would spend milliseconds a second
+  // on an answer that only changes when the debate is refetched.
+  const { tallies, totalStake } = useMemo(
+    () => ({
+      tallies: tallyOf(debate),
+      totalStake: debate.nodes.reduce((sum, node) => sum + node.weight, 0),
+    }),
+    [debate],
+  );
   const focusTally = tallies.get(focus.id);
-  const totalStake = debate.nodes.reduce((sum, node) => sum + node.weight, 0);
+  // What the rings are a share of. The thesis' subtree stake, not the sum of every node's, because
+  // that is the same accounting the arcs themselves come from: the tally leaves drafts out, so a
+  // denominator that counted them would give arcs that cannot add up to their own circle. Zero
+  // while nothing has locked in yet, which is when a share of the tally means nothing anyway.
+  const talliedStake = tallies.get(thesis.id)?.subtreeWeight ?? 0;
 
   // An argument is locked once the data says final or the live clock has passed its finalization
   // time - the same rule the cards' padlocks follow.
@@ -251,8 +264,14 @@ export function DebateView({
         )}
         {isThesis ? (
           <p className="focus-meta">
-            {/* The thesis owns no market, so its rating stands alone - backed by the whole debate. */}
-            {focusTally && <Rating rating={focusTally.rating} stake={totalStake} hint={THESIS_RATING_HINT} />}
+            {/* The thesis owns no market, so its gauge is its rating alone - and a ring would be a
+                share of itself, so the debate's stake reads as the engagement figure it is. */}
+            {focusTally && (
+              <>
+                <RatingGauge rating={focusTally.rating} /> ·{' '}
+              </>
+            )}
+            <TotalStake total={totalStake} />
             {debate.bounty && (
               <>
                 {' '}
@@ -275,28 +294,23 @@ export function DebateView({
           </p>
         ) : (
           <p className="focus-meta">
-            <Market approval={focus.approval} stake={focus.weight} />{' '}
-            {/* The market detail sits on the figure it explains, as the bounty top-up sits on the pool. */}
+            {/* The figures are the way into the market that produced them, so there is nothing to
+                label with an "i": the thing you want to know more about is the thing you click. The
+                label carries the figures as well as the action, because the drawings inside are
+                marked presentational - a name that said only "about this market" would make the
+                two figures unreachable without a mouse. */}
             <button
               type="button"
-              className="round-chip"
+              className="figure-button"
               title="About this rating market"
-              aria-label="About this rating market"
+              aria-label={`${figuresLabel(focus, focusTally, talliedStake)}. About this rating market`}
               onClick={() => setMarketOpen(true)}
             >
-              <svg className="chip-glyph" viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M8 7.25 V11.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-                <path d="M8 4.5 V4.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-              </svg>
+              <ArgumentFigures node={focus} tally={focusTally} total={talliedStake} presentational />
             </button>
             {focusTally && (
               <>
                 {' '}
-                ·{' '}
-                <Rating
-                  rating={focusTally.rating}
-                  stake={focusTally.subtreeWeight > focus.weight ? focusTally.subtreeWeight : undefined}
-                />{' '}
                 · <ParentImpact impact={focusTally.impact} />
               </>
             )}{' '}
@@ -387,6 +401,7 @@ export function DebateView({
                 node={node}
                 tally={tallies.get(node.id)}
                 now={now}
+                totalStake={talliedStake}
                 onFocus={setFocusedId}
               />
             ))
@@ -419,6 +434,7 @@ export function DebateView({
                 node={node}
                 tally={tallies.get(node.id)}
                 now={now}
+                totalStake={talliedStake}
                 onFocus={setFocusedId}
               />
             ))

@@ -61,6 +61,31 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — the card figures are drawn, not written; the drawing is the affordance.** Market
+  and Rating became one centre-anchored gauge and the stake became a ring, both on the cards and on
+  the focused claim. The gauge fills from neutral to the argument's own market price in its stance
+  colour, then draws what the sub-debate did to that price over or beyond it — `pro-pale` where the
+  children lifted it, `con-pale` where they cut into it, so direction reads without a sign. The ring
+  runs clockwise from noon: the argument's own stake in `bark`, its sub-debate's continuing it in a
+  lighter grey, the two together its share of every stake the tally counts. The figures themselves
+  now open the rating market, so the info chip beside them is gone (reversing the 2026-08-18
+  affordance): the thing you want explained is the thing you click.
+
+  This re-opens what the 2026-08-18 entry closed. That entry retired a diverging bar because "a
+  labelled signed percentage says what the bar said, and the bar could not show two figures" — the
+  bar can show two now, which is the whole point of it, and the third figure (Parent impact) stays a
+  labelled percentage because it is about the *parent*, not about this argument's own standing. The
+  numbers did not go away; they moved to hover, and to the aria-label of whatever wraps them.
+
+  The thesis takes neither treatment whole: it owns no market, so its gauge is one saturated bar,
+  and a ring would be the debate's stake as a share of itself. Its figure stays the number, read as
+  engagement — how much the question drew, rather than which way it went.
+
+  Two accountings had to be kept apart. The rings divide by the stake **the tally counts** (the
+  thesis' subtree weight), because that is where their arcs come from and a denominator including
+  drafts would give arcs that cannot fill their own circle. The thesis' figure counts every stake,
+  drafts included, because engagement is not the tally's question. (Principles 1, 2, 8.)
+
 - **2026-08-18 — three figures, defined once: Market, Rating, Parent impact.** The headline number
   had three different names for two different quantities — the thesis said "net impact", an argument
   said "Market approval", and a card said nothing at all (a diverging gauge bar). They are now one

@@ -14,6 +14,8 @@ spent on the rail, the type, and the market-as-ledger presentation.
 | con | `#A5432C` | attacking polarity (redwood oxide) |
 | bark | `#7A7568` | metadata |
 | hairline | `#E3E6DE` | borders |
+| pro-pale | `#8CBF95` | a sub-debate raising a rating, on the gauge |
+| con-pale | `#E3CABE` | a sub-debate cutting one |
 
 Type: **Fraunces** (display: wordmark, focused claim, column headers) · **Public Sans**
 (body — civic typeface) · **IBM Plex Mono** (market figures, addresses).
@@ -27,7 +29,8 @@ the thesis into its full text and rating (kialo's context stack, in the rail's o
 
 ## Tried / decided
 
-- Gauge remainder was `--con-wash` (#F7EEE9) — invisible on white cards; hardened to `#E3CABE`.
+- Gauge remainder was `--con-wash` (#F7EEE9) — invisible on white cards; hardened to `#E3CABE`,
+  which is now the `con-pale` token the rating gauge's correction uses.
 - One motion moment only: columns settle (160 ms) on focus change; reduced-motion disables it.
 - Rejected: dark theme, sunburst tree visual (kialo's), numbered markers, cream+terracotta default.
 - Not yet tried: screenshot-based critique (no Playwright in this environment yet).

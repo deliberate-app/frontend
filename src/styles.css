@@ -8,6 +8,10 @@
   --con-wash: #f7eee9;
   --bark: #7a7568;
   --hairline: #e3e6de;
+  /* The sub-debate's correction on a rating gauge: the stance hues held back, but well short of
+     --pro-wash / --con-wash, which vanish on a white card (DESIGN.md, "Tried / decided"). */
+  --pro-pale: #8cbf95;
+  --con-pale: #e3cabe;
   --card: #ffffff;
 
   --font-display: 'Fraunces', 'Iowan Old Style', georgia, serif;
@@ -761,8 +765,7 @@ button {
   margin-top: auto;
 }
 
-/* The card's figures, kept together as one wrapping group so the lock and replies stay at the end.
-   The middots are drawn rather than written, so the JSX stays a plain list of figures. */
+/* The card's figures, kept together as one wrapping group so the lock and replies stay at the end. */
 .card-figures {
   display: flex;
   align-items: baseline;
@@ -772,10 +775,6 @@ button {
   color: var(--bark);
 }
 
-.card-figures > .figure:not(:last-child)::after {
-  content: ' ·';
-  color: var(--bark);
-}
 
 .card-replies {
   font-size: 0.78rem;
@@ -876,14 +875,123 @@ button {
   white-space: nowrap;
 }
 
-.figure-label,
-.figure-stake {
+.figure-label {
   color: var(--bark);
 }
 
 /* The ⬡ sits closer to its amount than a word space: it is a unit, not a following word. */
 .unit {
   margin-left: 0.12em;
+}
+
+/* The rating gauge: one signed axis, neutral at its centre (principle 8). The track is a hairline
+   the fill sits inside rather than on, so an argument nobody has moved still reads as a scale
+   rather than as nothing. */
+.gauge {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  width: 5.5rem;
+  height: 0.5rem;
+  flex: none;
+  background: var(--hairline);
+  border-radius: 999px;
+}
+
+.gauge-fill,
+.gauge-correction {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+}
+
+/* Neutral is a place on the axis, so it is drawn whether or not anything is filled - and over the
+   fills rather than under them, which is how the stake slider draws the same mark. */
+.gauge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 1px);
+  width: 2px;
+  background: var(--bark);
+  z-index: 1;
+}
+
+.gauge-pro {
+  background: var(--pro);
+}
+
+.gauge-con {
+  background: var(--con);
+}
+
+/* The sub-debate's correction, drawn over the market's own fill: green where the children lifted
+   the price, rust where they cut into it. Pale against the saturated bar, because this is what the
+   debate did to the figure rather than the figure itself. */
+.gauge-raised {
+  background: var(--pro-pale);
+}
+
+.gauge-cut {
+  background: var(--con-pale);
+}
+
+/* The figures as one control: on the focused claim they open the market that produced them, so
+   they carry the affordance an info chip used to. Bare button - the figures are the whole of it. */
+.figure-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.25rem;
+  margin: -0.15rem -0.25rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.figure-button:hover {
+  background: var(--hairline);
+}
+
+.figure-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+/* The stake ring: arcs from noon, clockwise, on a hairline track. Grey throughout - stake is
+   volume, and the stance colours are spoken for (principle 2). */
+.ring {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
+  vertical-align: middle;
+  /* SVG arcs start at three o'clock; the debate reads from the top. */
+  transform: rotate(-90deg);
+}
+
+.ring circle {
+  fill: none;
+  /* Thick against the 18-unit box: most arcs are a few percent of a debate, and a hairline share
+     of a hairline ring is not a figure anyone can read. */
+  stroke-width: 4;
+}
+
+.ring-track {
+  stroke: var(--hairline);
+}
+
+.ring-own {
+  stroke: var(--bark);
+}
+
+.ring-beneath {
+  /* Between the track and the argument's own arc: the sub-debate's share has to separate from
+     both, and mixing toward the canvas rather than to white keeps it on the page's palette. */
+  stroke: color-mix(in srgb, var(--bark) 60%, var(--canvas));
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────── */
