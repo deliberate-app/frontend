@@ -12,7 +12,7 @@ import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, stakeW
 import { VerdictMark, verdictLabel } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ArgumentCard } from './ArgumentCard';
-import { ArgumentFigures, figuresLabel, gaugeLabel, RatingGauge, TotalStake } from './Figures';
+import { ArgumentFigures, DebateStakeRing, figuresLabel, gaugeLabel, RatingGauge } from './Figures';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
 import { Byline } from './Byline';
@@ -297,17 +297,19 @@ export function DebateView({
         {isThesis ? (
           <p className="focus-meta focus-meta-row">
             <span>
-              {/* The thesis owns no market, so its gauge is its rating alone - and a ring would be a
-                  share of itself, so the debate's stake reads as the engagement figure it is. Both
-                  open the debate's detail, as an argument's figures open its own. */}
+              {/* The thesis owns no market, so its gauge is its rating alone, and its ring is the
+                  whole circle every argument's is a share of. Both open the debate's detail, as an
+                  argument's figures open its own. */}
               <button
                 type="button"
                 className="figure-button"
                 aria-label={`${focusTally ? `${gaugeLabel(focusTally.rating)}. ` : ''}Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens. Debate details`}
                 onClick={() => setDetailOpen(true)}
               >
-                {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
-                <TotalStake total={stakeWithDrafts(debate)} />
+                <span className="figure-pair">
+                  {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
+                  <DebateStakeRing total={stakeWithDrafts(debate)} presentational />
+                </span>
               </button>
               {debate.bounty && (
                 <>

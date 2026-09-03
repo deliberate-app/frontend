@@ -1,5 +1,5 @@
 import type { NodeTally } from '../lib/impact';
-import { axisPercent, DEBATE_STAKE_HINT, figuresOf, formatImpact, readsDifferently } from '../lib/impact';
+import { axisPercent, figuresOf, formatImpact, readsDifferently } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 import type { ArgumentNode } from '../types';
 
@@ -13,7 +13,8 @@ import type { ArgumentNode } from '../types';
  *   that price. Green where they raised it, rust where they cut it - direction, not stance, since
  *   an argument's own stance is already the card's colour.
  * - **Stake ring** - how much of the debate's stake sits under this argument. The dark arc is its
- *   own market's; the pale arc continuing clockwise is the rest of its sub-debate's.
+ *   own market's; the pale arc continuing clockwise is the rest of its sub-debate's. The thesis'
+ *   is the whole circle: the debate's stake is what every other ring is a share of.
  *
  * The numbers are not gone, they are one hover away: every segment carries the figure it draws,
  * and only that - what a figure means is said once, on its term in the detail. That is the trade
@@ -166,6 +167,44 @@ export function RatingGauge({
 const RING_RADIUS = 6.5;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
+/** One drawn arc: how far round it runs, where it starts, and the figure it stands for. */
+interface RingArc {
+  cls: string;
+  /** Arc length, in the circumference's own units. */
+  length: number;
+  /** Where the arc starts, measured the same way; arcs run clockwise from noon. */
+  offset: number;
+  title: string;
+}
+
+/** The ring itself: a hairline track and the arcs on it. Every ring on the page is drawn here. */
+const Ring = ({
+  arcs,
+  label,
+  presentational,
+}: {
+  arcs: RingArc[];
+  label: () => string;
+  presentational?: boolean;
+}) => (
+  <svg className="ring" viewBox="0 0 18 18" {...figureRole(presentational, label)}>
+    <circle className="ring-track" cx="9" cy="9" r={RING_RADIUS} />
+    {arcs.map(({ cls, length, offset, title }) => (
+      <circle
+        key={cls}
+        className={cls}
+        cx="9"
+        cy="9"
+        r={RING_RADIUS}
+        strokeDasharray={`${length} ${RING_CIRCUMFERENCE}`}
+        strokeDashoffset={-offset}
+      >
+        <title>{title}</title>
+      </circle>
+    ))}
+  </svg>
+);
+
 /**
  * How much of the debate's stake sits under one argument, as a ring read clockwise from noon.
  *
@@ -195,52 +234,52 @@ export function StakeRing({
   const arc = (units: number) => (units / total) * RING_CIRCUMFERENCE;
   const own = Math.max(stake, 0);
   const beneath = Math.max(subtreeStake - stake, 0);
-  // Both arcs start at noon and run clockwise, the second offset by the length of the first. An
-  // undebated argument gets no second arc at all: a zero-length one paints nothing but would still
-  // answer a hover with "Staked 0 ⬡ on its sub-arguments", which describes nothing.
-  const arcs = [
-    { cls: 'ring-own', stake: own, offset: 0, of: 'its own market' },
+  // Both arcs start at noon and run clockwise, the second offset by the length of the first, and
+  // each names where its own end falls: the first the argument's own stake, the second the
+  // branch's total - what a reader measures by following the ring from noon, rather than the
+  // difference between them, which is drawn nowhere. An undebated argument gets no second arc at
+  // all: a zero-length one paints nothing but would still answer a hover, with a figure equal to
+  // the one beside it.
+  const arcs: RingArc[] = [
+    {
+      cls: 'ring-own',
+      length: arc(own),
+      offset: 0,
+      title: `Staked ${formatVotes(own)} ⬡ on its own market`,
+    },
     ...(beneath > 0
-      ? [{ cls: 'ring-beneath', stake: beneath, offset: arc(own), of: 'its sub-arguments' }]
+      ? [
+          {
+            cls: 'ring-beneath',
+            length: arc(beneath),
+            offset: arc(own),
+            title: `Staked ${formatVotes(subtreeStake)} ⬡ with its sub-arguments`,
+          },
+        ]
       : []),
   ];
 
-  return (
-    <svg
-      className="ring"
-      viewBox="0 0 18 18"
-      {...figureRole(presentational, () => ringLabel(subtreeStake, total))}
-    >
-      <circle className="ring-track" cx="9" cy="9" r={RING_RADIUS} />
-      {arcs.map(({ cls, stake: units, offset, of }) => (
-        <circle
-          key={cls}
-          className={cls}
-          cx="9"
-          cy="9"
-          r={RING_RADIUS}
-          strokeDasharray={`${arc(units)} ${RING_CIRCUMFERENCE}`}
-          strokeDashoffset={-offset}
-        >
-          <title>{`Staked ${formatVotes(units)} ⬡ on ${of}`}</title>
-        </circle>
-      ))}
-    </svg>
-  );
+  return <Ring arcs={arcs} label={() => ringLabel(subtreeStake, total)} presentational={presentational} />;
 }
 
 /**
- * The debate's whole stake, which is what the thesis has instead of a ring: a share of itself
- * would always be the full circle. Read as engagement rather than conviction - how much the
- * question drew, not which way it went.
+ * The debate's whole stake, which is what the thesis has: the full circle, because every other
+ * ring on the page is a share of exactly this. Read as engagement rather than conviction - how
+ * much the question drew, not which way it went - and the figure is on the ring, as on any other.
  */
-export const TotalStake = ({ total }: { total: number }) => (
-  <span className="figure" title={DEBATE_STAKE_HINT}>
-    <span className="figure-label">Staked </span>
-    <strong className="mono">{formatVotes(total)}</strong>
-    <span className="unit">⬡</span>
-  </span>
-);
+export const DebateStakeRing = ({ total, presentational }: { total: number; presentational?: boolean }) => {
+  if (total <= 0) {
+    return null;
+  }
+  const said = `Staked ${formatVotes(total)} ⬡ across the whole debate`;
+  return (
+    <Ring
+      arcs={[{ cls: 'ring-own', length: RING_CIRCUMFERENCE, offset: 0, title: said }]}
+      label={() => said}
+      presentational={presentational}
+    />
+  );
+};
 
 /**
  * An argument's pair of figures, wherever it appears. Both are read off the same node and tally,

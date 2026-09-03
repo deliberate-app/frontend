@@ -61,6 +61,16 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — the thesis gets the whole ring, and each arc names its own end.** The thesis used
+  to read its stake as text ("Staked 148.60 ⬡") on the grounds that a share of itself is always the
+  full circle. That was the argument for drawing it: the full circle is exactly what the debate's
+  stake *is*, and it stands as the reference every argument's ring is measured against, so the pair
+  of figures now reads the same on the thesis as on any claim - gauge, then ring - and the figure
+  moved onto the drawing where every other figure lives. The two arcs also stopped naming the
+  difference between them: the second says the branch total (`Staked 46.25 ⬡ with its
+  sub-arguments`, not the 12 ⬡ that arc alone spans), because that is the figure a reader measures
+  by following the ring from noon, and it is the same number the detail's *With sub-arguments* row
+  and the chart's band carry. (Principles 1, 3.)
 - **2026-09-03 — every claim is signed, and the byline is one element.** Cards showed a lock but
   no creator, while the focused claim showed its creator at the top and its lock at the bottom —
   so the two views taught different orders for the same two facts. Both now end their meta row

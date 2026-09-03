@@ -1094,14 +1094,6 @@ button {
 /* ── Figures ─────────────────────────────────────────────────────────── */
 /* A labelled figure in words, which is now only the thesis' total stake: the rest are drawings.
    The label recedes and the value carries the colour, so it scans as a value with a name attached. */
-.figure {
-  white-space: nowrap;
-}
-
-.figure-label {
-  color: var(--bark);
-}
-
 /* The ⬡ sits closer to its amount than a word space: it is a unit, not a following word. */
 .unit {
   margin-left: 0.12em;
