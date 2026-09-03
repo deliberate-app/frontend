@@ -945,6 +945,91 @@ button {
   opacity: 0.55;
 }
 
+/* Reading the plot. Attention moves by receding rather than by growing: this figure already uses
+   opacity as its depth device - the stake washes sit behind the rating lines by exactly that means -
+   so the pair you are not reading steps back, and its axis with it. Nothing changes size: a thicker
+   line would widen the very thing being measured, and a plot read for values cannot afford that. */
+.history-group {
+  transition: opacity 120ms ease;
+}
+
+.history-plot.is-reading .history-group {
+  opacity: 0.35;
+}
+
+.history-plot.is-reading .history-group.is-read {
+  opacity: 1;
+}
+
+/* The washes are the faintest thing on the plot to begin with, so a flat multiplier would erase
+   them when they are not read and leave them a background when they are. They get their own pair:
+   forward while the reader is on them, and no further back than the lines they sit behind. */
+.history-plot.is-reading .history-group.is-read .history-subtree {
+  opacity: 0.2;
+}
+
+.history-plot.is-reading .history-group.is-read .history-stake {
+  opacity: 0.42;
+}
+
+.history-key-item {
+  transition: opacity 120ms ease;
+}
+
+.history-key-item.is-faded {
+  opacity: 0.35;
+}
+
+/* A line is 1.6px of ink; this is the width that makes it something a pointer can find. */
+.history-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10;
+  pointer-events: stroke;
+}
+
+.history-band,
+.history-hit {
+  cursor: crosshair;
+}
+
+/* Nothing structural catches the pointer: the reader is aiming at the data. */
+.history-axis,
+.history-zero,
+.history-now,
+.history-tick,
+.history-reading {
+  pointer-events: none;
+}
+
+/* Where in the window the reading is taken. The palette's structural line, so it separates from
+   both the dashed zero and the solid mark on the clock. */
+.history-cursor {
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.history-reading-ratings .history-dot,
+.history-reading-ratings .history-readout {
+  fill: var(--ink);
+}
+
+.history-reading-stakes .history-dot,
+.history-reading-stakes .history-readout {
+  fill: var(--bark);
+}
+
+/* The figure at the point being read. Its halo is the canvas itself, so a number stays legible
+   wherever on the plot it lands - over a wash, a line, or the zero mark. */
+.history-readout {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  paint-order: stroke fill;
+  stroke: var(--canvas);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
 .history-tick {
   fill: var(--bark);
   font-family: var(--font-mono);
@@ -964,11 +1049,6 @@ button {
   align-items: center;
   gap: 0.3rem;
   white-space: nowrap;
-}
-
-/* Where the series stands now. It carries the ink because it is the figure, not the label. */
-.history-key-value {
-  color: var(--ink);
 }
 
 /* The key's swatches are the lines themselves, laid flat. */

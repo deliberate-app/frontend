@@ -100,15 +100,25 @@ contouring are exactly right — treat them as the baseline to protect.)
   stacked washes because it only accumulates and an argument's own is always part of its branch's,
   which makes the paler band exactly what its sub-arguments hold — the ring beside it, unrolled.
   The washes are laid down first and held faint: the stake is the weight behind the verdict, so it
-  belongs behind it. Every series steps rather than slopes, because nothing accrues between stakes
+  belongs behind it. That same device does the highlighting: reading one pair sends the other back
+  rather than bringing the read one forward. Weight was the alternative — thicker lines, bolder
+  ticks — and it was rejected twice over: it would be a second device where opacity already carries
+  depth here, and in a plot read for values a thicker line widens the very thing being measured.
+  Nothing changes size or hue; only attention moves. The one place a flat multiplier failed is the
+  washes, which start too faint to survive it, so they step forward on their own scale when they
+  are the pair being read. Every series steps rather than slopes, because nothing accrues between stakes
   and a filled ramp would draw an accumulation that never happened.
 
-  *The key carries the figures, so the fact list no longer repeats them.* Market, rating, own stake
-  and branch stake each sit against the line they name, which is a better place for a number than a
-  table under the picture of it. They come from the tally, not from the plot's right edge, so a
-  settled argument shows what it settled at rather than the projection its window closed on. A
-  source that keeps no stake history draws no chart and therefore has no key; there the fact list
-  still states them.
+  *The figures are read off the plot, not listed beside it.* The key names the four series and
+  nothing more; touching one reveals its pair's two figures at the instant under the pointer, on
+  the curve, with a dot marking the value and a crosshair saying when. Two decisions inside that.
+  The figures come in pairs because on this plot one is only meaningful against the other — a
+  rating says little without the price it corrects, an argument's own stake little without its
+  branch's — so picking up either member shows both. And they are read *at an instant* rather than
+  pinned to the curve's end, which would have to be the closing projection: for a settled argument
+  that parts from the settled rating (ADR-0013), so an end-label would contradict the card's gauge.
+  A reading at a moment cannot. A source that keeps no stake history draws no chart, and there the
+  fact list still states the figures.
 
   Nothing on the chart is stored. A stake is exactly invertible, so the series are rebuilt by
   walking the indexed stakes backwards from the state we can see — no new field, on-chain or in the

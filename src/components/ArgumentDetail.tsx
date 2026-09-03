@@ -101,7 +101,6 @@ export function ArgumentDetail({
             opens: debate.timing?.editingEndTime ?? 0,
             closes: debate.timing?.ratingEndTime ?? 0,
           }}
-          current={current}
         />
 
         <dl className="detail-facts">
