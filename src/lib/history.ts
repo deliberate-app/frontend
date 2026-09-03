@@ -1,7 +1,6 @@
 import { centered, tallyOf } from './impact';
 import { reservesOf } from './market';
 import type { ArgumentNode, Debate } from '../types';
-import { thesisOf } from '../types';
 
 /**
  * An argument's four figures over the rating window, rebuilt from the stakes that produced them.
@@ -71,8 +70,6 @@ export function historyOf(
     state.set(node.id, { pro, con, votes: node.weight });
   }
 
-  const thesisId = thesisOf(debate).id;
-
   /** The figures as the reconstructed markets stand, dated `at`. */
   const snapshot = (at: number): HistoryPoint => {
     const nodes: ArgumentNode[] = debate.nodes.map((node) => {
@@ -139,7 +136,5 @@ export function historyOf(
   // window opened.
   points.push(snapshot(timing.editingEndTime));
   points.reverse();
-
-  // The thesis' own series would be its descendants' by definition; it is not offered one.
-  return argumentId === thesisId ? [] : points;
+  return points;
 }

@@ -48,6 +48,18 @@ export interface DebateSource {
    * would need a block fetch per stake to date them, which is not worth a chart.
    */
   history(debateId: number): Promise<StakeEvent[]>;
+  /**
+   * Every account that joined the debate with the vote tokens it holds, most first. Empty from a
+   * source that keeps no participant list: the chain stores balances per account, not per debate.
+   */
+  participants(debateId: number): Promise<DebateParticipant[]>;
+}
+
+/** One account's standing in a debate, in the contract's units. */
+export interface DebateParticipant {
+  account: string;
+  /** Vote tokens held: the joining grant, less what is staked, plus what has been redeemed. */
+  tokens: number;
 }
 
 /** The market columns of a node, as a market refetch would report them. */
@@ -76,6 +88,7 @@ export const mockSource: DebateSource = {
   feesEarned: async () => 0,
   markets: async (debateId) => (await mockSource.load(debateId)).nodes.map(marketOf),
   history: async () => [],
+  participants: async () => [],
 };
 
 // Phase.Status on-chain: 0 Uninitialized … 4 Finished. Only these two boundaries are read raw - one to
@@ -464,6 +477,11 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
     async history(): Promise<StakeEvent[]> {
       return [];
     },
+
+    // Who joined is only known from the Joined events, which the index has folded already.
+    async participants(): Promise<DebateParticipant[]> {
+      return [];
+    },
   };
 }
 
@@ -658,6 +676,10 @@ const INDEXER_HISTORY_QUERY = `query DebateStakes($argumentPrefix: String!) {
   Stake(where: { argument_id: { _like: $argumentPrefix } }, order_by: { timestamp: asc }) {
     argument_id isPro voteTokensStaked fee sharesOut timestamp
   }
+}`;
+
+const INDEXER_PARTICIPANTS_QUERY = `query DebateParticipants($debateId: String!) {
+  Participant(where: { debate_id: { _eq: $debateId } }, order_by: { tokens: desc }) { account tokens }
 }`;
 
 const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
@@ -889,6 +911,14 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
         at: Number(row.timestamp),
       }));
     },
+
+    async participants(debateId: number): Promise<DebateParticipant[]> {
+      const data = await graphql<{ Participant: Array<{ account: string; tokens: string }> }>(
+        INDEXER_PARTICIPANTS_QUERY,
+        { debateId: debateKey(await chainId(), debateId) },
+      );
+      return data.Participant.map((row) => ({ account: row.account, tokens: Number(row.tokens) }));
+    },
   };
 }
 
@@ -913,6 +943,7 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
     feesEarned: guarded((source) => source.feesEarned.bind(source)),
     markets: guarded((source) => source.markets.bind(source)),
     history: guarded((source) => source.history.bind(source)),
+    participants: guarded((source) => source.participants.bind(source)),
   };
 }
 

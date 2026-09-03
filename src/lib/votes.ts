@@ -23,6 +23,11 @@ export function formatVotes(units: number): string {
   return Number.isInteger(tokens) ? String(tokens) : tokens.toFixed(2);
 }
 
+/** A signed token figure: what an account is up or down by, "+5.94", "−10", "±0". */
+export function formatSignedVotes(units: number): string {
+  return units > 0 ? `+${formatVotes(units)}` : units < 0 ? `−${formatVotes(-units)}` : '±0';
+}
+
 /** Tokens to units, rounded to the nearest unit - the inverse of `formatVotes` for typed input. */
 export function toUnits(tokens: number): number {
   return Math.round(tokens * UNITS_PER_TOKEN);

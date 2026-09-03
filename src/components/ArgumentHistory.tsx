@@ -118,12 +118,18 @@ export function ArgumentHistory({
   points,
   totalDebateStake,
   ratingWindow,
+  thesis,
 }: {
   points: readonly HistoryPoint[];
   /** The right axis' full scale: every stake in the debate. */
   totalDebateStake: number;
   /** The x-axis, end to end: when the rating phase opens and when it closes. */
   ratingWindow: { opens: number; closes: number };
+  /**
+   * The thesis owns no market and no stake of its own - its rating and its stake are its
+   * sub-debate's, whole - so its chart is one line over one wash, and the pairs are singles.
+   */
+  thesis?: boolean;
 }) {
   // What the reader is on, and where in the window. The pair is set by touching one of its series
   // and held until the pointer leaves the plot, so you can pick up the rating lines and then sweep
@@ -165,17 +171,18 @@ export function ArgumentHistory({
   // Both of the pair's figures, whichever of its two series the reader picked up: on this plot one
   // is only meaningful against the other - a rating says little without the price it corrects, and
   // an argument's own stake little without its branch's.
+  const row = (y: number, text: string) => ({ dot: y, y, text });
   const rows =
     group === null || held === undefined
       ? []
       : group === 'ratings'
         ? [
-            { dot: yRating(held.rating), y: yRating(held.rating), text: formatImpact(held.rating) },
-            { dot: yRating(held.market), y: yRating(held.market), text: formatImpact(held.market) },
+            row(yRating(held.rating), formatImpact(held.rating)),
+            ...(thesis ? [] : [row(yRating(held.market), formatImpact(held.market))]),
           ]
         : [
-            { dot: yStake(held.subtreeStake), y: yStake(held.subtreeStake), text: `${formatVotes(held.subtreeStake)} ⬡` },
-            { dot: yStake(held.stake), y: yStake(held.stake), text: `${formatVotes(held.stake)} ⬡` },
+            row(yStake(held.subtreeStake), `${formatVotes(held.subtreeStake)} ⬡`),
+            ...(thesis ? [] : [row(yStake(held.stake), `${formatVotes(held.stake)} ⬡`)]),
           ];
 
   // Two figures a few pixels apart would overprint, so the closer pair is pushed to a legible gap
@@ -202,9 +209,12 @@ export function ArgumentHistory({
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label={
-          `Over the rating window this argument's market moved to ${formatImpact(last.market)} and the ` +
-          `debate's verdict on it to ${formatImpact(last.rating)}, on ${formatVotes(last.subtreeStake)} ` +
-          `vote tokens of the debate's ${formatVotes(totalDebateStake)}.`
+          thesis
+            ? `Over the rating window the thesis' rating moved to ${formatImpact(last.rating)}, on ` +
+              `${formatVotes(last.subtreeStake)} vote tokens.`
+            : `Over the rating window this argument's market moved to ${formatImpact(last.market)} and the ` +
+              `debate's verdict on it to ${formatImpact(last.rating)}, on ${formatVotes(last.subtreeStake)} ` +
+              `vote tokens of the debate's ${formatVotes(totalDebateStake)}.`
         }
         onPointerMove={readAt}
         onPointerLeave={() => {
@@ -215,16 +225,19 @@ export function ArgumentHistory({
         <g className={groupClass('stakes')}>
           {/* The branch's stake, then the argument's own over it: what is left showing above the
               darker band is the sub-arguments' share. */}
+          {/* The thesis' one wash takes the denser tone: it is the stake, not a share of it. */}
           <path
-            className="history-band history-subtree"
+            className={`history-band ${thesis ? 'history-stake' : 'history-subtree'}`}
             d={area(subtree, floor)}
             onPointerEnter={() => setGroup('stakes')}
           />
-          <path
-            className="history-band history-stake"
-            d={area(stake, floor)}
-            onPointerEnter={() => setGroup('stakes')}
-          />
+          {!thesis && (
+            <path
+              className="history-band history-stake"
+              d={area(stake, floor)}
+              onPointerEnter={() => setGroup('stakes')}
+            />
+          )}
           <text className="history-tick" x={width - padRight + 4} y={yStake(totalDebateStake) + 3}>
             {formatVotes(totalDebateStake)}
           </text>
@@ -247,7 +260,7 @@ export function ArgumentHistory({
         )}
 
         <g className={groupClass('ratings')}>
-          <path className="history-line history-market" d={path(market)} />
+          {!thesis && <path className="history-line history-market" d={path(market)} />}
           <path className="history-line history-rating" d={path(rating)} />
           <text className="history-tick" x={padLeft - 4} y={yRating(1) + 3} textAnchor="end">+100%</text>
           <text className="history-tick" x={padLeft - 4} y={yRating(0) + 3} textAnchor="end">±0%</text>
@@ -262,7 +275,7 @@ export function ArgumentHistory({
         )}
 
         {/* A line is 1.6px of ink; this is the width that makes it something a pointer can find. */}
-        <path className="history-hit" d={path(market)} onPointerEnter={() => setGroup('ratings')} />
+        {!thesis && <path className="history-hit" d={path(market)} onPointerEnter={() => setGroup('ratings')} />}
         <path className="history-hit" d={path(rating)} onPointerEnter={() => setGroup('ratings')} />
 
         {/* The reading, over everything and dimmed by nothing: where the pointer is in the window,
@@ -299,15 +312,25 @@ export function ArgumentHistory({
         <span className={`history-key-item ${group === 'stakes' ? 'is-faded' : ''}`}>
           <span className="history-swatch history-rating" /> rating
         </span>
-        <span className={`history-key-item ${group === 'stakes' ? 'is-faded' : ''}`}>
-          <span className="history-swatch history-market" /> its own market
-        </span>
-        <span className={`history-key-item ${group === 'ratings' ? 'is-faded' : ''}`}>
-          <span className="history-swatch history-swatch-area history-stake" /> its own stake
-        </span>
-        <span className={`history-key-item ${group === 'ratings' ? 'is-faded' : ''}`}>
-          <span className="history-swatch history-swatch-area history-subtree" /> with sub‑arguments
-        </span>
+        {!thesis && (
+          <span className={`history-key-item ${group === 'stakes' ? 'is-faded' : ''}`}>
+            <span className="history-swatch history-market" /> its own market
+          </span>
+        )}
+        {thesis ? (
+          <span className={`history-key-item ${group === 'ratings' ? 'is-faded' : ''}`}>
+            <span className="history-swatch history-swatch-area history-stake" /> staked
+          </span>
+        ) : (
+          <>
+            <span className={`history-key-item ${group === 'ratings' ? 'is-faded' : ''}`}>
+              <span className="history-swatch history-swatch-area history-stake" /> its own stake
+            </span>
+            <span className={`history-key-item ${group === 'ratings' ? 'is-faded' : ''}`}>
+              <span className="history-swatch history-swatch-area history-subtree" /> with sub‑arguments
+            </span>
+          </>
+        )}
       </figcaption>
     </figure>
   );

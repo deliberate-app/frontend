@@ -2,20 +2,23 @@ import { zeroAddress } from 'viem';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { tallyOf } from '../lib/impact';
+import { formatVotes } from '../lib/votes';
 import { shortAddress } from '../lib/address';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
 import type { StakeEvent } from '../lib/history';
+import type { DebateParticipant } from '../data/source';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, stakeWithDrafts, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ArgumentCard } from './ArgumentCard';
-import { ArgumentFigures, figuresLabel, RatingGauge, TotalStake } from './Figures';
+import { ArgumentFigures, figuresLabel, gaugeLabel, RatingGauge, TotalStake } from './Figures';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
 import { LockChip } from './LockChip';
 import { ArgumentDetail } from './ArgumentDetail';
+import { ThesisDetail } from './ThesisDetail';
 import { StakeModal } from './StakeModal';
 import { MiniTree } from './MiniTree';
 import { PositionPanel } from './PositionPanel';
@@ -143,6 +146,7 @@ export function DebateView({
   tx,
   feesEarnedOf,
   historyOfDebate,
+  participantsOf,
   onRefreshMarkets,
 }: {
   debate: Debate;
@@ -151,6 +155,8 @@ export function DebateView({
   feesEarnedOf?: (debateId: number, argumentId: number) => Promise<number>;
   /** Reads every stake the debate has seen, for the argument detail's chart. */
   historyOfDebate?: (debateId: number) => Promise<StakeEvent[]>;
+  /** Reads every account that joined, ranked, for the debate detail's standings. */
+  participantsOf?: (debateId: number) => Promise<DebateParticipant[]>;
   /** Refetches only the markets into `debate`; polled while the stake modal is open. Absent for sample data. */
   onRefreshMarkets?: () => Promise<void>;
 }) {
@@ -176,6 +182,22 @@ export function DebateView({
       cancelled = true;
     };
   }, [detailOpen, historyOfDebate, debate.id]);
+  // The standings, fetched the same way and for the same reason - read only in the thesis' detail.
+  const [participants, setParticipants] = useState<readonly DebateParticipant[]>([]);
+  useEffect(() => {
+    if (!detailOpen || !participantsOf) return;
+    let cancelled = false;
+    participantsOf(debate.id)
+      .then((list) => {
+        if (!cancelled) setParticipants(list);
+      })
+      .catch(() => {
+        if (!cancelled) setParticipants([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detailOpen, participantsOf, debate.id]);
   // The stake modal, opened from the focus meta during the rating phase.
   const [stakeOpen, setStakeOpen] = useState(false);
   // While it is open, the markets behind its preview are refetched every few seconds, so a stake
@@ -280,13 +302,18 @@ export function DebateView({
         {isThesis ? (
           <p className="focus-meta">
             {/* The thesis owns no market, so its gauge is its rating alone - and a ring would be a
-                share of itself, so the debate's stake reads as the engagement figure it is. */}
-            {focusTally && (
-              <>
-                <RatingGauge rating={focusTally.rating} thesis /> ·{' '}
-              </>
-            )}
-            <TotalStake total={stakeWithDrafts(debate)} />
+                share of itself, so the debate's stake reads as the engagement figure it is. Both
+                open the debate's detail, as an argument's figures open its own. */}
+            <button
+              type="button"
+              className="figure-button"
+              title="Debate details"
+              aria-label={`${focusTally ? `${gaugeLabel(focusTally.rating, undefined, true)}. ` : ''}Stake ${formatVotes(stakeWithDrafts(debate))} vote tokens. Debate details`}
+              onClick={() => setDetailOpen(true)}
+            >
+              {focusTally && <RatingGauge rating={focusTally.rating} thesis presentational />}
+              <TotalStake total={stakeWithDrafts(debate)} />
+            </button>
             {debate.bounty && (
               <>
                 {' '}
@@ -344,6 +371,14 @@ export function DebateView({
               </span>
             </div>
           </div>
+        )}
+        {detailOpen && isThesis && (
+          <ThesisDetail
+            debate={debate}
+            stakes={stakes}
+            participants={participants}
+            onClose={() => setDetailOpen(false)}
+          />
         )}
         {detailOpen && !isThesis && (
           <ArgumentDetail

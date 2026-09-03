@@ -1180,6 +1180,7 @@ button {
 .figure-button {
   display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
   padding: 0.15rem 0.25rem;
   margin: -0.15rem -0.25rem;
   border: 0;
@@ -1734,6 +1735,40 @@ button {
 
 /* The corrected figure sits beside the one it corrects, recessed: the market's own number is what
    the row is titled, and this is what the debate made of it. */
+/* Where each participant stands, most first. Read as a list with a rank, not as a grid: the rank
+   and the figure are set in the mono face so the columns line up without rules. */
+.leaderboard {
+  border-collapse: collapse;
+  margin: 1rem 0 0.25rem;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.leaderboard caption {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bark);
+  padding-bottom: 0.35rem;
+}
+
+.leaderboard td {
+  padding: 0.2rem 0;
+  vertical-align: middle;
+}
+
+.leaderboard-rank {
+  width: 1.6rem;
+  color: var(--bark);
+}
+
+.leaderboard-points {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .detail-corrected {
   margin-left: 0.45rem;
   color: var(--bark);

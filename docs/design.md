@@ -61,6 +61,18 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — the thesis opens the debate's detail, and the lock sits where it sits on every
+  card.** The thesis' figures now open a view of their own. Its chart is the argument chart in
+  thesis form — one line over one wash — because the thesis owns no market and no stake of its own:
+  its rating and its stake are its sub-debate's, whole, so an "own" series would draw the same line
+  twice. It has no reserves and no author to have earned from them; what it has instead is the
+  people. Once the tally has run the view lists every participant by standing, in points — vote
+  tokens beyond the 100 granted on joining, which is the contract's own measure (the `excess` a
+  bounty claim is paid on) rather than one invented for the screen. Shares not yet redeemed do not
+  count until they are, and the view says so. On the focused claim the lock briefly moved up beside
+  the kicker; it moved back to the end of the meta row, where every card keeps it. A recurring
+  element sits in the same place on each thing it recurs on, or it reads as two elements.
+
 - **2026-09-03 — a correction is drawn only where a sub-debate caused one.** The gauge's pale
   segment means "this is what the sub-arguments did to the price", so it must not appear where
   there are none. It was appearing: once the tally has run, a settled rating is time-weighted and

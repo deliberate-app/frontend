@@ -55,6 +55,11 @@ export default function App() {
     () => (deployment ? source.history.bind(source) : undefined),
     [deployment, source],
   );
+  // The ranked participants the debate detail lists; sample data has no one to rank.
+  const participantsOf = useMemo(
+    () => (deployment ? source.participants.bind(source) : undefined),
+    [deployment, source],
+  );
   // One shared read client per network for resolving custom bounty tokens; absent in sample mode.
   const tokenClient = useMemo(
     () => (deployment ? createPublicClient({ transport: http(deployment.rpcUrl) }) : null),
@@ -558,6 +563,7 @@ export default function App() {
           tx={tx}
           feesEarnedOf={feesEarnedOf}
           historyOfDebate={historyOfDebate}
+          participantsOf={participantsOf}
           onRefreshMarkets={deployment ? refreshMarkets : undefined}
         />
       ) : (
