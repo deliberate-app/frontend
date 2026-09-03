@@ -44,12 +44,17 @@ export function ArgumentCard({
         {/* The gauge answers "how does this stand", the ring "how much is behind it" - the two
             questions a column of cards is scanned for. The figures themselves are on hover. */}
         <ArgumentFigures node={node} tally={tally} total={totalStake} />
-        <LockChip locked={locked} finalizesIn={finalizesIn} />
-        <span className="card-replies">
-          {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays
-              empty - the countdown padlock owns that story. Final and childless reads as an
-              invitation. */}
-          {replies.length > 0 ? `${replies.join(' · ')} →` : locked ? 'Undebated' : null}
+        {/* The lock and the reply count are one answer read together - whether the argument is
+            settled, and what has been said beneath it - so they travel as a pair at the end of the
+            row rather than the lock floating between the figures and them. */}
+        <span className="card-tail">
+          <LockChip locked={locked} finalizesIn={finalizesIn} />
+          <span className="card-replies">
+            {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays
+                empty - the countdown padlock owns that story. Final and childless reads as an
+                invitation. */}
+            {replies.length > 0 ? `${replies.join(' · ')} →` : locked ? 'Undebated' : null}
+          </span>
         </span>
       </span>
     </button>

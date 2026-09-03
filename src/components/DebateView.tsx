@@ -265,9 +265,14 @@ export function DebateView({
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
         <div className="focus-kicker-row">
-          <p className="focus-kicker">
-            {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
-          </p>
+          {/* What this is and whether it can still change: both are facts about the claim itself,
+              so they are read together above it, and the figures below are left to be figures. */}
+          <span className="focus-kind">
+            <p className="focus-kicker">
+              {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
+            </p>
+            {!isThesis && <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />}
+          </span>
           {focus.creator && <AddressChip address={focus.creator} />}
         </div>
         <h1 className="focus-text">{focus.text}</h1>
@@ -322,8 +327,7 @@ export function DebateView({
               onClick={() => setDetailOpen(true)}
             >
               <ArgumentFigures node={focus} tally={focusTally} total={talliedStake} presentational />
-            </button>{' '}
-            · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
+            </button>
           </p>
         )}
         {rating && tx && (

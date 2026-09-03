@@ -613,6 +613,13 @@ button {
   margin-bottom: 0.35rem;
 }
 
+/* The claim's kind and its lock state, read as one line above the text. */
+.focus-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .focus-kicker {
   margin: 0;
   font-size: 0.75rem;
@@ -781,6 +788,13 @@ button {
   margin-top: auto;
 }
 
+
+/* The lock and the reply count, kept together at the end of the meta row. */
+.card-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
 
 .card-replies {
   font-size: 0.78rem;
