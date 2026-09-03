@@ -285,9 +285,12 @@ export function DebateView({
       {isThesis && <BountyPanel debate={debate} tx={tx} now={now} />}
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
-        <p className="focus-kicker">
-          {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
-        </p>
+        <div className="focus-kicker-row">
+          <p className="focus-kicker">
+            {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
+          </p>
+          <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
+        </div>
         <h1 className="focus-text">{focus.text}</h1>
         {isThesis && phase === 'finished' && debate.approved !== undefined && (
           <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
@@ -295,50 +298,46 @@ export function DebateView({
           </p>
         )}
         {isThesis ? (
-          <p className="focus-meta focus-meta-row">
-            <span>
-              {/* The thesis owns no market, so its gauge is its rating alone - and a ring would be a
-                  share of itself, so the debate's stake reads as the engagement figure it is. Both
-                  open the debate's detail, as an argument's figures open its own. */}
-              <button
-                type="button"
-                className="figure-button"
-                aria-label={`${focusTally ? `${gaugeLabel(focusTally.rating)}. ` : ''}Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens. Debate details`}
-                onClick={() => setDetailOpen(true)}
-              >
-                {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
-                <TotalStake total={stakeWithDrafts(debate)} />
-              </button>
-              {debate.bounty && (
-                <>
-                  {' '}
-                  · <BountyTopUpChip debate={debate} tx={tx} />
-                </>
-              )}
-              {debate.identityRegistry !== undefined && (
-                <>
-                  {' '}
-                  ·{' '}
-                  {debate.identityRegistry === zeroAddress ? (
-                    <span>open to everyone</span>
-                  ) : (
-                    <span title={`Identity registry ${debate.identityRegistry}`}>
-                      members of <span className="mono">{shortAddress(debate.identityRegistry)}</span>
-                    </span>
-                  )}
-                </>
-              )}
-            </span>
-            <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
+          <p className="focus-meta">
+            {/* The thesis owns no market, so its gauge is its rating alone - and a ring would be a
+                share of itself, so the debate's stake reads as the engagement figure it is. Both
+                open the debate's detail, as an argument's figures open its own. */}
+            <button
+              type="button"
+              className="figure-button"
+              aria-label={`${focusTally ? `${gaugeLabel(focusTally.rating)}. ` : ''}Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens. Debate details`}
+              onClick={() => setDetailOpen(true)}
+            >
+              {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
+              <TotalStake total={stakeWithDrafts(debate)} />
+            </button>
+            {debate.bounty && (
+              <>
+                {' '}
+                · <BountyTopUpChip debate={debate} tx={tx} />
+              </>
+            )}
+            {debate.identityRegistry !== undefined && (
+              <>
+                {' '}
+                ·{' '}
+                {debate.identityRegistry === zeroAddress ? (
+                  <span>open to everyone</span>
+                ) : (
+                  <span title={`Identity registry ${debate.identityRegistry}`}>
+                    members of <span className="mono">{shortAddress(debate.identityRegistry)}</span>
+                  </span>
+                )}
+              </>
+            )}
           </p>
         ) : (
-          <p className="focus-meta focus-meta-row">
+          <p className="focus-meta">
             {/* The figures are the way into the market that produced them, so there is nothing to
                 label with an "i": the thing you want to know more about is the thing you click. The
                 label carries the figures as well as the action, because the drawings inside are
                 marked presentational - a name that said only "about this market" would make the
-                two figures unreachable without a mouse. The byline sits where it sits on every
-                card: at the row's end, the same element in the same place. */}
+                two figures unreachable without a mouse. */}
             <button
               type="button"
               className="figure-button"
@@ -347,7 +346,6 @@ export function DebateView({
             >
               <ArgumentFigures node={focus} tally={focusTally} total={talliedStake} presentational />
             </button>
-            <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
           </p>
         )}
         {rating && tx && (

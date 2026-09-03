@@ -61,14 +61,18 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
-- **2026-09-03 — every claim is signed, and the byline is one element.** Cards showed a lock but
-  no creator, while the focused claim showed its creator at the top and its lock at the bottom —
-  so the two views taught different orders for the same two facts. Both now end their meta row
-  with one `Byline`: the lock, then the identicon and address, on a card, on the focused argument
-  and on the thesis alike (the kicker is left naming the claim's kind). Inside a card, which is
-  itself a button, the address is the presentational badge rather than the copy chip — a control
-  cannot nest in a control, and the focused claim one click away is where it copies. (Principle 3:
-  a recurring element sits in the same place on each thing it recurs on.)
+- **2026-09-03 — every claim is signed, and the byline heads it.** Cards showed a lock but no
+  creator, while the focused claim showed its creator at the top and its lock at the bottom — two
+  views teaching different orders for the same two facts. They are one element now, a `Byline`:
+  the lock, then the identicon and address, reading "whose claim this is, and whether it is still
+  theirs to move". It heads the claim — top right of a card, top right of the focused argument and
+  of the thesis, beside the kicker that names the kind — because attribution belongs with the claim
+  it attributes, not below the figures that measure it. That settles a placement this page had
+  twice recorded the other way: the lock alone had no business at the top, but the byline does, and
+  the argument's meta row is left holding only what it measures. Inside a card, which is itself a
+  button, the address is the presentational badge rather than the copy chip — a control cannot nest
+  in a control, and the focused claim one click away is where it copies. (Principle 3: a recurring
+  element sits in the same place on each thing it recurs on.)
 - **2026-09-03 — one `Modal`, and the heading names the dialog.** Eight dialogs each carried the
   same backdrop, heading and cross, and each named itself twice — once as the visible heading, once
   as an `aria-label` on the dialog — and one pair had drifted ("Debate bounty" over "Bounty"). They
@@ -98,9 +102,8 @@ contouring are exactly right — treat them as the baseline to protect.)
   people. Once the tally has run the view lists every participant by standing, in points — vote
   tokens beyond the 100 granted on joining, which is the contract's own measure (the `excess` a
   bounty claim is paid on) rather than one invented for the screen. Shares not yet redeemed do not
-  count until they are, and the view says so. On the focused claim the lock briefly moved up beside
-  the kicker; it moved back to the end of the meta row, where every card keeps it. A recurring
-  element sits in the same place on each thing it recurs on, or it reads as two elements.
+  count until they are, and the view says so. (The lock's own place moved twice on this day and is
+  settled in the byline entry above: it heads the claim, paired with the creator.)
 
 - **2026-09-03 — a correction is drawn only where a sub-debate caused one.** The gauge's pale
   segment means "this is what the sub-arguments did to the price", so it must not appear where
