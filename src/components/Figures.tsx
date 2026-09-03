@@ -1,7 +1,7 @@
 import type { NodeTally } from '../lib/impact';
 import {
   axisPercent,
-  centered,
+  figuresOf,
   formatImpact,
   IMPACT_HINT,
   MARKET_HINT,
@@ -35,8 +35,8 @@ import type { ArgumentNode } from '../types';
  * A drawing inside a button is not reached on its own, so the button has to carry the figures in
  * its own name or they exist for the mouse alone. One source for both, or the two would drift.
  */
-export const gaugeLabel = (rating: number, market?: number) =>
-  `${market === undefined ? 'Thesis rating' : 'Rating'} ${formatImpact(rating)}${
+export const gaugeLabel = (rating: number, market?: number, thesis?: boolean) =>
+  `${thesis ? 'Thesis rating' : 'Rating'} ${formatImpact(rating)}${
     market !== undefined && formatImpact(rating) !== formatImpact(market)
       ? `, its own market ${formatImpact(market)}`
       : ''
@@ -47,8 +47,8 @@ export const ringLabel = (subtreeStake: number, total: number) =>
 
 /** Both of an argument's figures in words, for a control that wraps them. */
 export const figuresLabel = (node: ArgumentNode, tally: NodeTally | undefined, total: number) => {
-  const market = centered(node.approval);
-  return `${gaugeLabel(tally?.rating ?? market, market)}. ${ringLabel(tally?.subtreeWeight ?? node.weight, total)}`;
+  const { market, rating, subtreeStake, corrected } = figuresOf(node, tally);
+  return `${gaugeLabel(rating, corrected ? market : undefined)}. ${ringLabel(subtreeStake, total)}`;
 };
 
 /** The extent of one fill on the axis, as the inline position it is drawn at. */
@@ -81,24 +81,31 @@ const span = (from: number, to: number, roundFrom: boolean, roundTo: boolean) =>
  * price eats visibly into the bar rather than sitting beside it. Where the sub-debate added to the
  * bar - carrying the argument further from neutral - the correction takes the pale hue of the side
  * it added on; where it only pulled the argument back toward neutral it is grey. A correction that
- * crosses neutral does both, and is drawn as both. Omit `market` for the thesis, which owns no
- * market of its own: the bar is then simply its rating, and the tooltip says so.
+ * crosses neutral does both, and is drawn as both.
+ *
+ * Pass `market` only where a sub-debate moved the rating away from it (see `figuresOf`). Without
+ * one the bar is simply the rating, ending where it stops, and nothing is drawn that would credit
+ * a gap to sub-arguments that do not exist.
  */
 export function RatingGauge({
   rating,
   market,
+  thesis,
   presentational,
 }: {
   rating: number;
+  /** The argument's own price, where a sub-debate moved the rating off it. */
   market?: number;
+  /** The thesis owns no market of its own, so its bar is its rating and its label says so. */
+  thesis?: boolean;
   /** Set where a surrounding control already names the figure, so it is not announced twice. */
   presentational?: boolean;
 }) {
-  const base = market ?? rating;
-  const thesis = market === undefined;
   // Whether the correction is worth drawing is whether it is worth reporting, so the question is
-  // asked through the formatter that decides what "worth reporting" means.
-  const correcting = !thesis && formatImpact(rating) !== formatImpact(base);
+  // asked through the formatter that decides what "worth reporting" means. With none to draw the
+  // bar runs to the rating, which is the figure it would otherwise have ended on anyway.
+  const correcting = market !== undefined && formatImpact(rating) !== formatImpact(market);
+  const base = correcting ? market : rating;
 
   // Which corners are ends depends on what the sub-debate did, which is not the same question as
   // which way it moved: on a con market a rating nearer neutral is "raised" and yet the bar is
@@ -138,7 +145,7 @@ export function RatingGauge({
         ];
 
   return (
-    <span className="gauge" {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': gaugeLabel(rating, market) })}>
+    <span className="gauge" {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': gaugeLabel(rating, market, thesis) })}>
       <span
         className={`gauge-fill ${base > 0 ? 'gauge-pro' : base < 0 ? 'gauge-con' : ''}`}
         // Square where it leaves the centre line; round at the far end unless the correction
@@ -147,7 +154,9 @@ export function RatingGauge({
         title={
           thesis
             ? `Thesis rating ${formatImpact(rating)}. ${THESIS_RATING_HINT}`
-            : `Market ${formatImpact(base)}. ${MARKET_HINT}`
+            : correcting
+              ? `Market ${formatImpact(base)}. ${MARKET_HINT}`
+              : `Rating ${formatImpact(rating)}. ${RATING_HINT}`
         }
       />
       {corrections.map(({ tone, style }) => (
@@ -256,18 +265,17 @@ export const ArgumentFigures = ({
   /** Set where a surrounding control names both figures itself (see `figuresLabel`). */
   presentational?: boolean;
 }) => {
-  const market = centered(node.approval);
+  const { market, rating, stake, subtreeStake, corrected } = figuresOf(node, tally);
   // One box around the pair, centred: the two are drawings of different heights, and a row that
   // aligns its items on text baselines has none to give them.
   return (
     <span className="figure-pair">
-      <RatingGauge rating={tally?.rating ?? market} market={market} presentational={presentational} />
-      <StakeRing
-        stake={node.weight}
-        subtreeStake={tally?.subtreeWeight ?? node.weight}
-        total={total}
+      <RatingGauge
+        rating={rating}
+        market={corrected ? market : undefined}
         presentational={presentational}
       />
+      <StakeRing stake={stake} subtreeStake={subtreeStake} total={total} presentational={presentational} />
     </span>
   );
 };

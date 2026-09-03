@@ -290,7 +290,7 @@ export function DebateView({
                 share of itself, so the debate's stake reads as the engagement figure it is. */}
             {focusTally && (
               <>
-                <RatingGauge rating={focusTally.rating} /> ·{' '}
+                <RatingGauge rating={focusTally.rating} thesis /> ·{' '}
               </>
             )}
             <TotalStake total={totalStake} />

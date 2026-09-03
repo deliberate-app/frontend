@@ -1,15 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArgumentHistory } from './ArgumentHistory';
 import { historyOf, type StakeEvent } from '../lib/history';
-import {
-  centered,
-  formatApproval,
-  formatImpact,
-  IMPACT_HINT,
-  MARKET_HINT,
-  RATING_HINT,
-  type NodeTally,
-} from '../lib/impact';
+import { figuresOf, formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT, type NodeTally } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 import { reservesOf } from '../lib/market';
 import type { ArgumentNode, Debate } from '../types';
@@ -54,20 +46,14 @@ export function ArgumentDetail({
     [debate],
   );
 
-  const current = {
-    market: centered(node.approval),
-    rating: tally?.rating ?? centered(node.approval),
-    stake: node.weight,
-    subtreeStake: tally?.subtreeWeight ?? node.weight,
-  };
+  const current = figuresOf(node, tally);
   // The key states the figures, so the list below only does where the chart is absent.
   const charted = points.length >= 2 && totalDebateStake > 0;
 
   // Each correction is shown only where it says something the figure beside it does not: an
   // undebated argument's rating is its market price and its subtree is itself, and repeating a
   // number is how a fact list stops being read.
-  const corrected = tally && formatImpact(tally.rating) !== formatApproval(node.approval);
-  const deeper = tally && tally.subtreeWeight > node.weight;
+  const corrected = current.corrected && formatImpact(current.rating) !== formatImpact(current.market);
 
   // The lifetime fee figure comes from the stake history, so it loads separately from the tree;
   // null while loading or when the source cannot say.
@@ -118,22 +104,22 @@ export function ArgumentDetail({
             <>
               <dt title={MARKET_HINT}>Market</dt>
               <dd className="mono">
-                {formatApproval(node.approval)}
+                {formatImpact(current.market)}
                 {corrected && (
                   <span className="detail-corrected" title={RATING_HINT}>
-                    · rated {formatImpact(tally.rating)}
+                    · rated {formatImpact(current.rating)}
                   </span>
                 )}
               </dd>
               <dt>Staked</dt>
               <dd className="mono">
-                {formatVotes(node.weight)} ⬡
-                {deeper && (
+                {formatVotes(current.stake)} ⬡
+                {current.corrected && (
                   <span
                     className="detail-corrected"
                     title="The stake the tally weighs this argument by: its own market's plus every sub-argument's."
                   >
-                    · {formatVotes(tally.subtreeWeight)} ⬡ with its sub‑arguments
+                    · {formatVotes(current.subtreeStake)} ⬡ with its sub‑arguments
                   </span>
                 )}
               </dd>

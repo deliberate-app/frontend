@@ -131,6 +131,42 @@ export function axisPercent(value: number): number {
 /** The class that colours a figure by its sign; neutral takes neither stance colour. */
 export const signClassOf = (value: number) => (value > 0 ? 'impact-pos' : value < 0 ? 'impact-neg' : '');
 
+/** An argument's figures as every view reads them, with the tally's fallbacks applied once. */
+export interface NodeFigures {
+  /** The argument's own market price, centered so an undecided market is 0. */
+  market: number;
+  /** The debate's verdict on it: the market corrected by its sub-debate, or the market itself. */
+  rating: number;
+  /** Vote tokens on its own market. */
+  stake: number;
+  /** Those plus every sub-argument's - the weight the tally gives this branch. */
+  subtreeStake: number;
+  /**
+   * Whether a sub-debate moved the rating. A correction is something sub-arguments did, so there
+   * has to be one: with no stake beneath it nothing was weighed against the argument's own market,
+   * and the gap the settled rating leaves is the tally's time-weighting, which no sub-argument
+   * caused and no figure should credit to one.
+   */
+  corrected: boolean;
+}
+
+/**
+ * The four figures of one argument. The fallbacks - an undebated argument's rating is its own
+ * market price, and its branch is itself - are the tally's contract rather than any one view's, so
+ * every view reads them from here instead of restating them.
+ */
+export function figuresOf(node: ArgumentNode, tally?: NodeTally): NodeFigures {
+  const market = centered(node.approval);
+  const subtreeStake = tally?.subtreeWeight ?? node.weight;
+  return {
+    market,
+    rating: tally?.rating ?? market,
+    stake: node.weight,
+    subtreeStake,
+    corrected: subtreeStake > node.weight,
+  };
+}
+
 /** Formats an impact or rating fraction as a signed percentage, e.g. "+12%". */
 export function formatImpact(impact: number): string {
   const percent = Math.round(impact * 100);
