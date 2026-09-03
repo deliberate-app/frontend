@@ -77,9 +77,9 @@ export function BountyTopUpChip({ debate, tx }: { debate: Debate; tx: DebateTx |
               </button>
             </div>
             <p className="composer-hint">
-              The pool - currently <strong className="mono">{formatTokenAmount(bounty.pool, bounty)}</strong> -
-              pays the debate&apos;s net winners once it finishes. Top-ups are donations: they raise every
-              claim and are not refundable.
+              The bounty - currently <strong className="mono">{formatTokenAmount(bounty.pool, bounty)}</strong> -
+              pays participants who end with more vote tokens than they were granted, once the debate
+              finishes. Top-ups are donations: they raise every claim and are not refundable.
             </p>
             <label className="duration-field">
               <span className="duration-label">Amount</span>
@@ -175,7 +175,7 @@ export function BountyPanel({ debate, tx, now }: { debate: Debate; tx: DebateTx 
           type="button"
           className="btn btn-solid"
           disabled={busy}
-          title="One transaction, once: redeem shares, collect fees, claim your share."
+          title="One transaction, once - it also redeems your shares and claims your fees."
           onClick={() => void claim()}
         >
           {busy ? 'Claiming…' : 'Redeem & claim bounty share'}

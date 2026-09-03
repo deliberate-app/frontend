@@ -61,6 +61,21 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — hover copy: the drawing names the figure, the term defines it.** The figure hovers
+  had grown into paragraphs — a gauge segment carried its figure, a correction, and a two-sentence
+  definition; the same definition rode every card in a column; share settlement was spelled five
+  ways and the fee's recipient two. The rule now: a drawing's hover is its figure and nothing else
+  (`Market +84%`, `Rating +46%, market +84%`, `Staked 12 ⬡ on its own market`); what a figure
+  *means* is one sentence on the term it hangs on — the detail's and the stake modal's `dt`s and,
+  new, the chart's key — and each definition is a single constant (`lib/impact.ts`; the payout
+  rule in `lib/market.ts`, as the formula `(1 + tallied rating) / 2 of a vote token`, which
+  "paid by the rating" had misstated). Vocabulary settled on the glossary: *tallied rating* for
+  the settled value ("final" is the lock word), *market* for the argument's own figure, *creator*
+  for whoever the fee goes to, *deposit* for what an argument is seeded with, *excess* for what a
+  bounty claim is proportional to, *bounty* never "prize" or "pool", *sub-arguments* with a plain
+  hyphen, phases lowercase in prose, a debate *finishes*. Hovers that restated their own label
+  ("Anyone may join" on "open to everyone", "Debate details" on a button whose aria-label already
+  ends in it, "Copied!" beside "copied ✓") were removed rather than shortened. (Principles 9, 10.)
 - **2026-09-03 — the thesis opens the debate's detail, and the lock sits where it sits on every
   card.** The thesis' figures now open a view of their own. Its chart is the argument chart in
   thesis form — one line over one wash — because the thesis owns no market and no stake of its own:

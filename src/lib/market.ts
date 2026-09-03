@@ -33,6 +33,15 @@ export function upsideOf(node: ArgumentNode): { underrated: number; overrated: n
   return { underrated: pro, overrated: con };
 }
 
+/**
+ * How a share settles, in words. Said once, so the stake modal's slider ends, the position panel
+ * and the argument's detail cannot state one rule three ways.
+ */
+export const GOOD_SHARE_PAYOUT = '(1 + tallied rating) / 2 of a vote token';
+export const BAD_SHARE_PAYOUT = '(1 − tallied rating) / 2 of a vote token';
+export const SHARE_PAYOUT_HINT =
+  `A good-argument share pays ${GOOD_SHARE_PAYOUT}, a bad-argument share ${BAD_SHARE_PAYOUT}.`;
+
 /** What one stake would do to an argument's market, before it is sent. */
 export interface StakePreview {
   /** The part of the stake that goes to the argument's author. */

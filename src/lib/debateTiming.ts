@@ -47,7 +47,7 @@ export function scheduleError(schedule: DebateSchedule): string | null {
     return 'Locking needs a duration.';
   }
   if (editingDuration <= lockingDuration) {
-    return 'The editing phase must be longer than the locking duration.';
+    return 'The editing phase must be longer than the locking window.';
   }
   if (ratingDuration < lockingDuration) {
     return 'The rating phase must fit at least one locking window.';

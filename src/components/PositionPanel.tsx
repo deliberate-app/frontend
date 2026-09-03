@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatVotes } from '../lib/votes';
+import { SHARE_PAYOUT_HINT } from '../lib/market';
 import { actionErrorMessage, type ArgumentPosition } from '../data/actions';
 
 /** Post-debate controls for the focused argument: redeem shares, claim creator fees. */
@@ -61,7 +62,7 @@ export function PositionPanel({
           <>
             <span
               className="action-hint"
-              title="Good-argument shares pay by the argument's final rating, bad-argument shares by its complement."
+              title={SHARE_PAYOUT_HINT}
             >
               Your shares:{' '}
               <strong className="mono">

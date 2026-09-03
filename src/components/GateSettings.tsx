@@ -75,7 +75,7 @@ export function GateSettings({
           <button
             type="button"
             className={`btn btn-small ${gate.mode === 'circles' ? 'preset-active' : ''}`}
-            title="Any account registered as a human in Circles, the invite graph on Gnosis Chain."
+            title="Accounts registered as human in Circles on Gnosis Chain."
             onClick={() => onChange({ mode: 'circles', address: circlesRegistry })}
           >
             Circles humans
@@ -118,7 +118,7 @@ export function GateSettings({
         {gate.mode !== 'open' && (
           <p className="composer-hint">
             Joining is refused to accounts the registry does not know. Choose <em>Everyone</em> for a
-            debate anyone may enter.
+            debate anyone may join.
           </p>
         )}
       </div>

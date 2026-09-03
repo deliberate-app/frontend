@@ -456,7 +456,7 @@ export default function App() {
   // latter never disables anything, it asks.
   const createUnavailableHint = deployment
     ? null
-    : 'Browsing the bundled sample debate - configure a deployment to create debates.';
+    : 'Configure a deployment to start debates.';
   const needsWallet = deployment !== null && actions === null;
 
   const browsing = debateId === null;
@@ -496,7 +496,7 @@ export default function App() {
           <button
             type="button"
             className="btn"
-            title={`Redeems your shares across ${redeemable.length} argument${redeemable.length === 1 ? '' : 's'} in one transaction.`}
+            title={`${redeemable.length} argument${redeemable.length === 1 ? '' : 's'}, one transaction.`}
             onClick={() => void redeemAll()}
             disabled={redeeming}
           >

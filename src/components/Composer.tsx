@@ -34,9 +34,9 @@ export function Composer({
         className="composer-open"
         onClick={() => setOpen(true)}
         disabled={!affordable}
-        title={affordable ? undefined : `An argument costs at least ${formatVotes(MIN_DEPOSIT_UNITS)} vote tokens`}
+        title={affordable ? undefined : `You only have ${formatVotes(tokens)} ⬡ in this debate.`}
       >
-        + Add {side} argument · min stake {formatVotes(MIN_DEPOSIT_UNITS)} ⬡
+        + Add {side} argument · min deposit {formatVotes(MIN_DEPOSIT_UNITS)} ⬡
       </button>
     );
   }
@@ -83,7 +83,7 @@ export function Composer({
         />
       </label>
       <label className="composer-approval composer-deposit">
-        Stake <strong className="mono">{formatVotes(deposit)} ⬡</strong>
+        Deposit <strong className="mono">{formatVotes(deposit)} ⬡</strong>
         <input
           type="number"
           min={toTokens(MIN_DEPOSIT_UNITS)}
@@ -98,11 +98,11 @@ export function Composer({
           ? 'A larger deposit deepens the market and puts more stake behind the argument from the start.'
           : deposit > tokens
             ? `You only have ${formatVotes(tokens)} ⬡ in this debate.`
-            : `The minimum stake is ${formatVotes(MIN_DEPOSIT_UNITS)} ⬡.`}
+            : `The minimum deposit is ${formatVotes(MIN_DEPOSIT_UNITS)} ⬡.`}
       </p>
       <div className="action-row">
         <button type="submit" className="btn btn-solid" disabled={!canSubmit}>
-          {busy ? 'Publishing…' : `Publish · ${formatVotes(deposit)} ⬡`}
+          {busy ? 'Adding…' : `Add · ${formatVotes(deposit)} ⬡`}
         </button>
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
           Cancel

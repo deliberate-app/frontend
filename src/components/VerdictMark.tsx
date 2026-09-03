@@ -1,5 +1,8 @@
 type Props = { approved: boolean };
 
+/** The outcome in words, wherever the mark needs them beside or instead of it. */
+export const verdictLabel = (approved: boolean) => (approved ? 'Thesis confirmed' : 'Thesis objected');
+
 /**
  * The finished thesis outcome as a mark: the docs decision icon's rounded check when the thesis is
  * confirmed, a matching rounded cross when it is objected. Both share one stroke weight and rounded

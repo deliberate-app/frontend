@@ -10,7 +10,7 @@ import type { Address } from 'viem';
 import type { DebateFilter, DebateSummary, Phase } from '../types';
 import { filterDebates } from '../types';
 import { AddressChip } from './AddressChip';
-import { VerdictMark } from './VerdictMark';
+import { VerdictMark, verdictLabel } from './VerdictMark';
 import { BountySettings, type BountyDraft } from './BountySettings';
 import { ContentBudget } from './ContentBudget';
 import { FeeSettings } from './FeeSettings';
@@ -151,7 +151,7 @@ function CreatePanel({
         <button
           type="button"
           className="schedule-chip"
-          title="Customize the debate schedule"
+          title="The locking window and the lengths of the editing and rating phases."
           onClick={() => setSettingsOpen(true)}
         >
           locking {formatDuration(schedule.lockingDuration)} · editing {formatDuration(schedule.editingDuration)}{' '}
@@ -161,7 +161,7 @@ function CreatePanel({
         <button
           type="button"
           className="schedule-chip"
-          title="The market fee, accrued to an argument's creator on every stake"
+          title="The market fee, paid to the argument's creator on every stake."
           onClick={() => setFeeOpen(true)}
         >
           fee {fee}%
@@ -170,7 +170,7 @@ function CreatePanel({
         <button
           type="button"
           className="schedule-chip"
-          title="Who may join: everyone, Circles humans, or the members of a registry"
+          title="Who may join the debate."
           onClick={() => setGateOpen(true)}
         >
           {gateLabel(gate)}
@@ -179,7 +179,7 @@ function CreatePanel({
         <button
           type="button"
           className="schedule-chip"
-          title="Attach an ERC-20 prize for the debate's net winners"
+          title="An ERC-20 bounty for participants who end with more vote tokens than they were granted."
           onClick={() => setBountyOpen(true)}
         >
           {bounty ? `bounty ${formatTokenAmount(bounty.amount, bounty.token)}` : 'no bounty'}
@@ -221,11 +221,11 @@ function CreatePanel({
               invalidSchedule ??
               invalidFee ??
               (bounty && bounty.amount > 0n
-                ? 'Funding the bounty may ask for two confirmations: the token approval, then the creation.'
+                ? 'Up to two wallet confirmations: the token approval, then the creation.'
                 : undefined)
             }
           >
-            {busy ? 'Creating…' : 'Create debate'}
+            {busy ? 'Starting…' : 'Start debate'}
           </button>
         )}
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
@@ -326,7 +326,7 @@ export function BrowseView({
           </select>
         </label>
         <label className="filter filter-author">
-          Author
+          Creator
           <span className="author-field">
             <input
               type="text"
@@ -339,7 +339,7 @@ export function BrowseView({
               <button
                 type="button"
                 className={`author-mine${filter.author === account ? ' author-mine-active' : ''}`}
-                title={filter.author === account ? 'Show all authors' : 'Only my debates'}
+                title={filter.author === account ? 'Show all creators' : 'Only my debates'}
                 onClick={() => onFilter({ ...filter, author: filter.author === account ? '' : account })}
               >
                 mine
@@ -375,7 +375,7 @@ export function BrowseView({
               <span
                 className={`verdict-mark ${debate.approved === undefined ? '' : debate.approved ? 'verdict-approved' : 'verdict-objected'}`}
                 title={
-                  debate.approved === undefined ? undefined : debate.approved ? 'Thesis confirmed' : 'Thesis objected'
+                  debate.approved === undefined ? undefined : verdictLabel(debate.approved)
                 }
               >
                 {debate.approved === undefined ? null : <VerdictMark approved={debate.approved} />}

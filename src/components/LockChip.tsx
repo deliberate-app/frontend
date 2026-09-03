@@ -24,8 +24,8 @@ export function LockChip({
       className={`card-lock ${locked ? 'card-lock-locked' : 'card-lock-draft'}`}
       title={
         locked
-          ? 'Locked in - final: no more edits or moves'
-          : 'Draft: editable and movable until it locks in, then final automatically'
+          ? 'Locked in: no more edits or moves.'
+          : 'Draft: editable and movable until it locks in; no replies or stakes until then.'
       }
     >
       {!locked && finalizesIn !== null && <span className="card-lock-time">{formatCountdown(finalizesIn)}</span>}

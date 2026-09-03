@@ -1733,6 +1733,12 @@ button {
   margin: 0;
 }
 
+/* A share's name breaks at the slash between the two, never inside its own hyphen. */
+.detail-facts .market-pro,
+.detail-facts .market-con {
+  white-space: nowrap;
+}
+
 /* The corrected figure sits beside the one it corrects, recessed: the market's own number is what
    the row is titled, and this is what the debate made of it. */
 /* Where each participant stands, most first. Read as a list with a rank, not as a grid: the rank
@@ -1767,11 +1773,6 @@ button {
 .leaderboard-points {
   text-align: right;
   white-space: nowrap;
-}
-
-.detail-corrected {
-  margin-left: 0.45rem;
-  color: var(--bark);
 }
 
 /* The schedule and bounty chips share one row, wrapping when the width runs out. */

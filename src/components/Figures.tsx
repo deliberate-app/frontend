@@ -1,13 +1,5 @@
 import type { NodeTally } from '../lib/impact';
-import {
-  axisPercent,
-  figuresOf,
-  formatImpact,
-  MARKET_HINT,
-  RATING_HINT,
-  readsDifferently,
-  THESIS_RATING_HINT,
-} from '../lib/impact';
+import { axisPercent, DEBATE_STAKE_HINT, figuresOf, formatImpact, readsDifferently } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 import type { ArgumentNode } from '../types';
 
@@ -23,9 +15,10 @@ import type { ArgumentNode } from '../types';
  * - **Stake ring** - how much of the debate's stake sits under this argument. The dark arc is its
  *   own market's; the pale arc continuing clockwise is the rest of its sub-debate's.
  *
- * The numbers are not gone, they are one hover away: every segment carries the figure it draws.
- * That is the trade this makes - a column of cards is scanned far more often than any one figure
- * in it is read, and shapes survive scanning where four percentages do not.
+ * The numbers are not gone, they are one hover away: every segment carries the figure it draws,
+ * and only that - what a figure means is said once, on its term in the detail. That is the trade
+ * this makes - a column of cards is scanned far more often than any one figure in it is read, and
+ * shapes survive scanning where four percentages do not.
  */
 
 /**
@@ -42,13 +35,13 @@ const figureRole = (presentational: boolean | undefined, label: () => string) =>
  * A drawing inside a button is not reached on its own, so the button has to carry the figures in
  * its own name or they exist for the mouse alone. One source for both, or the two would drift.
  */
-export const gaugeLabel = (rating: number, market?: number, thesis?: boolean) =>
-  `${thesis ? 'Thesis rating' : 'Rating'} ${formatImpact(rating)}${
-    market !== undefined && readsDifferently(rating, market) ? `, its own market ${formatImpact(market)}` : ''
+export const gaugeLabel = (rating: number, market?: number) =>
+  `Rating ${formatImpact(rating)}${
+    market !== undefined && readsDifferently(rating, market) ? `, market ${formatImpact(market)}` : ''
   }`;
 
 export const ringLabel = (subtreeStake: number, total: number) =>
-  `${formatVotes(subtreeStake)} vote tokens staked here and beneath, of ${formatVotes(total)} the tally counts`;
+  `Staked ${formatVotes(subtreeStake)} of the debate's ${formatVotes(total)} vote tokens`;
 
 /** Both of an argument's figures in words, for a control that wraps them. */
 export const figuresLabel = (node: ArgumentNode, tally: NodeTally | undefined, total: number) => {
@@ -132,28 +125,25 @@ export function gaugeSegments(rating: number, market?: number): GaugeSegment[] {
 
 /**
  * The rating on one signed axis: what the market priced, and what the sub-debate did to it.
- * `gaugeSegments` decides the shape; this draws it and says what each piece means.
+ * `gaugeSegments` decides the shape; this draws it and names each piece. A correction is the gap
+ * between the two figures, so it names both ends.
  */
 export function RatingGauge({
   rating,
   market,
-  thesis,
   presentational,
 }: {
   rating: number;
   /** The argument's own price, where a sub-debate moved the rating off it. */
   market?: number;
-  /** The thesis owns no market of its own, so its bar is its rating and its label says so. */
-  thesis?: boolean;
   /** Set where a surrounding control already names the figure, so it is not announced twice. */
   presentational?: boolean;
 }) {
   const segments = gaugeSegments(rating, market);
   const correcting = segments.length > 1;
-  const ratingTitle = `Rating ${formatImpact(rating)}`;
 
   return (
-    <span className="gauge" {...figureRole(presentational, () => gaugeLabel(rating, market, thesis))}>
+    <span className="gauge" {...figureRole(presentational, () => gaugeLabel(rating, market))}>
       {segments.map(({ kind, side, style }, index) => (
         <span
           key={index}
@@ -161,12 +151,10 @@ export function RatingGauge({
           style={style}
           title={
             kind === 'correction'
-              ? `${ratingTitle}, ${formatImpact(rating - (market as number))} off its own market price. ${RATING_HINT}`
-              : thesis
-                ? `Thesis rating ${formatImpact(rating)}. ${THESIS_RATING_HINT}`
-                : correcting
-                  ? `Market ${formatImpact(market as number)}. ${MARKET_HINT}`
-                  : `${ratingTitle}. ${RATING_HINT}`
+              ? gaugeLabel(rating, market)
+              : correcting
+                ? `Market ${formatImpact(market as number)}`
+                : gaugeLabel(rating)
           }
         />
       ))}
@@ -209,9 +197,9 @@ export function StakeRing({
   const beneath = Math.max(subtreeStake - stake, 0);
   // Both arcs start at noon and run clockwise, the second offset by the length of the first. An
   // undebated argument gets no second arc at all: a zero-length one paints nothing but would still
-  // answer a hover with "0 ⬡ staked on its sub-arguments", which describes nothing.
+  // answer a hover with "Staked 0 ⬡ on its sub-arguments", which describes nothing.
   const arcs = [
-    { cls: 'ring-own', stake: own, offset: 0, of: "this argument's own market" },
+    { cls: 'ring-own', stake: own, offset: 0, of: 'its own market' },
     ...(beneath > 0
       ? [{ cls: 'ring-beneath', stake: beneath, offset: arc(own), of: 'its sub-arguments' }]
       : []),
@@ -234,7 +222,7 @@ export function StakeRing({
           strokeDasharray={`${arc(units)} ${RING_CIRCUMFERENCE}`}
           strokeDashoffset={-offset}
         >
-          <title>{`${formatVotes(units)} ⬡ staked on ${of}`}</title>
+          <title>{`Staked ${formatVotes(units)} ⬡ on ${of}`}</title>
         </circle>
       ))}
     </svg>
@@ -247,8 +235,8 @@ export function StakeRing({
  * question drew, not which way it went.
  */
 export const TotalStake = ({ total }: { total: number }) => (
-  <span className="figure" title="Vote tokens staked across the whole debate - how much it drew">
-    <span className="figure-label">Stake </span>
+  <span className="figure" title={DEBATE_STAKE_HINT}>
+    <span className="figure-label">Staked </span>
     <strong className="mono">{formatVotes(total)}</strong>
     <span className="unit">⬡</span>
   </span>

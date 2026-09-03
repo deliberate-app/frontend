@@ -10,7 +10,7 @@ import type { StakeEvent } from '../lib/history';
 import type { DebateParticipant } from '../data/source';
 import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, stakeWithDrafts, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
-import { VerdictMark } from './VerdictMark';
+import { VerdictMark, verdictLabel } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ArgumentCard } from './ArgumentCard';
 import { ArgumentFigures, figuresLabel, gaugeLabel, RatingGauge, TotalStake } from './Figures';
@@ -125,8 +125,8 @@ function AncestryRail({
           aria-expanded={expanded}
           title={
             expanded
-              ? 'Fold the path back to one line per claim'
-              : 'Read every claim on the path up to the thesis in full'
+              ? 'One line per argument.'
+              : 'Every argument in full.'
           }
           onClick={() => onExpandedChange(!expanded)}
         >
@@ -295,8 +295,7 @@ export function DebateView({
         <h1 className="focus-text">{focus.text}</h1>
         {isThesis && phase === 'finished' && debate.approved !== undefined && (
           <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
-            {debate.approved ? 'Thesis confirmed ' : 'Thesis objected '}
-            <VerdictMark approved={debate.approved} />
+            {verdictLabel(debate.approved)} <VerdictMark approved={debate.approved} />
           </p>
         )}
         {isThesis ? (
@@ -307,11 +306,10 @@ export function DebateView({
             <button
               type="button"
               className="figure-button"
-              title="Debate details"
-              aria-label={`${focusTally ? `${gaugeLabel(focusTally.rating, undefined, true)}. ` : ''}Stake ${formatVotes(stakeWithDrafts(debate))} vote tokens. Debate details`}
+              aria-label={`${focusTally ? `${gaugeLabel(focusTally.rating)}. ` : ''}Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens. Debate details`}
               onClick={() => setDetailOpen(true)}
             >
-              {focusTally && <RatingGauge rating={focusTally.rating} thesis presentational />}
+              {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
               <TotalStake total={stakeWithDrafts(debate)} />
             </button>
             {debate.bounty && (
@@ -325,9 +323,9 @@ export function DebateView({
                 {' '}
                 ·{' '}
                 {debate.identityRegistry === zeroAddress ? (
-                  <span title="Anyone may join this debate.">open to everyone</span>
+                  <span>open to everyone</span>
                 ) : (
-                  <span title={`Joining is gated by the identity registry at ${debate.identityRegistry}.`}>
+                  <span title={`Identity registry ${debate.identityRegistry}`}>
                     members of <span className="mono">{shortAddress(debate.identityRegistry)}</span>
                   </span>
                 )}
@@ -345,7 +343,6 @@ export function DebateView({
             <button
               type="button"
               className="figure-button"
-              title="Argument details"
               aria-label={`${figuresLabel(focus, focusTally, talliedStake)}. Argument details`}
               onClick={() => setDetailOpen(true)}
             >
@@ -360,13 +357,12 @@ export function DebateView({
               <button
                 type="button"
                 className="btn"
-                title="Stake vote tokens on this argument being under- or overrated."
                 onClick={() => setStakeOpen(true)}
               >
                 Stake ⬡
               </button>
               <span className="action-hint">
-                You profit if the rating corrects your way once the debate ends
+                You profit if the rating corrects your way once the debate finishes
                 {debate.feePercentage > 0 ? ` · ${debate.feePercentage}% fee to the argument's creator` : ' · no market fee'}
               </span>
             </div>
@@ -439,7 +435,7 @@ export function DebateView({
           <h2 className="column-title">Pros</h2>
           {pros.length === 0 ? (
             <p className="column-empty">
-              No pros yet. Arguments can be added during the Editing phase.
+              No pros yet. Arguments can be added during the editing phase.
             </p>
           ) : (
             pros.map((node) => (
@@ -472,7 +468,7 @@ export function DebateView({
           <h2 className="column-title">Cons</h2>
           {cons.length === 0 ? (
             <p className="column-empty">
-              No cons yet. Arguments can be added during the Editing phase.
+              No cons yet. Arguments can be added during the editing phase.
             </p>
           ) : (
             cons.map((node) => (

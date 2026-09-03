@@ -80,7 +80,7 @@ export function BountySettings({
         className="modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Debate bounty"
+        aria-label="Bounty"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-head">
@@ -91,9 +91,9 @@ export function BountySettings({
         </div>
 
         <p className="composer-hint">
-          An ERC-20 prize for the debate&apos;s net winners - participants who end with more vote
-          tokens than the initial grant. Unclaimed remainder returns to you after the 7-day claim
-          window; anyone can top the pool up while the debate runs.
+          An ERC-20 bounty for participants who end with an excess - more vote tokens than they were
+          granted on joining. Unclaimed remainder returns to you after the 7-day claim window; anyone
+          can top the bounty up while the debate runs.
         </p>
 
         <div className="preset-row">

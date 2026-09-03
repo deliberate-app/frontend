@@ -92,25 +92,38 @@ export function tallyOf(debate: Debate): Map<number, NodeTally> {
   return tallies;
 }
 
-/** The tooltip on the parent-impact figure, shared by every place it appears. */
-export const IMPACT_HINT =
-  "How much this argument moves its parent's rating: its own rating at its share of the siblings' " +
-  'stake, signed by the side it takes; a refuted argument moves nothing.';
+/*
+ * What each figure means, one sentence each, hung on the term wherever it is named: the detail's
+ * list, the stake modal's, and the chart's key. The drawings on the cards carry the figure alone -
+ * a definition repeated on every card is read on none of them.
+ */
 
-/** The tooltip on an argument's rating figure. */
+/** An argument's own market figure. */
+export const MARKET_HINT = 'The price of a good-argument share on its own market, ±0% when undecided.';
+
+/** The tally's verdict on an argument. */
 export const RATING_HINT =
-  "The debate's verdict on this argument: its market rating corrected by its sub-arguments, each " +
-  'counted by the stake behind it. This is what its shares settle against.';
+  "Its market price corrected by its sub-arguments in proportion to their stake - the tally's " +
+  'verdict, which its shares settle against.';
 
-/** The tooltip on the thesis' rating figure - it has no market, so its rating is its arguments'. */
+/** The thesis' rating: it has no market, so its rating is its arguments' alone. */
 export const THESIS_RATING_HINT =
-  "The debate's verdict: the top-level arguments' impacts, weighted by their stake. Above zero " +
-  'confirms the thesis, at or below objects it.';
+  "The top-level arguments' parent impacts, summed: above zero confirms the thesis, at or below " +
+  'objects it.';
 
-/** The tooltip on an argument's own market figure. */
-export const MARKET_HINT =
-  'What this argument\'s market alone says, before its sub-arguments are counted: the price of a ' +
-  'good-argument share, centered so an undecided market reads ±0%.';
+/** What an argument moves its parent's rating by. */
+export const IMPACT_HINT =
+  "Its rating, ±0 if refuted, at its branch's share of the stake beneath the parent, signed by " +
+  'its side.';
+
+/** The vote tokens on an argument's own market. */
+export const STAKE_HINT = 'Vote tokens staked on its own market.';
+
+/** The stake behind an argument's rating. */
+export const SUBTREE_STAKE_HINT = "Its own stake plus every sub-argument's - what the tally weighs it by.";
+
+/** The debate's whole stake, which the thesis shows instead of a share of itself. */
+export const DEBATE_STAKE_HINT = 'Vote tokens staked across the whole debate.';
 
 /**
  * A market's 0..1 price on the signed scale the rest of the app speaks: 0.5 becomes ±0, a fully

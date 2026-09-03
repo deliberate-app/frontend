@@ -113,13 +113,13 @@ export function ScheduleSettings({
         />
         <DurationField
           label="Editing"
-          hint="Adding and revising arguments; each nesting level needs one locking window."
+          hint="Adding, altering and moving arguments; each nesting level needs one locking window."
           value={schedule.editingDuration}
           onChange={(editingDuration) => onChange({ ...schedule, editingDuration })}
         />
         <DurationField
           label="Rating"
-          hint="Reading the debate and staking on over- and underrated arguments."
+          hint="Reading the debate and staking on underrated and overrated arguments."
           value={schedule.ratingDuration}
           onChange={(ratingDuration) => onChange({ ...schedule, ratingDuration })}
         />

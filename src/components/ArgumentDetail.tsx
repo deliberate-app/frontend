@@ -8,10 +8,12 @@ import {
   MARKET_HINT,
   RATING_HINT,
   signClassOf,
+  STAKE_HINT,
+  SUBTREE_STAKE_HINT,
   type NodeTally,
 } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
-import { reservesOf } from '../lib/market';
+import { reservesOf, SHARE_PAYOUT_HINT } from '../lib/market';
 import { stakeWithDrafts, type ArgumentNode, type Debate } from '../types';
 
 /**
@@ -20,8 +22,8 @@ import { stakeWithDrafts, type ArgumentNode, type Debate } from '../types';
  * the fee with what it has earned the author so far - and, in words, what the reserves mean for a
  * corrector. Informational - the cross and the backdrop are the exits.
  *
- * The four figures the gauge and the ring draw as shapes are named in the chart's key, against the
- * line each belongs to, so they are not listed again here. Without a chart there is no key, and a
+ * The four figures the gauge and the ring draw as shapes are read off the chart, under the pointer,
+ * so they are not listed again here. Without a chart there is nothing to read them off, and a
  * source that keeps no stake history - the bundled sample - falls back to stating them: this is
  * still the one place a reader who wants the numbers finds them.
  */
@@ -52,10 +54,10 @@ export function ArgumentDetail({
   const totalDebateStake = stakeWithDrafts(debate);
 
   const current = figuresOf(node, tally);
-  // The key states the figures, so the list below only does where the chart is absent.
+  // The chart states the figures, so the list below only does where it is absent.
   const charted = points.length >= 2 && totalDebateStake > 0;
 
-  // Each correction is shown only where it says something the figure beside it does not: an
+  // Each correction gets a row only where it says something the row above it does not: an
   // undebated argument's rating is its market price and its subtree is itself, and repeating a
   // number is how a fact list stops being read.
   const corrected = current.corrected && formatImpact(current.rating) !== formatImpact(current.market);
@@ -107,26 +109,21 @@ export function ArgumentDetail({
           {!charted && (
             <>
               <dt title={MARKET_HINT}>Market</dt>
-              <dd className="mono">
-                {formatImpact(current.market)}
-                {corrected && (
-                  <span className="detail-corrected" title={RATING_HINT}>
-                    · rated {formatImpact(current.rating)}
-                  </span>
-                )}
-              </dd>
-              <dt>Staked</dt>
-              <dd className="mono">
-                {formatVotes(current.stake)} ⬡
-                {current.corrected && (
-                  <span
-                    className="detail-corrected"
-                    title="The stake the tally weighs this argument by: its own market's plus every sub-argument's."
-                  >
-                    · {formatVotes(current.subtreeStake)} ⬡ with its sub‑arguments
-                  </span>
-                )}
-              </dd>
+              <dd className="mono">{formatImpact(current.market)}</dd>
+              {corrected && (
+                <>
+                  <dt title={RATING_HINT}>Rating</dt>
+                  <dd className="mono">{formatImpact(current.rating)}</dd>
+                </>
+              )}
+              <dt title={STAKE_HINT}>Staked</dt>
+              <dd className="mono">{formatVotes(current.stake)} ⬡</dd>
+              {current.corrected && (
+                <>
+                  <dt title={SUBTREE_STAKE_HINT}>With sub-arguments</dt>
+                  <dd className="mono">{formatVotes(current.subtreeStake)} ⬡</dd>
+                </>
+              )}
             </>
           )}
           {tally && (
@@ -137,13 +134,14 @@ export function ArgumentDetail({
           )}
           <dt>Reserves</dt>
           <dd className="mono">
-            {pro} <span className="market-pro">good</span> / {con} <span className="market-con">bad</span>
+            {pro} <span className="market-pro">good-argument</span> / {con}{' '}
+            <span className="market-con">bad-argument</span>
           </dd>
           <dt>Fee</dt>
           <dd>
             {feePercentage > 0 ? (
               <>
-                <span className="mono">{feePercentage}%</span> of every stake, to the author
+                <span className="mono">{feePercentage}%</span> of every stake, to the creator
               </>
             ) : (
               'none'
@@ -151,7 +149,7 @@ export function ArgumentDetail({
           </dd>
           {feesEarned !== null && (
             <>
-              <dt>Author earned</dt>
+              <dt>Creator earned</dt>
               <dd>
                 <span className="mono">{formatVotes(feesEarned)} ⬡</span> so far
               </dd>
@@ -159,9 +157,8 @@ export function ArgumentDetail({
           )}
         </dl>
         <p className="composer-hint">
-          Underrated stakes buy good-argument shares, paid by the argument's final rating; overrated
-          stakes buy bad-argument shares, paid by its complement. Correcting the market can gain at
-          most the reserve on that side, before fees.
+          {SHARE_PAYOUT_HINT} Staking against a mispricing gains at most the reserve on that side, before
+          fees.
         </p>
       </div>
     </div>

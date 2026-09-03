@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react';
 import type { HistoryPoint } from '../lib/history';
-import { axisPercent, formatImpact } from '../lib/impact';
+import {
+  axisPercent,
+  DEBATE_STAKE_HINT,
+  formatImpact,
+  MARKET_HINT,
+  RATING_HINT,
+  STAKE_HINT,
+  SUBTREE_STAKE_HINT,
+  THESIS_RATING_HINT,
+} from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 
 /**
@@ -28,13 +37,11 @@ import { formatVotes } from '../lib/votes';
  * is open the series stop where the chain does, and a thin mark stands there; once it has closed
  * the series reach the right edge and there is nothing to mark.
  *
- * The key carries each series' figure as it stands now, which is why the argument has no separate
- * list of them: a number that names the line it belongs to says more than the same number in a
- * table. Those figures come from the tally rather than from the right edge of the plot, so a
- * settled argument shows what it settled at and not the projection the window closed on. All four
- * are always named, even where two coincide - an undebated argument reading the same stake twice
- * is the fact that nothing is staked beneath it, and a key that dropped rows would be read as a
- * different chart rather than as the same one with an empty band.
+ * The key names each series and defines it on hover; the figures are read off the curves under
+ * the pointer, at the instant it points to, which is why the argument has no separate list of
+ * them. All four series are always named, even where two coincide - an undebated argument
+ * drawing the same stake twice is the fact that nothing is staked beneath it, and a key that
+ * dropped rows would be read as a different chart rather than as the same one with an empty band.
  */
 /** The plot's box, in the user units its viewBox is drawn in. */
 export const HISTORY_BOX = {
@@ -201,6 +208,24 @@ export function ArgumentHistory({
   /** A pair steps forward by everything else stepping back; nothing changes size. */
   const groupClass = (own: ReadGroup) => `history-group ${group === own ? 'is-read' : ''}`;
 
+  /** The key: each series by name, defined on hover, fading with the pair it belongs to. */
+  const key: { group: ReadGroup; swatch: string; name: string; hint: string }[] = thesis
+    ? [
+        { group: 'ratings', swatch: 'history-rating', name: 'rating', hint: THESIS_RATING_HINT },
+        { group: 'stakes', swatch: 'history-swatch-area history-stake', name: 'staked', hint: DEBATE_STAKE_HINT },
+      ]
+    : [
+        { group: 'ratings', swatch: 'history-rating', name: 'rating', hint: RATING_HINT },
+        { group: 'ratings', swatch: 'history-market', name: 'its own market', hint: MARKET_HINT },
+        { group: 'stakes', swatch: 'history-swatch-area history-stake', name: 'its own stake', hint: STAKE_HINT },
+        {
+          group: 'stakes',
+          swatch: 'history-swatch-area history-subtree',
+          name: 'with sub-arguments',
+          hint: SUBTREE_STAKE_HINT,
+        },
+      ];
+
   return (
     <figure className="history">
       <svg
@@ -210,11 +235,11 @@ export function ArgumentHistory({
         role="img"
         aria-label={
           thesis
-            ? `Over the rating window the thesis' rating moved to ${formatImpact(last.rating)}, on ` +
-              `${formatVotes(last.subtreeStake)} vote tokens.`
-            : `Over the rating window this argument's market moved to ${formatImpact(last.market)} and the ` +
-              `debate's verdict on it to ${formatImpact(last.rating)}, on ${formatVotes(last.subtreeStake)} ` +
-              `vote tokens of the debate's ${formatVotes(totalDebateStake)}.`
+            ? `Rating ${formatImpact(last.rating)} on ${formatVotes(last.subtreeStake)} vote tokens staked, ` +
+              'over the rating window.'
+            : `Market ${formatImpact(last.market)}, rating ${formatImpact(last.rating)}, on ` +
+              `${formatVotes(last.subtreeStake)} of the debate's ${formatVotes(totalDebateStake)} vote ` +
+              'tokens, over the rating window.'
         }
         onPointerMove={readAt}
         onPointerLeave={() => {
@@ -309,28 +334,15 @@ export function ArgumentHistory({
         )}
       </svg>
       <figcaption className="history-key">
-        <span className={`history-key-item ${group === 'stakes' ? 'is-faded' : ''}`}>
-          <span className="history-swatch history-rating" /> rating
-        </span>
-        {!thesis && (
-          <span className={`history-key-item ${group === 'stakes' ? 'is-faded' : ''}`}>
-            <span className="history-swatch history-market" /> its own market
+        {key.map(({ group: own, swatch, name, hint }) => (
+          <span
+            key={name}
+            className={`history-key-item ${group !== null && group !== own ? 'is-faded' : ''}`}
+            title={hint}
+          >
+            <span className={`history-swatch ${swatch}`} /> {name}
           </span>
-        )}
-        {thesis ? (
-          <span className={`history-key-item ${group === 'ratings' ? 'is-faded' : ''}`}>
-            <span className="history-swatch history-swatch-area history-stake" /> staked
-          </span>
-        ) : (
-          <>
-            <span className={`history-key-item ${group === 'ratings' ? 'is-faded' : ''}`}>
-              <span className="history-swatch history-swatch-area history-stake" /> its own stake
-            </span>
-            <span className={`history-key-item ${group === 'ratings' ? 'is-faded' : ''}`}>
-              <span className="history-swatch history-swatch-area history-subtree" /> with sub‑arguments
-            </span>
-          </>
-        )}
+        ))}
       </figcaption>
     </figure>
   );

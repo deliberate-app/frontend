@@ -3,14 +3,14 @@ import { ArgumentHistory } from './ArgumentHistory';
 import { AddressChip } from './AddressChip';
 import { historyOf, type StakeEvent } from '../lib/history';
 import { signClassOf } from '../lib/impact';
-import { formatSignedVotes, INITIAL_UNITS } from '../lib/votes';
+import { formatSignedVotes, formatVotes, INITIAL_UNITS } from '../lib/votes';
 import type { DebateParticipant } from '../data/source';
 import { stakeWithDrafts, thesisOf, type Debate } from '../types';
 
 /**
  * Everything about the debate as a whole, opened from the thesis' figures: how its rating and its
  * stake got where they are, the fee its markets ran on, and - once the tally has run - where each
- * participant stands. The thesis owns no market, so there are no reserves and no author to have
+ * participant stands. The thesis owns no market, so there are no reserves and no creator to have
  * earned from them; what it has instead of those is the people.
  */
 export function ThesisDetail({
@@ -61,7 +61,7 @@ export function ThesisDetail({
           <dd>
             {debate.feePercentage > 0 ? (
               <>
-                <span className="mono">{debate.feePercentage}%</span> of every stake, to the author
+                <span className="mono">{debate.feePercentage}%</span> of every stake, to the creator
               </>
             ) : (
               'none'
@@ -98,8 +98,8 @@ export function ThesisDetail({
         )}
         {finished && participants.length > 0 && (
           <p className="composer-hint">
-            Points are vote tokens beyond the 100 granted on joining. Shares not yet redeemed do not
-            count until they are.
+            Excess: vote tokens beyond the {formatVotes(INITIAL_UNITS)} granted on joining, which a bounty
+            claim is proportional to. Shares not yet redeemed and fees not yet claimed do not count.
           </p>
         )}
       </div>

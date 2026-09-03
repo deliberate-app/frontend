@@ -22,7 +22,7 @@ export function AddressChip({ address }: { address: string }) {
     <button
       type="button"
       className="address"
-      title={copied ? 'Copied!' : `${address} - click to copy`}
+      title={`${address} - click to copy`}
       onClick={copy}
     >
       <AddressBadge address={address} label={copied ? 'copied ✓' : undefined} />

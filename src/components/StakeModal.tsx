@@ -11,8 +11,11 @@ import {
   signClassOf,
   tallyOf,
 } from '../lib/impact';
-import { previewStake, withPreviewedStake } from '../lib/market';
+import { BAD_SHARE_PAYOUT, GOOD_SHARE_PAYOUT, previewStake, withPreviewedStake } from '../lib/market';
 import type { ArgumentNode, Debate, Side } from '../types';
+
+/** The slider and the number field are one control in two shapes, so they share one name. */
+const STAKE_INPUT_LABEL = 'Stake in vote tokens: positive for underrated, negative for overrated';
 
 /** A signed figure as it stands and as the stake would leave it, both on the ±100% scale. */
 function Shift({ before, after }: { before: number; after: number | null }) {
@@ -125,7 +128,7 @@ export function StakeModal({
         </div>
 
         <div className="stake-amount">
-          <span className="stake-amount-label">Available {formatVotes(tokens)} ⬡</span>
+          <span className="stake-amount-label">Balance {formatVotes(tokens)} ⬡</span>
           <span className="stake-amount-inputs">
             <span className="stake-slider">
               <input
@@ -138,13 +141,13 @@ export function StakeModal({
                 value={signed}
                 onChange={(event) => setSigned(Number(event.target.value))}
                 disabled={busy || tokens < 1}
-                aria-label="Stake: negative calls the argument overrated, positive underrated"
+                aria-label={STAKE_INPUT_LABEL}
               />
               <span className="stake-slider-ends" aria-hidden="true">
-                <span className="market-con" title="Buys bad-argument shares, paid by the complement of the final rating.">
+                <span className="market-con" title={`Buys bad-argument shares, paying ${BAD_SHARE_PAYOUT} each.`}>
                   Overrated ↓
                 </span>
-                <span className="market-pro" title="Buys good-argument shares, paid by the argument's final rating.">
+                <span className="market-pro" title={`Buys good-argument shares, paying ${GOOD_SHARE_PAYOUT} each.`}>
                   Underrated ↑
                 </span>
               </span>
@@ -157,7 +160,7 @@ export function StakeModal({
               value={toTokens(signed)}
               onChange={(event) => setSigned(toUnits(Number(event.target.value)))}
               disabled={busy || tokens < 1}
-              aria-label="Stake in vote tokens: negative calls the argument overrated, positive underrated"
+              aria-label={STAKE_INPUT_LABEL}
             />
             ⬡
           </span>
@@ -176,7 +179,7 @@ export function StakeModal({
           <dd>
             <Shift before={before?.impact ?? 0} after={after ? after.impact : null} />
           </dd>
-          <dt>Fee to the author</dt>
+          <dt>Fee to the creator</dt>
           <dd className="mono">{preview ? `${formatVotes(preview.fee)} ⬡` : '—'}</dd>
         </dl>
 
@@ -201,8 +204,8 @@ export function StakeModal({
         <p className="composer-hint">
           {tokens < 1
             ? 'You have no vote tokens left in this debate.'
-            : 'You profit if the final rating lands on your side of the price you paid. The impact shown ' +
-              'is a projection - the tally weighs prices by how long they stood, so a late stake moves it less.'}
+            : 'You profit if the rating corrects your way once the debate finishes. The figures are a ' +
+              'projection: the tally weighs each price by how long it stood, so a late stake moves them less.'}
         </p>
         {error && <p className="action-error">{error}</p>}
       </div>
