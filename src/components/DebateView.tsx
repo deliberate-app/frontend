@@ -372,7 +372,7 @@ export function DebateView({
                 Stake ⬡
               </button>
               <span className="action-hint">
-                You profit if the rating corrects your way once the debate finishes
+                You profit if the weighted rating corrects your way once the debate finishes
                 {debate.feePercentage > 0 ? ` · ${debate.feePercentage}% fee to the argument's creator` : ' · no market fee'}
               </span>
             </div>

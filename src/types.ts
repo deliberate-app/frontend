@@ -23,7 +23,7 @@ export interface ArgumentNode {
   /** Vote tokens staked on this argument's market. */
   weight: number;
   /**
-   * The tallied rating the argument's shares settle against, as a fraction of full conviction
+   * The weighted rating the argument's shares settle against, as a fraction of full conviction
    * (−1..1, negative meaning refuted); null until the tally has run, and always null for the
    * thesis, whose verdict is its descendants' aggregate. Absent for bundled sample data.
    */

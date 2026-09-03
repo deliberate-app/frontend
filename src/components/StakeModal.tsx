@@ -3,14 +3,14 @@ import { Modal } from './Modal';
 import { formatVotes, toTokens, toUnits } from '../lib/votes';
 import { actionErrorMessage } from '../data/actions';
 import {
+  ARGUMENT_RATING_HINT,
   axisPercent,
   centered,
   formatImpact,
   IMPACT_HINT,
-  MARKET_HINT,
-  RATING_HINT,
   signClassOf,
   tallyOf,
+  WEIGHTED_RATING_HINT,
 } from '../lib/impact';
 import { BAD_SHARE_PAYOUT, GOOD_SHARE_PAYOUT, previewStake, withPreviewedStake } from '../lib/market';
 import type { ArgumentNode, Debate, Side } from '../types';
@@ -154,11 +154,11 @@ export function StakeModal({
       </div>
 
       <dl className="detail-facts">
-        <dt title={MARKET_HINT}>Market</dt>
+        <dt title={ARGUMENT_RATING_HINT}>Argument rating</dt>
         <dd>
           <Shift before={centered(node.approval)} after={preview ? centered(preview.approval) : null} />
         </dd>
-        <dt title={RATING_HINT}>Rating</dt>
+        <dt title={WEIGHTED_RATING_HINT}>Weighted rating</dt>
         <dd>
           <Shift before={before?.rating ?? 0} after={after ? after.rating : null} />
         </dd>
@@ -191,7 +191,7 @@ export function StakeModal({
       <p className="composer-hint">
         {tokens < 1
           ? 'You have no vote tokens left in this debate.'
-          : 'You profit if the rating corrects your way once the debate finishes. The figures are a ' +
+          : 'You profit if the weighted rating corrects your way once the debate finishes. The figures are ' +
             'projection: the tally weighs each price by how long it stood, so a late stake moves them less.'}
       </p>
       {error && <p className="action-error">{error}</p>}

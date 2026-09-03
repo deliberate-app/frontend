@@ -8,13 +8,15 @@ import type { ArgumentNode } from '../types';
  * Everything here lives on the same signed scale whose zero is an undecided market (principle 8),
  * so the shapes can be compared at a glance across a column without reading a single number:
  *
- * - **Rating gauge** - one axis carrying both halves of the story. The saturated fill is what the
- *   argument's own market says; the pale fill beyond or over it is what its sub-arguments did to
- *   that price. Green where they raised it, rust where they cut it - direction, not stance, since
- *   an argument's own stance is already the card's colour.
+ * - **Rating gauge** - one axis carrying both halves of the story. The saturated fill is the
+ *   argument rating, what its own market says; the pale fill beyond or over it is what its
+ *   sub-arguments did to that price, leaving the weighted rating. Green where they raised it, rust
+ *   where they cut it - direction, not stance, since an argument's own stance is already the
+ *   card's colour.
  * - **Stake ring** - how much of the debate's stake sits under this argument. The dark arc is its
- *   own market's; the pale arc continuing clockwise is the rest of its sub-debate's. The thesis'
- *   is the whole circle: the debate's stake is what every other ring is a share of.
+ *   argument stake; the pale arc continuing clockwise carries it to the accumulated stake, its
+ *   whole sub-debate's. The thesis' is the circle itself: the debate stake every other ring is a
+ *   share of.
  *
  * The numbers are not gone, they are one hover away: every segment carries the figure it draws,
  * and only that - what a figure means is said once, on its term in the detail. That is the trade
@@ -37,7 +39,7 @@ const figureRole = (presentational: boolean | undefined, label: () => string) =>
  * its own name or they exist for the mouse alone. One source for both, or the two would drift.
  */
 export const gaugeLabel = (rating: number, market?: number) => {
-  const said = `Rating ${formatImpact(rating)}`;
+  const said = `Weighted rating ${formatImpact(rating)}`;
   // The rating leads wherever the gauge speaks - it is the figure the bar is about. Where the
   // argument has a market of its own, the label ends by placing the rating against it: apart from
   // it when the two read differently, on it when they do not. "(= market)" rather than silence,
@@ -46,11 +48,13 @@ export const gaugeLabel = (rating: number, market?: number) => {
   // The thesis passes none, and its label is the rating alone - it owns no market to be placed
   // against.
   if (market === undefined) return said;
-  return readsDifferently(rating, market) ? `${said}, market ${formatImpact(market)}` : `${said} (= market)`;
+  return readsDifferently(rating, market)
+    ? `${said}, argument rating ${formatImpact(market)}`
+    : `${said} (= argument rating)`;
 };
 
 export const ringLabel = (subtreeStake: number, total: number) =>
-  `Staked ${formatVotes(subtreeStake)} of the debate's ${formatVotes(total)} vote tokens`;
+  `Accumulated stake ${formatVotes(subtreeStake)} of the debate's ${formatVotes(total)} vote tokens`;
 
 /** Both of an argument's figures in words, for a control that wraps them. */
 export const figuresLabel = (node: ArgumentNode, tally: NodeTally | undefined, total: number) => {
@@ -262,7 +266,7 @@ export function StakeRing({
       cls: 'ring-own',
       length: arc(own),
       offset: arc(startsAt),
-      title: `Staked ${formatVotes(own)} ⬡ on its own market`,
+      title: `Argument stake ${formatVotes(own)} ⬡`,
     },
     ...(beneath > 0
       ? [
@@ -270,7 +274,7 @@ export function StakeRing({
             cls: 'ring-beneath',
             length: arc(beneath),
             offset: arc(startsAt + own),
-            title: `Staked ${formatVotes(subtreeStake)} ⬡ with its sub-arguments`,
+            title: `Accumulated stake ${formatVotes(subtreeStake)} ⬡`,
           },
         ]
       : []),
@@ -288,7 +292,7 @@ export const DebateStakeRing = ({ total, presentational }: { total: number; pres
   if (total <= 0) {
     return null;
   }
-  const said = `Staked ${formatVotes(total)} ⬡ across the whole debate`;
+  const said = `Debate stake ${formatVotes(total)} ⬡`;
   return (
     <Ring
       arcs={[{ cls: 'ring-own', length: RING_CIRCUMFERENCE, offset: 0, title: said }]}

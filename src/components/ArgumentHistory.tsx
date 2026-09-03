@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react';
 import type { HistoryPoint } from '../lib/history';
 import {
+  ACCUMULATED_STAKE_HINT,
+  ARGUMENT_RATING_HINT,
+  ARGUMENT_STAKE_HINT,
   axisPercent,
   DEBATE_STAKE_HINT,
   formatImpact,
-  MARKET_HINT,
-  RATING_HINT,
-  STAKE_HINT,
-  SUBTREE_STAKE_HINT,
   THESIS_RATING_HINT,
+  WEIGHTED_RATING_HINT,
 } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 
@@ -211,18 +211,28 @@ export function ArgumentHistory({
   /** The key: each series by name, defined on hover, fading with the pair it belongs to. */
   const key: { group: ReadGroup; swatch: string; name: string; hint: string }[] = thesis
     ? [
-        { group: 'ratings', swatch: 'history-rating', name: 'rating', hint: THESIS_RATING_HINT },
-        { group: 'stakes', swatch: 'history-swatch-area history-stake', name: 'staked', hint: DEBATE_STAKE_HINT },
+        { group: 'ratings', swatch: 'history-rating', name: 'weighted rating', hint: THESIS_RATING_HINT },
+        {
+          group: 'stakes',
+          swatch: 'history-swatch-area history-stake',
+          name: 'debate stake',
+          hint: DEBATE_STAKE_HINT,
+        },
       ]
     : [
-        { group: 'ratings', swatch: 'history-rating', name: 'rating', hint: RATING_HINT },
-        { group: 'ratings', swatch: 'history-market', name: 'its own market', hint: MARKET_HINT },
-        { group: 'stakes', swatch: 'history-swatch-area history-stake', name: 'its own stake', hint: STAKE_HINT },
+        { group: 'ratings', swatch: 'history-rating', name: 'weighted rating', hint: WEIGHTED_RATING_HINT },
+        { group: 'ratings', swatch: 'history-market', name: 'argument rating', hint: ARGUMENT_RATING_HINT },
+        {
+          group: 'stakes',
+          swatch: 'history-swatch-area history-stake',
+          name: 'argument stake',
+          hint: ARGUMENT_STAKE_HINT,
+        },
         {
           group: 'stakes',
           swatch: 'history-swatch-area history-subtree',
-          name: 'with sub-arguments',
-          hint: SUBTREE_STAKE_HINT,
+          name: 'accumulated stake',
+          hint: ACCUMULATED_STAKE_HINT,
         },
       ];
 
@@ -235,11 +245,11 @@ export function ArgumentHistory({
         role="img"
         aria-label={
           thesis
-            ? `Rating ${formatImpact(last.rating)} on ${formatVotes(last.subtreeStake)} vote tokens staked, ` +
-              'over the rating window.'
-            : `Market ${formatImpact(last.market)}, rating ${formatImpact(last.rating)}, on ` +
-              `${formatVotes(last.subtreeStake)} of the debate's ${formatVotes(totalDebateStake)} vote ` +
-              'tokens, over the rating window.'
+            ? `Weighted rating ${formatImpact(last.rating)} on a debate stake of ` +
+              `${formatVotes(last.subtreeStake)} vote tokens, over the rating window.`
+            : `Argument rating ${formatImpact(last.market)}, weighted rating ${formatImpact(last.rating)}, ` +
+              `on an accumulated stake of ${formatVotes(last.subtreeStake)} of the debate's ` +
+              `${formatVotes(totalDebateStake)} vote tokens, over the rating window.`
         }
         onPointerMove={readAt}
         onPointerLeave={() => {

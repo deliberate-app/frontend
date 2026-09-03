@@ -81,19 +81,19 @@ describe('gaugeSegments', () => {
 });
 
 describe('gaugeLabel', () => {
-  test('the rating leads, and the market follows where it reads differently', () => {
-    expect(gaugeLabel(0.46, 0.84)).toBe('Rating +46%, market +84%');
+  test('the weighted rating leads, the argument rating follows where it reads differently', () => {
+    expect(gaugeLabel(0.46, 0.84)).toBe('Weighted rating +46%, argument rating +84%');
   });
 
-  test('an argument nobody argued beneath says its rating is its market', () => {
-    expect(gaugeLabel(0.46, 0.46)).toBe('Rating +46% (= market)');
+  test('an argument nobody argued beneath says its two ratings are one', () => {
+    expect(gaugeLabel(0.46, 0.46)).toBe('Weighted rating +46% (= argument rating)');
   });
 
   test('figures too close to read apart count as equal, as the bar draws them', () => {
-    expect(gaugeLabel(0.4601, 0.46)).toBe('Rating +46% (= market)');
+    expect(gaugeLabel(0.4601, 0.46)).toBe('Weighted rating +46% (= argument rating)');
   });
 
-  test('the thesis owns no market, so its label is the rating alone', () => {
-    expect(gaugeLabel(0.16)).toBe('Rating +16%');
+  test('the thesis owns no market, so its label is the weighted rating alone', () => {
+    expect(gaugeLabel(0.16)).toBe('Weighted rating +16%');
   });
 });

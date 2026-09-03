@@ -27,7 +27,7 @@ export interface NodeTally {
  *
  * Everything lives on one signed scale whose zero is the market's undecided price: an argument's
  * own centered approval (2a − 1) blends with its descendants' aggregate, weighted by the stake
- * behind each, into its tallied rating — negative meaning refuted. What a child exerts on its
+ * behind each, into its weighted rating — negative meaning refuted. What a child exerts on its
  * parent is its sway: the rating clamped at neutral (a refuted argument sways nothing rather
  * than aiding the other side), signed by its stance, at its subtree's share of the siblings'
  * stake — and a refuted child keeps its weight in that share, dampening its neighborhood.
@@ -43,7 +43,7 @@ export interface NodeTally {
 export function tallyOf(debate: Debate): Map<number, NodeTally> {
   const tallies = new Map<number, NodeTally>();
 
-  /** The node's tallied rating and subtree stake; fills the map with its children's tallies. */
+  /** The node's weighted rating and accumulated stake; fills the map with its children's tallies. */
   const subtree = (node: ArgumentNode): { rating: number; weight: number } => {
     const children = [...childrenOf(debate, node.id, 'pro'), ...childrenOf(debate, node.id, 'con')]
       .filter((child) => child.state === 'final')
@@ -98,12 +98,13 @@ export function tallyOf(debate: Debate): Map<number, NodeTally> {
  * a definition repeated on every card is read on none of them.
  */
 
-/** An argument's own market figure. */
-export const MARKET_HINT = 'The price of a good-argument share on its own market, ±0% when undecided.';
+/** What an argument's own market says about it. */
+export const ARGUMENT_RATING_HINT =
+  'The price of a good-argument share on its own market, ±0% when undecided.';
 
 /** The tally's verdict on an argument. */
-export const RATING_HINT =
-  "Its market price corrected by its sub-arguments in proportion to their stake - the tally's " +
+export const WEIGHTED_RATING_HINT =
+  "Its argument rating corrected by its sub-arguments in proportion to their stake - the tally's " +
   'verdict, which its shares settle against.';
 
 /** The thesis' rating: it has no market, so its rating is its arguments' alone. */
@@ -111,16 +112,17 @@ export const THESIS_RATING_HINT =
   "The top-level arguments' parent impacts, summed: above zero confirms the thesis, at or below " +
   'objects it.';
 
-/** What an argument moves its parent's rating by. */
+/** What an argument moves its parent's weighted rating by. */
 export const IMPACT_HINT =
-  "Its rating, ±0 if refuted, at its branch's share of the stake beneath the parent, signed by " +
-  'its side.';
+  "Its weighted rating, ±0 if refuted, at its branch's share of the stake beneath the parent, " +
+  'signed by its side.';
 
 /** The vote tokens on an argument's own market. */
-export const STAKE_HINT = 'Vote tokens staked on its own market.';
+export const ARGUMENT_STAKE_HINT = 'Vote tokens staked on its own market.';
 
-/** The stake behind an argument's rating. */
-export const SUBTREE_STAKE_HINT = "Its own stake plus every sub-argument's - what the tally weighs it by.";
+/** The stake behind an argument's weighted rating. */
+export const ACCUMULATED_STAKE_HINT =
+  "Its argument stake plus every sub-argument's - what the tally weighs it by.";
 
 /** The debate's whole stake, which the thesis shows instead of a share of itself. */
 export const DEBATE_STAKE_HINT = 'Vote tokens staked across the whole debate.';

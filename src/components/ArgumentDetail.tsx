@@ -3,14 +3,14 @@ import { Modal } from './Modal';
 import { ArgumentHistory } from './ArgumentHistory';
 import { historyOf, type StakeEvent } from '../lib/history';
 import {
+  ACCUMULATED_STAKE_HINT,
+  ARGUMENT_RATING_HINT,
+  ARGUMENT_STAKE_HINT,
   figuresOf,
   formatImpact,
   IMPACT_HINT,
-  MARKET_HINT,
-  RATING_HINT,
   signClassOf,
-  STAKE_HINT,
-  SUBTREE_STAKE_HINT,
+  WEIGHTED_RATING_HINT,
   type NodeTally,
 } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
@@ -95,19 +95,19 @@ export function ArgumentDetail({
       <dl className="detail-facts">
         {!charted && (
           <>
-            <dt title={MARKET_HINT}>Market</dt>
+            <dt title={ARGUMENT_RATING_HINT}>Argument rating</dt>
             <dd className="mono">{formatImpact(current.market)}</dd>
             {corrected && (
               <>
-                <dt title={RATING_HINT}>Rating</dt>
+                <dt title={WEIGHTED_RATING_HINT}>Weighted rating</dt>
                 <dd className="mono">{formatImpact(current.rating)}</dd>
               </>
             )}
-            <dt title={STAKE_HINT}>Staked</dt>
+            <dt title={ARGUMENT_STAKE_HINT}>Argument stake</dt>
             <dd className="mono">{formatVotes(current.stake)} ⬡</dd>
             {current.corrected && (
               <>
-                <dt title={SUBTREE_STAKE_HINT}>With sub-arguments</dt>
+                <dt title={ACCUMULATED_STAKE_HINT}>Accumulated stake</dt>
                 <dd className="mono">{formatVotes(current.subtreeStake)} ⬡</dd>
               </>
             )}
