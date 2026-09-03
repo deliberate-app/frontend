@@ -19,10 +19,12 @@
      on the scale rather than as another of the greys the bar is made of - and short of --ink,
      which is the page's text and would put a stroke of body copy through a figure. */
   --slate: #3c4535;
-  /* The ring's diameter, the bar's thickness, and the space between the two figures. The zero mark
-     is sized from the last two rather than given a length of its own: it stands half a gap clear of
-     the bar top and bottom, so the air around it is the same air that separates the pair. */
-  --figure-size: 1.15rem;
+  /* The ring's diameter, the bar's thickness, and the space between the two figures. The ring is
+     the identicon's box exactly - 1.4em at the 0.8rem a byline is set in - so the two drawings
+     share a bounding box down a column of claims. The zero mark is sized from the last two rather
+     than given a length of its own: it stands half a gap clear of the bar top and bottom, so the
+     air around it is the same air that separates the pair. */
+  --figure-size: 1.12rem;
   --gauge-height: 0.5rem;
   --figure-gap: 0.4rem;
   --stone: #b4b1a7;
@@ -1143,7 +1145,13 @@ button {
   position: relative;
   display: inline-block;
   vertical-align: middle;
-  width: 5.5rem;
+  /* The address' twin across the row: eleven characters of the mono face, the width of the
+     `0x1234…abcd` truncation opposite it. `ch` is that face's own character width, which is why a
+     bar that draws no text still borrows its font - measured any other way the two columns would
+     drift apart the moment the font did. */
+  width: 11ch;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
   height: var(--gauge-height);
   flex: none;
   background: var(--hairline);
