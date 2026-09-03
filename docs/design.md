@@ -58,15 +58,36 @@ contouring are exactly right — treat them as the baseline to protect.)
 10. **Mechanism-honest copy.** Labels say what the mechanism does ("Underrated ↑ / Overrated ↓",
    "locking · editing · rating", "You profit if the rating corrects your way"); tooltips explain the
    consequence. No moralized or gamified wording that misstates the incentives.
-11. **Order by cause, then by time.** Where a row or a group has no stronger reason for its order,
-   it runs in the order the things happened, left to right: the creator writes an argument, its
-   lock runs down, stake lands on it, and the rating follows from that stake. So a claim's head
-   reads identicon, address, lock, ring, gauge - one causal sentence rather than five items in an
-   arbitrary sweep - and any new element joins where its cause puts it. Reading order is a free
-   channel; spending it on the mechanism costs nothing and teaches it.
+11. **Order by cause, then by time.** Within a group, elements run in the order the things
+   happened, left to right: the creator writes an argument and its lock runs down; stake lands on
+   it and the rating follows from that stake. So a byline reads identicon, address, lock, and the
+   figures read ring then gauge - a causal sentence rather than an arbitrary sweep, and any new
+   element joins where its cause puts it. Between groups the roles decide: who made the claim, what
+   came of it, and the figures at the trailing edge where a measure belongs. Reading order is a
+   free channel; spending it on the mechanism costs nothing and teaches it.
 
 ## Decision log
 
+- **2026-09-03 — the four figures share two nouns: argument/weighted rating, argument/accumulated
+  stake.** *Market* was AMM jargon standing in for a figure, and its partner *rating* was an
+  unrelated word, so the pair taught nothing and a reader had to be told which was which. Each pair
+  now shares a noun and differs by what qualifies it: the **argument rating** is what an argument's
+  own market says, the **weighted rating** is that corrected by its sub-debate — weighted twice
+  over, by the stake behind each side of the blend (ADR-0011) and by the time each price stood
+  (ADR-0013); the **argument stake** is what sits on its own market, the **accumulated stake** that
+  plus every sub-argument's. The chart's key, the detail rows, the gauge and the ring arcs all read
+  from the same four names, which is what makes the key legible as a 2x2. The rename reverses a
+  documented decision - the glossary reserved *rating* for the tally's verdict and listed "rating
+  value" under Avoid for approval - so `CONTEXT.md` was rewritten to match, ADR-0014's title with
+  it, and the protocol keeps its own identifiers (`approval` is unsigned, the display figure is that
+  price centred). Left alone for now: the composer still seeds an argument at an unsigned "Initial
+  approval", which is the one place the two scales still meet.
+- **2026-09-03 — the focused claim's row is three tracks by role.** Who made the claim and under
+  what gate, then what came of it - the arguments beneath, or the finished thesis' outcome - then
+  the figures at the trailing edge. The middle track is sized to its content between two equal
+  sides, so the consequence holds the centre whether or not the sides are full, and the verdict
+  left its own paragraph above the row to sit in it. Principle 11 was narrowed to match: cause
+  orders elements *within* a group (creator then lock, stake then rating), roles order the groups.
 - **2026-09-03 — the gauge answers as one object, and the rating always leads.** Its two runs each
   carried their own hover, so the saturated run - the bar's own body, and the obvious thing to
   point at - answered "Market +84%" while the grey correction beside it answered "Rating +46%,
@@ -110,7 +131,8 @@ contouring are exactly right — treat them as the baseline to protect.)
   *means* is one sentence on the term it hangs on — the detail's and the stake modal's `dt`s and,
   new, the chart's key — and each definition is a single constant (`lib/impact.ts`; the payout
   rule in `lib/market.ts`, as the formula `(1 + tallied rating) / 2 of a vote token`, which
-  "paid by the rating" had misstated). Vocabulary settled on the glossary: *tallied rating* for
+  "paid by the rating" had misstated; the two ratings were renamed later the same day, see below).
+  Vocabulary settled on the glossary: *tallied rating* for
   the settled value ("final" is the lock word), *market* for the argument's own figure, *creator*
   for whoever the fee goes to, *deposit* for what an argument is seeded with, *excess* for what a
   bounty claim is proportional to, *bounty* never "prize" or "pool", *sub-arguments* with a plain

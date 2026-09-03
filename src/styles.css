@@ -659,6 +659,10 @@ button {
   min-width: 0;
 }
 
+.focus-meta-middle {
+  justify-content: center;
+}
+
 .focus-meta-end {
   justify-content: flex-end;
 }

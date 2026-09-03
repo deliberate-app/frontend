@@ -1,9 +1,7 @@
-import { zeroAddress } from 'viem';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
 import { ringOffsetsOf, tallyOf } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
-import { shortAddress } from '../lib/address';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
 import type { StakeEvent } from '../lib/history';
@@ -293,11 +291,11 @@ export function DebateView({
           {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
         </p>
         <h1 className="focus-text">{focus.text}</h1>
-        {/* One row, read left to right in the order it happened (principle 11): who made the claim
-            and on what terms, then what the market made of it, then what followed from that. Three
-            tracks rather than a spread, so the figures hold the row's centre whether or not there
-            is a consequence to put at the end - an argument has none, the finished thesis has its
-            outcome. The figures are the way into the market that produced them, so there is nothing
+        {/* Three tracks by role (principle 11): who made the claim, what came of
+            it - the arguments beneath, or the finished thesis' outcome - and, at the trailing edge
+            where a figure belongs, what the market made of it. Within each group the order is
+            causal: creator then lock, stake then the rating it moved. The figures are the way into
+            the market that produced them, so there is nothing
             to label with an "i": the thing you want to know more about is the thing you click. The
             label carries the figures as well as the action, because the drawings inside are marked
             presentational - a name that said only "about this market" would make them unreachable
@@ -305,45 +303,9 @@ export function DebateView({
         <p className="focus-meta focus-meta-row">
           <span className="focus-meta-side">
             <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
-            {isThesis &&
-              debate.identityRegistry !== undefined &&
-              (debate.identityRegistry === zeroAddress ? (
-                <span>open to everyone</span>
-              ) : (
-                <span title={`Identity registry ${debate.identityRegistry}`}>
-                  members of <span className="mono">{shortAddress(debate.identityRegistry)}</span>
-                </span>
-              ))}
             {isThesis && debate.bounty && <BountyTopUpChip debate={debate} tx={tx} />}
           </span>
-          <button
-            type="button"
-            className="figure-button"
-            aria-label={
-              isThesis
-                ? `Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens${focusTally ? `. ${gaugeLabel(focusTally.rating)}` : ''}. Debate details`
-                : `${figuresLabel(focus, focusTally, talliedStake)}. Argument details`
-            }
-            onClick={() => setDetailOpen(true)}
-          >
-            {isThesis ? (
-              // The thesis owns no market, so its gauge is its rating alone, and its ring is the
-              // whole circle every argument's is a share of.
-              <span className="figure-pair">
-                <DebateStakeRing total={stakeWithDrafts(debate)} presentational />
-                {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
-              </span>
-            ) : (
-              <ArgumentFigures
-                node={focus}
-                tally={focusTally}
-                total={talliedStake}
-                startsAt={ringOffsets.get(focus.id)}
-                presentational
-              />
-            )}
-          </button>
-          <span className="focus-meta-side focus-meta-end">
+          <span className="focus-meta-side focus-meta-middle">
             {/* What followed from the claim: for an argument what was argued beneath it, for the
                 finished thesis its outcome. */}
             {isThesis ? (
@@ -356,6 +318,35 @@ export function DebateView({
             ) : (
               <Replies debate={debate} node={focus} locked={focusLocked} />
             )}
+          </span>
+          <span className="focus-meta-side focus-meta-end">
+            <button
+              type="button"
+              className="figure-button"
+              aria-label={
+                isThesis
+                  ? `Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens${focusTally ? `. ${gaugeLabel(focusTally.rating)}` : ''}. Debate details`
+                  : `${figuresLabel(focus, focusTally, talliedStake)}. Argument details`
+              }
+              onClick={() => setDetailOpen(true)}
+            >
+              {isThesis ? (
+                // The thesis owns no market, so its gauge is its rating alone, and its ring is the
+                // whole circle every argument's is a share of.
+                <span className="figure-pair">
+                  <DebateStakeRing total={stakeWithDrafts(debate)} presentational />
+                  {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
+                </span>
+              ) : (
+                <ArgumentFigures
+                  node={focus}
+                  tally={focusTally}
+                  total={talliedStake}
+                  startsAt={ringOffsets.get(focus.id)}
+                  presentational
+                />
+              )}
+            </button>
           </span>
         </p>
         {rating && tx && (
