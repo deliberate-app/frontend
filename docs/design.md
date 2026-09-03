@@ -58,6 +58,12 @@ contouring are exactly right — treat them as the baseline to protect.)
 10. **Mechanism-honest copy.** Labels say what the mechanism does ("Underrated ↑ / Overrated ↓",
    "locking · editing · rating", "You profit if the rating corrects your way"); tooltips explain the
    consequence. No moralized or gamified wording that misstates the incentives.
+11. **Order by cause, then by time.** Where a row or a group has no stronger reason for its order,
+   it runs in the order the things happened, left to right: the creator writes an argument, its
+   lock runs down, stake lands on it, and the rating follows from that stake. So a claim's head
+   reads identicon, address, lock, ring, gauge - one causal sentence rather than five items in an
+   arbitrary sweep - and any new element joins where its cause puts it. Reading order is a free
+   channel; spending it on the mechanism costs nothing and teaches it.
 
 ## Decision log
 

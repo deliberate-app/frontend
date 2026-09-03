@@ -141,6 +141,36 @@ export function axisPercent(value: number): number {
   return 50 + Math.max(-1, Math.min(1, value)) * 50;
 }
 
+/**
+ * Where each argument's arc starts on the debate's circle, in stake units: everything staked
+ * before it in a walk down the tree from the thesis, pro side first.
+ *
+ * The point is that the arcs tile. Own market stakes partition the debate's stake exactly - every
+ * token is staked on exactly one argument - so laid end to end in one fixed order they fill the
+ * circle once, and each argument owns a slice a reader can find again in any other ring. The walk
+ * is pre-order, so an argument's descendants follow immediately after it: a branch is a
+ * contiguous run, which is why an argument's pale arc continues its dark one and the two together
+ * span exactly its accumulated stake - the slice its whole sub-debate occupies.
+ *
+ * Drafts are left out, as they are left out of the tally that sizes the circle: a draft has no
+ * slice yet, and its own ring reads from noon until it locks in.
+ */
+export function ringOffsetsOf(debate: Debate): Map<number, number> {
+  const offsets = new Map<number, number>();
+  let ahead = 0;
+  const visit = (node: ArgumentNode) => {
+    offsets.set(node.id, ahead);
+    ahead += node.weight;
+    for (const child of [...childrenOf(debate, node.id, 'pro'), ...childrenOf(debate, node.id, 'con')]) {
+      if (child.state === 'final') {
+        visit(child);
+      }
+    }
+  };
+  visit(thesisOf(debate));
+  return offsets;
+}
+
 /** The class that colours a figure by its sign; neutral takes neither stance colour. */
 export const signClassOf = (value: number) => (value > 0 ? 'impact-pos' : value < 0 ? 'impact-neg' : '');
 

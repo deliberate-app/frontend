@@ -3,10 +3,11 @@ import { AddressChip } from './AddressChip';
 import { LockChip } from './LockChip';
 
 /**
- * Who made a claim and whether it can still change: the lock, then the creator, in that order at
- * the end of the meta row - on a card, on the focused argument, and on the thesis alike. The two
- * belong together because they answer one question between them: whose claim this is, and whether
- * it is still theirs to move. A reader who learns the pair on a card reads it everywhere.
+ * Who made a claim and whether it can still change: the creator, then the lock. In that order
+ * because that is the order it happened - someone wrote the argument, and the clock they started
+ * runs out on it (principle 11) - and in the same place on a card, on the focused argument and on
+ * the thesis alike. The two belong together because they answer one question between them: whose
+ * claim this is, and whether it is still theirs to move.
  *
  * A card is itself a button, and an address that copies on click cannot nest inside one - so the
  * card shows the badge and the focused claim, where the address is a control in its own right,
@@ -28,7 +29,6 @@ export function Byline({
 }) {
   return (
     <span className="byline">
-      <LockChip locked={locked} finalizesIn={finalizesIn} />
       {creator &&
         (presentational ? (
           <span title={creator}>
@@ -37,6 +37,7 @@ export function Byline({
         ) : (
           <AddressChip address={creator} />
         ))}
+      <LockChip locked={locked} finalizesIn={finalizesIn} />
     </span>
   );
 }

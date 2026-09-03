@@ -55,7 +55,7 @@ export const ringLabel = (subtreeStake: number, total: number) =>
 /** Both of an argument's figures in words, for a control that wraps them. */
 export const figuresLabel = (node: ArgumentNode, tally: NodeTally | undefined, total: number) => {
   const { market, rating, subtreeStake } = figuresOf(node, tally);
-  return `${gaugeLabel(rating, market)}. ${ringLabel(subtreeStake, total)}`;
+  return `${ringLabel(subtreeStake, total)}. ${gaugeLabel(rating, market)}`;
 };
 
 /**
@@ -227,6 +227,7 @@ export function StakeRing({
   stake,
   subtreeStake,
   total,
+  startsAt = 0,
   presentational,
 }: {
   /** The argument's own market stake, in vote token units. */
@@ -235,6 +236,8 @@ export function StakeRing({
   subtreeStake: number;
   /** Every stake the tally counts - what the two arcs are a share of. */
   total: number;
+  /** The stake staked before this argument's slice (see `ringOffsetsOf`); noon without one. */
+  startsAt?: number;
   /** Set where a surrounding control already names the figure, so it is not announced twice. */
   presentational?: boolean;
 }) {
@@ -244,17 +247,21 @@ export function StakeRing({
   const arc = (units: number) => (units / total) * RING_CIRCUMFERENCE;
   const own = Math.max(stake, 0);
   const beneath = Math.max(subtreeStake - stake, 0);
-  // Both arcs start at noon and run clockwise, the second offset by the length of the first, and
-  // each names where its own end falls: the first the argument's own stake, the second the
-  // branch's total - what a reader measures by following the ring from noon, rather than the
-  // difference between them, which is drawn nowhere. An undebated argument gets no second arc at
-  // all: a zero-length one paints nothing but would still answer a hover, with a figure equal to
-  // the one beside it.
+  // The arcs run clockwise from the argument's own place on the debate's circle rather than from
+  // noon, so the slices of the arguments on screen abut instead of overlapping: read together they
+  // are one circle, cut where the stake is. The pale arc continues the dark one, because a branch
+  // occupies a contiguous run (see `ringOffsetsOf`).
+  //
+  // Each names where its own end falls: the first the argument's own stake, the second the
+  // branch's total - what a reader measures by following the ring, rather than the difference
+  // between them, which is drawn nowhere. An undebated argument gets no second arc at all: a
+  // zero-length one paints nothing but would still answer a hover, with a figure equal to the one
+  // beside it.
   const arcs: RingArc[] = [
     {
       cls: 'ring-own',
       length: arc(own),
-      offset: 0,
+      offset: arc(startsAt),
       title: `Staked ${formatVotes(own)} ⬡ on its own market`,
     },
     ...(beneath > 0
@@ -262,7 +269,7 @@ export function StakeRing({
           {
             cls: 'ring-beneath',
             length: arc(beneath),
-            offset: arc(own),
+            offset: arc(startsAt + own),
             title: `Staked ${formatVotes(subtreeStake)} ⬡ with its sub-arguments`,
           },
         ]
@@ -300,22 +307,32 @@ export const ArgumentFigures = ({
   node,
   tally,
   total,
+  startsAt,
   presentational,
 }: {
   node: ArgumentNode;
   tally?: NodeTally;
   /** Every stake the tally counts - what the ring draws its share of. */
   total: number;
+  /** Where this argument's slice of that circle begins (see `ringOffsetsOf`). */
+  startsAt?: number;
   /** Set where a surrounding control names both figures itself (see `figuresLabel`). */
   presentational?: boolean;
 }) => {
   const { market, rating, stake, subtreeStake, corrected } = figuresOf(node, tally);
   // One box around the pair, centred: the two are drawings of different heights, and a row that
-  // aligns its items on text baselines has none to give them.
+  // aligns its items on text baselines has none to give them. The ring leads: how much is behind
+  // an argument is what places it in the debate, and the gauge then says how it stands.
   return (
     <span className="figure-pair">
+      <StakeRing
+        stake={stake}
+        subtreeStake={subtreeStake}
+        total={total}
+        startsAt={startsAt}
+        presentational={presentational}
+      />
       <RatingGauge rating={rating} market={market} corrected={corrected} presentational={presentational} />
-      <StakeRing stake={stake} subtreeStake={subtreeStake} total={total} presentational={presentational} />
     </span>
   );
 };

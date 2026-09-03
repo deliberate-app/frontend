@@ -1,7 +1,7 @@
 import { zeroAddress } from 'viem';
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { ArgumentPosition } from '../data/actions';
-import { tallyOf } from '../lib/impact';
+import { ringOffsetsOf, tallyOf } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 import { shortAddress } from '../lib/address';
 import { useNow } from '../lib/time';
@@ -235,6 +235,9 @@ export function DebateView({
   // denominator that counted them would give arcs that cannot add up to their own circle. Zero
   // while nothing has locked in yet, which is when a share of the tally means nothing anyway.
   const talliedStake = tallies.get(thesis.id)?.subtreeWeight ?? 0;
+  // Where each argument's slice of that circle begins, so the rings on screen abut rather than
+  // each starting at noon over the top of the others.
+  const ringOffsets = useMemo(() => ringOffsetsOf(debate), [debate]);
 
   // An argument is locked once the data says final or the live clock has passed its finalization
   // time - the same rule the cards' padlocks follow.
@@ -296,6 +299,7 @@ export function DebateView({
         )}
         {isThesis ? (
           <p className="focus-meta focus-meta-row">
+            <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
             <span>
               {/* The thesis owns no market, so its gauge is its rating alone, and its ring is the
                   whole circle every argument's is a share of. Both open the debate's detail, as an
@@ -303,12 +307,12 @@ export function DebateView({
               <button
                 type="button"
                 className="figure-button"
-                aria-label={`${focusTally ? `${gaugeLabel(focusTally.rating)}. ` : ''}Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens. Debate details`}
+                aria-label={`Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens${focusTally ? `. ${gaugeLabel(focusTally.rating)}` : ''}. Debate details`}
                 onClick={() => setDetailOpen(true)}
               >
                 <span className="figure-pair">
-                  {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
                   <DebateStakeRing total={stakeWithDrafts(debate)} presentational />
+                  {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
                 </span>
               </button>
               {debate.bounty && (
@@ -331,25 +335,30 @@ export function DebateView({
                 </>
               )}
             </span>
-            <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
           </p>
         ) : (
           <p className="focus-meta focus-meta-row">
-            {/* The figures are the way into the market that produced them, so there is nothing to
-                label with an "i": the thing you want to know more about is the thing you click. The
-                label carries the figures as well as the action, because the drawings inside are
-                marked presentational - a name that said only "about this market" would make the
-                two figures unreachable without a mouse. The byline sits where it sits on every
-                card: at the row's end, the same element in the same place. */}
+            {/* Left to right in the order it happened, as on every card (principle 11): the
+                byline, then the figures. The figures are the way into the market that produced
+                them, so there is nothing to label with an "i" - the thing you want to know more
+                about is the thing you click. The label carries the figures as well as the action,
+                because the drawings inside are marked presentational: a name that said only "about
+                this market" would make the two figures unreachable without a mouse. */}
+            <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
             <button
               type="button"
               className="figure-button"
               aria-label={`${figuresLabel(focus, focusTally, talliedStake)}. Argument details`}
               onClick={() => setDetailOpen(true)}
             >
-              <ArgumentFigures node={focus} tally={focusTally} total={talliedStake} presentational />
+              <ArgumentFigures
+                node={focus}
+                tally={focusTally}
+                total={talliedStake}
+                startsAt={ringOffsets.get(focus.id)}
+                presentational
+              />
             </button>
-            <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
           </p>
         )}
         {rating && tx && (
@@ -447,6 +456,7 @@ export function DebateView({
                 tally={tallies.get(node.id)}
                 now={now}
                 totalStake={talliedStake}
+                startsAt={ringOffsets.get(node.id)}
                 onFocus={setFocusedId}
               />
             ))
@@ -480,6 +490,7 @@ export function DebateView({
                 tally={tallies.get(node.id)}
                 now={now}
                 totalStake={talliedStake}
+                startsAt={ringOffsets.get(node.id)}
                 onFocus={setFocusedId}
               />
             ))

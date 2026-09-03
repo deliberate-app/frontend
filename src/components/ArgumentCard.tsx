@@ -10,6 +10,7 @@ export function ArgumentCard({
   tally,
   now,
   totalStake,
+  startsAt,
   onFocus,
 }: {
   debate: Debate;
@@ -20,6 +21,8 @@ export function ArgumentCard({
   now: number;
   /** Every stake in the debate - what the card's ring draws its share of. */
   totalStake: number;
+  /** Where this argument's slice of that circle begins (see `ringOffsetsOf`). */
+  startsAt?: number;
   onFocus: (id: number) => void;
 }) {
   const pros = childrenOf(debate, node.id, 'pro').length;
@@ -36,26 +39,22 @@ export function ArgumentCard({
     pros > 0 ? `${pros} pro` : null,
     cons > 0 ? `${cons} con` : null,
   ].filter(Boolean);
+  // A draft cannot be replied to (nesting needs a locked-in parent), so it gets no footer at all -
+  // the countdown padlock in the head owns that story. Final and childless reads as an invitation.
+  const beneath = replies.length > 0 ? `${replies.join(' · ')} →` : locked ? 'Undebated' : null;
 
   return (
     <button type="button" className={`card card-${node.side}`} onClick={() => onFocus(node.id)}>
-      <span className="card-text">{node.text}</span>
-      <span className="card-meta">
-        {/* The gauge answers "how does this stand", the ring "how much is behind it" - the two
-            questions a column of cards is scanned for. The figures themselves are on hover. */}
-        <ArgumentFigures node={node} tally={tally} total={totalStake} />
-        {/* What has been said beneath the argument, then whose it is and whether it can still
-            change. The byline ends the row here exactly as it ends the focused claim's. */}
-        <span className="card-tail">
-          <span className="card-replies">
-            {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays
-                empty - the countdown padlock owns that story. Final and childless reads as an
-                invitation. */}
-            {replies.length > 0 ? `${replies.join(' · ')} →` : locked ? 'Undebated' : null}
-          </span>
-          <Byline locked={locked} finalizesIn={finalizesIn} creator={node.creator} presentational />
-        </span>
+      {/* The head reads left to right in the order it happened (principle 11): someone wrote the
+          argument, its lock ran down, stake landed on it, and the rating followed. Above the claim
+          rather than below it, so the eye meets who and how-much on the way in, and the row under
+          the text is left as the way deeper. */}
+      <span className="card-head">
+        <Byline locked={locked} finalizesIn={finalizesIn} creator={node.creator} presentational />
+        <ArgumentFigures node={node} tally={tally} total={totalStake} startsAt={startsAt} />
       </span>
+      <span className="card-text">{node.text}</span>
+      {beneath !== null && <span className="card-replies">{beneath}</span>}
     </button>
   );
 }
