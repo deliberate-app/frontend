@@ -131,6 +131,13 @@ export function axisPercent(value: number): number {
 /** The class that colours a figure by its sign; neutral takes neither stance colour. */
 export const signClassOf = (value: number) => (value > 0 ? 'impact-pos' : value < 0 ? 'impact-neg' : '');
 
+/**
+ * Whether two figures on this scale would be read as different. Every view that decides whether a
+ * correction is worth drawing, saying, or listing asks it here, so a bar cannot draw a correction
+ * its own tooltip denies: the question is what the reader sees, and the formatter decides that.
+ */
+export const readsDifferently = (a: number, b: number) => formatImpact(a) !== formatImpact(b);
+
 /** An argument's figures as every view reads them, with the tally's fallbacks applied once. */
 export interface NodeFigures {
   /** The argument's own market price, centered so an undecided market is 0. */

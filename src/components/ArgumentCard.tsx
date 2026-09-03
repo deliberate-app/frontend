@@ -41,11 +41,9 @@ export function ArgumentCard({
     <button type="button" className={`card card-${node.side}`} onClick={() => onFocus(node.id)}>
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
-        <span className="card-figures">
-          {/* The gauge answers "how does this stand", the ring "how much is behind it" - the two
-              questions a column of cards is scanned for. The figures themselves are on hover. */}
-          <ArgumentFigures node={node} tally={tally} total={totalStake} />
-        </span>
+        {/* The gauge answers "how does this stand", the ring "how much is behind it" - the two
+            questions a column of cards is scanned for. The figures themselves are on hover. */}
+        <ArgumentFigures node={node} tally={tally} total={totalStake} />
         <LockChip locked={locked} finalizesIn={finalizesIn} />
         <span className="card-replies">
           {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays

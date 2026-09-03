@@ -6,7 +6,7 @@ import { shortAddress } from '../lib/address';
 import { useNow } from '../lib/time';
 import type { AccountPosition, ArgumentNode, Debate, Side } from '../types';
 import type { StakeEvent } from '../lib/history';
-import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, thesisOf } from '../types';
+import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, stakeWithDrafts, thesisOf } from '../types';
 import { AddressChip } from './AddressChip';
 import { VerdictMark } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
@@ -205,16 +205,9 @@ export function DebateView({
   // A live, client-side preview of the tally in every phase - during editing arguments start
   // counting as they lock in (drafts contribute nothing, like the tally treats them) - and the
   // mirrored result once run.
-  // Memoized on the debate, not left to every render: the clock ticks once a second and the tally
-  // walks the tree per node, so recomputing it with the countdown would spend milliseconds a second
-  // on an answer that only changes when the debate is refetched.
-  const { tallies, totalStake } = useMemo(
-    () => ({
-      tallies: tallyOf(debate),
-      totalStake: debate.nodes.reduce((sum, node) => sum + node.weight, 0),
-    }),
-    [debate],
-  );
+  // The tally is the expensive walk in this view - a pass over the tree per node - so it is the one
+  // that is cached; the clock ticks once a second and the answer only changes on a refetch.
+  const tallies = useMemo(() => tallyOf(debate), [debate]);
   const focusTally = tallies.get(focus.id);
   // What the rings are a share of. The thesis' subtree stake, not the sum of every node's, because
   // that is the same accounting the arcs themselves come from: the tally leaves drafts out, so a
@@ -293,7 +286,7 @@ export function DebateView({
                 <RatingGauge rating={focusTally.rating} thesis /> ·{' '}
               </>
             )}
-            <TotalStake total={totalStake} />
+            <TotalStake total={stakeWithDrafts(debate)} />
             {debate.bounty && (
               <>
                 {' '}

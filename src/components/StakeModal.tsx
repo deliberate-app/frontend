@@ -1,7 +1,16 @@
 import { useState, type CSSProperties } from 'react';
 import { formatVotes, toTokens, toUnits } from '../lib/votes';
 import { actionErrorMessage } from '../data/actions';
-import { axisPercent, formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT, signClassOf, tallyOf } from '../lib/impact';
+import {
+  axisPercent,
+  centered,
+  formatImpact,
+  IMPACT_HINT,
+  MARKET_HINT,
+  RATING_HINT,
+  signClassOf,
+  tallyOf,
+} from '../lib/impact';
 import { previewStake, withPreviewedStake } from '../lib/market';
 import type { ArgumentNode, Debate, Side } from '../types';
 
@@ -157,7 +166,7 @@ export function StakeModal({
         <dl className="detail-facts">
           <dt title={MARKET_HINT}>Market</dt>
           <dd>
-            <Shift before={2 * node.approval - 1} after={preview ? 2 * preview.approval - 1 : null} />
+            <Shift before={centered(node.approval)} after={preview ? centered(preview.approval) : null} />
           </dd>
           <dt title={RATING_HINT}>Rating</dt>
           <dd>

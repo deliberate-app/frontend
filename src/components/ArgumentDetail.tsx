@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArgumentHistory } from './ArgumentHistory';
 import { historyOf, type StakeEvent } from '../lib/history';
-import { figuresOf, formatImpact, IMPACT_HINT, MARKET_HINT, RATING_HINT, type NodeTally } from '../lib/impact';
+import {
+  figuresOf,
+  formatImpact,
+  IMPACT_HINT,
+  MARKET_HINT,
+  RATING_HINT,
+  signClassOf,
+  type NodeTally,
+} from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 import { reservesOf } from '../lib/market';
-import type { ArgumentNode, Debate } from '../types';
+import { stakeWithDrafts, type ArgumentNode, type Debate } from '../types';
 
 /**
  * Everything about one argument, opened from its figures: how its rating and its stake got where
@@ -41,10 +49,7 @@ export function ArgumentDetail({
 }) {
   const { pro, con } = reservesOf(node);
   const points = useMemo(() => historyOf(debate, stakes, node.id), [debate, stakes, node.id]);
-  const totalDebateStake = useMemo(
-    () => debate.nodes.reduce((sum, argument) => sum + argument.weight, 0),
-    [debate],
-  );
+  const totalDebateStake = stakeWithDrafts(debate);
 
   const current = figuresOf(node, tally);
   // The key states the figures, so the list below only does where the chart is absent.
@@ -128,7 +133,7 @@ export function ArgumentDetail({
           {tally && (
             <>
               <dt title={IMPACT_HINT}>Parent impact</dt>
-              <dd className="mono">{formatImpact(tally.impact)}</dd>
+              <dd className={`mono ${signClassOf(tally.impact)}`}>{formatImpact(tally.impact)}</dd>
             </>
           )}
           <dt>Reserves</dt>

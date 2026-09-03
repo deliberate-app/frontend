@@ -7,6 +7,9 @@
   --con: #a5432c;
   --con-wash: #f7eee9;
   --bark: #7a7568;
+  /* Between the canvas and bark: for a figure that has to separate from both, like the sub-debate's
+     share of a ring. Mixed toward the canvas rather than to white to stay on the page's palette. */
+  --bark-mid: color-mix(in srgb, var(--bark) 60%, var(--canvas));
   --hairline: #e3e6de;
   /* A sub-debate's correction on a rating gauge. `stone` where it only pulled the argument back
      toward neutral: nothing took a side, so nothing borrows a stance colour. The two pale hues
@@ -778,16 +781,6 @@ button {
   margin-top: auto;
 }
 
-/* The card's figures, kept together as one wrapping group so the lock and replies stay at the end. */
-.card-figures {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.15rem 0.4rem;
-  font-size: 0.75rem;
-  color: var(--bark);
-}
-
 
 .card-replies {
   font-size: 0.78rem;
@@ -1000,8 +993,8 @@ button {
 .history-swatch-area.history-subtree { opacity: 0.14; }
 
 /* ── Figures ─────────────────────────────────────────────────────────── */
-/* One labelled figure - Market, Rating, Parent impact, staked - wherever it appears. The label
-   recedes and the value carries the color, so a row of them scans as values with names attached. */
+/* A labelled figure in words, which is now only the thesis' total stake: the rest are drawings.
+   The label recedes and the value carries the colour, so it scans as a value with a name attached. */
 .figure {
   white-space: nowrap;
 }
@@ -1020,7 +1013,6 @@ button {
   display: inline-flex;
   align-items: center;
   gap: var(--figure-gap);
-  vertical-align: middle;
 }
 
 /* The rating gauge: one signed axis, neutral at its centre (principle 8). The track is a hairline
@@ -1064,28 +1056,27 @@ button {
   z-index: 1;
 }
 
-.gauge-pro {
+/* One side axis, two layers. The market's own fill takes the saturated hue; the sub-debate's
+   correction takes the pale one, because it is what the debate did to the figure rather than the
+   figure itself. A correction with no side is grey: conviction was taken away and none of it
+   landed anywhere. */
+.gauge-fill.gauge-pro {
   background: var(--pro);
 }
 
-.gauge-con {
+.gauge-fill.gauge-con {
   background: var(--con);
 }
 
-/* The sub-debate's correction. Where it added to the bar - carrying the argument further from
-   neutral, or across it - it takes the pale hue of the side it added on: the sub-debate put
-   conviction somewhere, and this is where. Where it only pulled the argument back toward neutral it
-   is grey: conviction was taken away, and none of it landed on a side. Pale throughout, because
-   this is what the debate did to the figure rather than the figure itself. */
-.gauge-eaten {
+.gauge-correction {
   background: var(--stone);
 }
 
-.gauge-added-pro {
+.gauge-correction.gauge-pro {
   background: var(--pro-pale);
 }
 
-.gauge-added-con {
+.gauge-correction.gauge-con {
   background: var(--con-pale);
 }
 
@@ -1118,7 +1109,6 @@ button {
   width: var(--figure-size);
   height: var(--figure-size);
   flex: none;
-  vertical-align: middle;
   /* SVG arcs start at three o'clock; the debate reads from the top. */
   transform: rotate(-90deg);
 }
@@ -1139,9 +1129,7 @@ button {
 }
 
 .ring-beneath {
-  /* Between the track and the argument's own arc: the sub-debate's share has to separate from
-     both, and mixing toward the canvas rather than to white keeps it on the page's palette. */
-  stroke: color-mix(in srgb, var(--bark) 60%, var(--canvas));
+  stroke: var(--bark-mid);
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────── */

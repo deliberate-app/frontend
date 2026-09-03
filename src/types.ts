@@ -69,6 +69,15 @@ export interface DebateTiming {
  * but still advance in real time, so the elapsed wall time carries the estimate
  * between reloads; the wall itself stays a floor.
  */
+/**
+ * Every stake in the debate, drafts included - engagement rather than the tally's accounting. The
+ * rings divide by the thesis' subtree weight instead, which leaves drafts out; the two part only
+ * while a draft holds stake, and naming them apart is what keeps them from being swapped.
+ */
+export function stakeWithDrafts(debate: Debate): number {
+  return debate.nodes.reduce((sum, node) => sum + node.weight, 0);
+}
+
 export function liveChainTime(timing: DebateTiming, now: number): number {
   return Math.max(now, timing.chainTime + Math.max(0, now - timing.loadedAt));
 }

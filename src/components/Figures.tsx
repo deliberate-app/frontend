@@ -3,10 +3,9 @@ import {
   axisPercent,
   figuresOf,
   formatImpact,
-  IMPACT_HINT,
   MARKET_HINT,
   RATING_HINT,
-  signClassOf,
+  readsDifferently,
   THESIS_RATING_HINT,
 } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
@@ -30,6 +29,14 @@ import type { ArgumentNode } from '../types';
  */
 
 /**
+ * How a drawing announces itself: named where it stands alone, hidden where a control around it
+ * already carries the words. Written once so the two figures cannot answer it differently - and the
+ * label is only built when something will read it.
+ */
+const figureRole = (presentational: boolean | undefined, label: () => string) =>
+  presentational ? { 'aria-hidden': true as const } : { role: 'img' as const, 'aria-label': label() };
+
+/**
  * What each figure says in words, so a control that wraps them can borrow it.
  *
  * A drawing inside a button is not reached on its own, so the button has to carry the figures in
@@ -37,9 +44,7 @@ import type { ArgumentNode } from '../types';
  */
 export const gaugeLabel = (rating: number, market?: number, thesis?: boolean) =>
   `${thesis ? 'Thesis rating' : 'Rating'} ${formatImpact(rating)}${
-    market !== undefined && formatImpact(rating) !== formatImpact(market)
-      ? `, its own market ${formatImpact(market)}`
-      : ''
+    market !== undefined && readsDifferently(rating, market) ? `, its own market ${formatImpact(market)}` : ''
   }`;
 
 export const ringLabel = (subtreeStake: number, total: number) =>
@@ -51,7 +56,6 @@ export const figuresLabel = (node: ArgumentNode, tally: NodeTally | undefined, t
   return `${gaugeLabel(rating, corrected ? market : undefined)}. ${ringLabel(subtreeStake, total)}`;
 };
 
-/** The extent of one fill on the axis, as the inline position it is drawn at. */
 /**
  * One fill on the axis: where it sits, and which of its two ends is an end.
  *
@@ -60,12 +64,13 @@ export const figuresLabel = (node: ArgumentNode, tally: NodeTally | undefined, t
  * beside it. So the reader can tell a bar that was cut short from one that simply ends there,
  * without reading a number.
  */
+const cap = (round: boolean) => (round ? '999px' : '0');
+
 const span = (from: number, to: number, roundFrom: boolean, roundTo: boolean) => {
   const a = axisPercent(from);
   const b = axisPercent(to);
   const [left, right] = a <= b ? [a, b] : [b, a];
   const [roundLeft, roundRight] = a <= b ? [roundFrom, roundTo] : [roundTo, roundFrom];
-  const cap = (round: boolean) => (round ? '999px' : '0');
   return {
     left: `${left}%`,
     width: `${right - left}%`,
@@ -73,19 +78,61 @@ const span = (from: number, to: number, roundFrom: boolean, roundTo: boolean) =>
   };
 };
 
+/** Which side of neutral a figure landed on, as the class that colours it. Neutral takes neither. */
+const sideOf = (value: number) => (value > 0 ? 'gauge-pro' : value < 0 ? 'gauge-con' : '');
+
+/** One drawn piece of the bar: the market's own fill, or a run of the sub-debate's correction. */
+export interface GaugeSegment {
+  kind: 'fill' | 'correction';
+  /** The side's class, or empty where the piece took no side. */
+  side: string;
+  style: { left: string; width: string; borderRadius: string };
+}
+
+/**
+ * The bar, as the pieces it is drawn from.
+ *
+ * The fill runs from neutral to the market price. The correction runs from there to the rating and
+ * is drawn over it, so a sub-debate that cut the price eats visibly into the bar rather than
+ * sitting beside it. A run that carries the figure *away* from neutral put conviction on the side
+ * it lands on and takes that side's pale hue; one that moves *toward* neutral only took conviction
+ * away, and takes no side - it is grey. A correction crossing neutral does both, so it is two runs
+ * meeting on the centre line, and painting it as one would claim the market's own stretch for a
+ * side that never held it.
+ *
+ * Pass `market` only where a sub-debate moved the rating off it (see `figuresOf`). Without one the
+ * bar is simply the rating, ending where it stops, and nothing is drawn that would credit a gap to
+ * sub-arguments that do not exist.
+ */
+export function gaugeSegments(rating: number, market?: number): GaugeSegment[] {
+  const correcting = market !== undefined && readsDifferently(rating, market);
+  const base = correcting ? market : rating;
+  const crossesNeutral = base !== 0 && rating !== 0 && Math.sign(rating) !== Math.sign(base);
+  // The fill keeps its far cap unless the correction carries the bar past it, in which case that
+  // run owns the end. Everything else about a corner is decided per run below.
+  const extendsBar = !crossesNeutral && Math.abs(rating) > Math.abs(base);
+  const fill: GaugeSegment = {
+    kind: 'fill',
+    side: sideOf(base),
+    style: span(0, base, false, !extendsBar),
+  };
+  if (!correcting) {
+    return [fill];
+  }
+  const stops = crossesNeutral ? [base, 0, rating] : [base, rating];
+  return [
+    fill,
+    ...stops.slice(0, -1).map((from, index): GaugeSegment => {
+      const to = stops[index + 1]!;
+      const away = Math.abs(to) > Math.abs(from);
+      return { kind: 'correction', side: away ? sideOf(to) : '', style: span(from, to, !away, away) };
+    }),
+  ];
+}
+
 /**
  * The rating on one signed axis: what the market priced, and what the sub-debate did to it.
- *
- * The saturated bar runs from the centre to `market`, coloured by which side of neutral it lands.
- * The correction runs from there to `rating` and is drawn over it, so a sub-debate that cut the
- * price eats visibly into the bar rather than sitting beside it. Where the sub-debate added to the
- * bar - carrying the argument further from neutral - the correction takes the pale hue of the side
- * it added on; where it only pulled the argument back toward neutral it is grey. A correction that
- * crosses neutral does both, and is drawn as both.
- *
- * Pass `market` only where a sub-debate moved the rating away from it (see `figuresOf`). Without
- * one the bar is simply the rating, ending where it stops, and nothing is drawn that would credit
- * a gap to sub-arguments that do not exist.
+ * `gaugeSegments` decides the shape; this draws it and says what each piece means.
  */
 export function RatingGauge({
   rating,
@@ -101,70 +148,26 @@ export function RatingGauge({
   /** Set where a surrounding control already names the figure, so it is not announced twice. */
   presentational?: boolean;
 }) {
-  // Whether the correction is worth drawing is whether it is worth reporting, so the question is
-  // asked through the formatter that decides what "worth reporting" means. With none to draw the
-  // bar runs to the rating, which is the figure it would otherwise have ended on anyway.
-  const correcting = market !== undefined && formatImpact(rating) !== formatImpact(market);
-  const base = correcting ? market : rating;
-
-  // Which corners are ends depends on what the sub-debate did, which is not the same question as
-  // which way it moved: on a con market a rating nearer neutral is "raised" and yet the bar is
-  // shorter. What decides a corner is whether the correction reaches past the market price
-  // (extending the bar), sits inside it (eating into it), or crosses neutral (replacing it).
-  const sameSide = base === 0 || rating === 0 || Math.sign(rating) === Math.sign(base);
-  const extendsBar = sameSide && Math.abs(rating) > Math.abs(base);
-  // What decides the correction's colour is whether it adds to the bar or eats into it. A
-  // sub-debate that carried the argument further from neutral put conviction on a side, and that
-  // side's pale hue says which. One that only pulled the argument back toward neutral took
-  // conviction away without putting any anywhere, so it is grey - the figure moved, nothing took a
-  // side. A rating landing exactly on neutral has not crossed it, and neither has one correcting a
-  // market that was already there.
-  const crossesNeutral = base !== 0 && rating !== 0 && Math.sign(rating) !== Math.sign(base);
-  const addsToBar = extendsBar || crossesNeutral;
-  const addedTone = rating > 0 ? 'gauge-added-pro' : 'gauge-added-con';
-
-  // A correction that crosses neutral is two facts, not one, so it is two spans. Everything from
-  // the market price back to neutral is conviction taken away from the side the market had picked,
-  // which is grey by the rule above; only what lies beyond neutral was put on the other side.
-  // Painting the crossing in one pale hue would claim the market's own stretch for a side that
-  // never held it. The join sits on neutral, where the zero mark stands, so the two square edges
-  // that meet there are the ones already covered.
-  const corrections = !correcting
-    ? []
-    : crossesNeutral
-      ? [
-          { tone: 'gauge-eaten', style: span(base, 0, true, false) },
-          { tone: addedTone, style: span(0, rating, false, true) },
-        ]
-      : [
-          {
-            tone: addsToBar ? addedTone : 'gauge-eaten',
-            // Square where it meets the market's fill, round where the bar actually stops.
-            style: span(base, rating, !extendsBar, extendsBar),
-          },
-        ];
+  const segments = gaugeSegments(rating, market);
+  const correcting = segments.length > 1;
+  const ratingTitle = `Rating ${formatImpact(rating)}`;
 
   return (
-    <span className="gauge" {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': gaugeLabel(rating, market, thesis) })}>
-      <span
-        className={`gauge-fill ${base > 0 ? 'gauge-pro' : base < 0 ? 'gauge-con' : ''}`}
-        // Square where it leaves the centre line; round at the far end unless the correction
-        // carries the bar further, in which case that segment owns the end.
-        style={span(0, base, false, !extendsBar)}
-        title={
-          thesis
-            ? `Thesis rating ${formatImpact(rating)}. ${THESIS_RATING_HINT}`
-            : correcting
-              ? `Market ${formatImpact(base)}. ${MARKET_HINT}`
-              : `Rating ${formatImpact(rating)}. ${RATING_HINT}`
-        }
-      />
-      {corrections.map(({ tone, style }) => (
+    <span className="gauge" {...figureRole(presentational, () => gaugeLabel(rating, market, thesis))}>
+      {segments.map(({ kind, side, style }, index) => (
         <span
-          key={tone}
-          className={`gauge-correction ${tone}`}
+          key={index}
+          className={`gauge-${kind} ${side}`}
           style={style}
-          title={`Rating ${formatImpact(rating)}, ${formatImpact(rating - base)} off its own market price. ${RATING_HINT}`}
+          title={
+            kind === 'correction'
+              ? `${ratingTitle}, ${formatImpact(rating - (market as number))} off its own market price. ${RATING_HINT}`
+              : thesis
+                ? `Thesis rating ${formatImpact(rating)}. ${THESIS_RATING_HINT}`
+                : correcting
+                  ? `Market ${formatImpact(market as number)}. ${MARKET_HINT}`
+                  : `${ratingTitle}. ${RATING_HINT}`
+          }
         />
       ))}
     </span>
@@ -201,33 +204,37 @@ export function StakeRing({
   if (total <= 0) {
     return null;
   }
-  const arc = (units: number) => (Math.max(units, 0) / total) * RING_CIRCUMFERENCE;
-  const own = arc(stake);
-  // Both arcs start at noon and run clockwise, the second offset by the length of the first. A
-  // zero-length arc paints nothing under a butt linecap, so an undebated argument needs no guard.
+  const arc = (units: number) => (units / total) * RING_CIRCUMFERENCE;
+  const own = Math.max(stake, 0);
+  const beneath = Math.max(subtreeStake - stake, 0);
+  // Both arcs start at noon and run clockwise, the second offset by the length of the first. An
+  // undebated argument gets no second arc at all: a zero-length one paints nothing but would still
+  // answer a hover with "0 ⬡ staked on its sub-arguments", which describes nothing.
   const arcs = [
-    { key: 'ring-own', length: own, offset: 0, stake, of: "this argument's own market" },
-    { key: 'ring-beneath', length: arc(subtreeStake - stake), offset: own, stake: subtreeStake - stake, of: 'its sub-arguments' },
+    { cls: 'ring-own', stake: own, offset: 0, of: "this argument's own market" },
+    ...(beneath > 0
+      ? [{ cls: 'ring-beneath', stake: beneath, offset: arc(own), of: 'its sub-arguments' }]
+      : []),
   ];
 
   return (
     <svg
       className="ring"
       viewBox="0 0 18 18"
-      {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': ringLabel(subtreeStake, total) })}
+      {...figureRole(presentational, () => ringLabel(subtreeStake, total))}
     >
       <circle className="ring-track" cx="9" cy="9" r={RING_RADIUS} />
-      {arcs.map(({ key, length, offset, stake: units, of }) => (
+      {arcs.map(({ cls, stake: units, offset, of }) => (
         <circle
-          key={key}
-          className={key}
+          key={cls}
+          className={cls}
           cx="9"
           cy="9"
           r={RING_RADIUS}
-          strokeDasharray={`${length} ${RING_CIRCUMFERENCE}`}
+          strokeDasharray={`${arc(units)} ${RING_CIRCUMFERENCE}`}
           strokeDashoffset={-offset}
         >
-          <title>{`${formatVotes(Math.max(units, 0))} ⬡ staked on ${of}`}</title>
+          <title>{`${formatVotes(units)} ⬡ staked on ${of}`}</title>
         </circle>
       ))}
     </svg>
@@ -279,11 +286,3 @@ export const ArgumentFigures = ({
     </span>
   );
 };
-
-/** What an argument moves its parent's rating by. Carries no stake - its share of one is the figure. */
-export const ParentImpact = ({ impact }: { impact: number }) => (
-  <span className="figure" title={IMPACT_HINT}>
-    <span className="figure-label">Parent impact </span>
-    <strong className={`mono ${signClassOf(impact)}`}>{formatImpact(impact)}</strong>
-  </span>
-);

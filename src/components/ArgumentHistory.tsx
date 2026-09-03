@@ -1,5 +1,5 @@
 import type { HistoryPoint } from '../lib/history';
-import { formatImpact } from '../lib/impact';
+import { axisPercent, formatImpact } from '../lib/impact';
 import { formatVotes } from '../lib/votes';
 
 /**
@@ -67,8 +67,8 @@ export function historyPlot(
 
   /** The time axis: the rating phase end to end, whatever happened across it. */
   const x = (at: number) => padLeft + ((at - ratingWindow.opens) / span) * plotWidth;
-  /** The signed axis: +1 at the top, -1 at the bottom, 0 in the middle. */
-  const yRating = (value: number) => padTop + ((1 - Math.max(-1, Math.min(1, value))) / 2) * plotHeight;
+  /** The signed axis: +1 at the top, -1 at the bottom, 0 in the middle - the page's own scale. */
+  const yRating = (value: number) => padTop + (1 - axisPercent(value) / 100) * plotHeight;
   /** The stake axis: the debate's whole stake at the top, nothing at the bottom. */
   const yStake = (value: number) =>
     padTop + (1 - Math.max(0, Math.min(1, value / totalDebateStake))) * plotHeight;
