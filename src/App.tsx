@@ -5,6 +5,7 @@ import { BrowseView } from './components/BrowseView';
 import { DebateView, type DebateTx } from './components/DebateView';
 import { NetworkMenu } from './components/NetworkMenu';
 import { PhaseClock } from './components/PhaseClock';
+import { ViewerAccount } from './components/AddressBadge';
 import { WalletMenu } from './components/WalletMenu';
 import {
   actionErrorMessage,
@@ -462,7 +463,9 @@ export default function App() {
   const browsing = debateId === null;
 
   return (
-    <>
+    // Every badge below can tell whether the account it names is the one connected, so none of the
+    // views in between have to carry the answer down to it.
+    <ViewerAccount.Provider value={wallet.account}>
       <header className="topbar">
         <a className="wordmark" href="#/">
           <svg className="wordmark-mark" viewBox="0 0 96 96" aria-hidden="true">
@@ -583,6 +586,6 @@ export default function App() {
           Documentation
         </a>
       </footer>
-    </>
+    </ViewerAccount.Provider>
   );
 }

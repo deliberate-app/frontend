@@ -71,7 +71,7 @@ export function WalletMenu({
           onClick={() => setAccountMenuOpen((o) => !o)}
           title={wrongChain && wallet.chainId !== null ? `Your wallet is on ${chainName(wallet.chainId)}` : undefined}
         >
-          <AddressBadge address={wallet.account} />
+          <AddressBadge address={wallet.account} asAddress />
         </button>
         {accountMenuOpen && (
           <div className="wallet-menu" role="menu">

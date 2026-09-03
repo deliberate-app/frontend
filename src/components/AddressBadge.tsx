@@ -1,4 +1,11 @@
+import { createContext, useContext } from 'react';
 import { identiconOf, IDENTICON_SIZE, shortAddress } from '../lib/address';
+
+/**
+ * The connected account, so a badge can recognise itself without every view between here and the
+ * wallet having to carry it. Null while no wallet is connected, which is most of a visitor's time.
+ */
+export const ViewerAccount = createContext<string | null>(null);
 
 /** The deterministic identicon of an account, sized in em so it rides with its text. */
 function IdenticonIcon({ address }: { address: string }) {
@@ -30,14 +37,32 @@ function IdenticonIcon({ address }: { address: string }) {
 
 /**
  * The one way an account renders anywhere in the app: its identicon plus the canonical
- * `0x1234…abcd` truncation. Presentational - interactive wrappers (the copy chip, the wallet
- * button) compose it.
+ * `0x1234…abcd` truncation, or **You** where that account is the one connected. Presentational -
+ * interactive wrappers (the copy chip, the wallet button) compose it.
+ *
+ * "You" keeps the truncation's width (11 monospace characters), so a column of badges stays a
+ * column: the identicons line up down the left and whatever follows the name lines up down the
+ * right, whether or not one of the rows is yours. The wallet button opts out - its whole job is to
+ * say *which* account is connected, and "You" would answer a question nobody asked there.
  */
-export function AddressBadge({ address, label }: { address: string; label?: string }) {
+export function AddressBadge({
+  address,
+  label,
+  asAddress,
+}: {
+  address: string;
+  label?: string;
+  /** Render the address even where it is the viewer's own. */
+  asAddress?: boolean;
+}) {
+  const viewer = useContext(ViewerAccount);
+  const isViewer = !asAddress && viewer !== null && viewer.toLowerCase() === address.toLowerCase();
   return (
     <span className="address-badge">
       <IdenticonIcon address={address} />
-      <span className="mono">{label ?? shortAddress(address)}</span>
+      <span className={`mono ${isViewer ? 'address-viewer' : ''}`}>
+        {label ?? (isViewer ? 'You' : shortAddress(address))}
+      </span>
     </span>
   );
 }
