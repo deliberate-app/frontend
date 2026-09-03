@@ -171,10 +171,18 @@ export function RatingGauge({
       {highlight !== undefined && highlight > 0 && (correcting || thesis) && (
         <span
           className="gauge-highlight"
+          // It takes the corners of what it is drawn over: an end of the bar stays an end when it
+          // is pointed at, and the inner edge is only an end where the child accounts for the whole
+          // correction and so reaches the far end itself.
           style={
             thesis
-              ? span(0, rating * highlight, false, false)
-              : span(base, base + (rating - base) * highlight, false, false)
+              ? span(0, rating * highlight, false, highlight >= 0.999)
+              : span(
+                  base,
+                  base + (rating - base) * highlight,
+                  !extendsBar,
+                  highlight >= 0.999 && (extendsBar || crossesNeutral),
+                )
           }
         />
       )}
