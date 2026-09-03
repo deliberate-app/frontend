@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Modal } from './Modal';
 import { ArgumentHistory } from './ArgumentHistory';
 import { AddressChip } from './AddressChip';
 import { historyOf, type StakeEvent } from '../lib/history';
@@ -31,78 +32,63 @@ export function ThesisDetail({
   const finished = debate.phase === 'finished';
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Debate details"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-head">
-          <h2 className="modal-title">Debate details</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
+    <Modal title="Debate details" onClose={onClose}>
+      <ArgumentHistory
+        points={points}
+        totalDebateStake={stakeWithDrafts(debate)}
+        ratingWindow={{
+          opens: debate.timing?.editingEndTime ?? 0,
+          closes: debate.timing?.ratingEndTime ?? 0,
+        }}
+        thesis
+      />
 
-        <ArgumentHistory
-          points={points}
-          totalDebateStake={stakeWithDrafts(debate)}
-          ratingWindow={{
-            opens: debate.timing?.editingEndTime ?? 0,
-            closes: debate.timing?.ratingEndTime ?? 0,
-          }}
-          thesis
-        />
+      <dl className="detail-facts">
+        <dt>Fee</dt>
+        <dd>
+          {debate.feePercentage > 0 ? (
+            <>
+              <span className="mono">{debate.feePercentage}%</span> of every stake, to the creator
+            </>
+          ) : (
+            'none'
+          )}
+        </dd>
+      </dl>
 
-        <dl className="detail-facts">
-          <dt>Fee</dt>
-          <dd>
-            {debate.feePercentage > 0 ? (
-              <>
-                <span className="mono">{debate.feePercentage}%</span> of every stake, to the creator
-              </>
-            ) : (
-              'none'
-            )}
-          </dd>
-        </dl>
-
-        {/* Standings are what the tally leaves each participant with, so they are shown once it
-            has run: before that a balance is only what has not been staked yet. */}
-        {finished && participants.length > 0 ? (
-          <table className="leaderboard">
-            <caption>Standings</caption>
-            <tbody>
-              {participants.map((participant, index) => {
-                const points = participant.tokens - INITIAL_UNITS;
-                return (
-                  <tr key={participant.account}>
-                    <td className="leaderboard-rank mono">{index + 1}</td>
-                    <td>
-                      <AddressChip address={participant.account} />
-                    </td>
-                    <td className={`leaderboard-points mono ${signClassOf(points)}`}>
-                      {formatSignedVotes(points)} ⬡
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <p className="composer-hint">
-            {finished ? 'No standings to show.' : 'Standings appear once the tally has run.'}
-          </p>
-        )}
-        {finished && participants.length > 0 && (
-          <p className="composer-hint">
-            Excess: vote tokens beyond the {formatVotes(INITIAL_UNITS)} granted on joining, which a bounty
-            claim is proportional to. Shares not yet redeemed and fees not yet claimed do not count.
-          </p>
-        )}
-      </div>
-    </div>
+      {/* Standings are what the tally leaves each participant with, so they are shown once it
+          has run: before that a balance is only what has not been staked yet. */}
+      {finished && participants.length > 0 ? (
+        <table className="leaderboard">
+          <caption>Standings</caption>
+          <tbody>
+            {participants.map((participant, index) => {
+              const points = participant.tokens - INITIAL_UNITS;
+              return (
+                <tr key={participant.account}>
+                  <td className="leaderboard-rank mono">{index + 1}</td>
+                  <td>
+                    <AddressChip address={participant.account} />
+                  </td>
+                  <td className={`leaderboard-points mono ${signClassOf(points)}`}>
+                    {formatSignedVotes(points)} ⬡
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      ) : (
+        <p className="composer-hint">
+          {finished ? 'No standings to show.' : 'Standings appear once the tally has run.'}
+        </p>
+      )}
+      {finished && participants.length > 0 && (
+        <p className="composer-hint">
+          Excess: vote tokens beyond the {formatVotes(INITIAL_UNITS)} granted on joining, which a bounty
+          claim is proportional to. Shares not yet redeemed and fees not yet claimed do not count.
+        </p>
+      )}
+    </Modal>
   );
 }

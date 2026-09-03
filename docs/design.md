@@ -61,6 +61,12 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — one `Modal`, and the heading names the dialog.** Eight dialogs each carried the
+  same backdrop, heading and cross, and each named itself twice — once as the visible heading, once
+  as an `aria-label` on the dialog — and one pair had drifted ("Debate bounty" over "Bounty"). They
+  now render through one component whose heading labels the dialog by reference
+  (`aria-labelledby`), so a dialog's name is written once. Behaviour is unchanged: the cross and the
+  backdrop remain the exits. (Principle 6.)
 - **2026-09-03 — hover copy: the drawing names the figure, the term defines it.** The figure hovers
   had grown into paragraphs — a gauge segment carried its figure, a correction, and a two-sentence
   definition; the same definition rode every card in a column; share settlement was spelled five

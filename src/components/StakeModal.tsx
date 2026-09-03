@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { Modal } from './Modal';
 import { formatVotes, toTokens, toUnits } from '../lib/votes';
 import { actionErrorMessage } from '../data/actions';
 import {
@@ -112,103 +113,88 @@ export function StakeModal({
   } as CSSProperties;
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Stake on this argument"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-head">
-          <h2 className="modal-title">Stake on this argument</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        <div className="stake-amount">
-          <span className="stake-amount-label">Balance {formatVotes(tokens)} ⬡</span>
-          <span className="stake-amount-inputs">
-            <span className="stake-slider">
-              <input
-                type="range"
-                className="stake-range"
-                style={trackStyle}
-                min={-max}
-                max={max}
-                step={1}
-                value={signed}
-                onChange={(event) => setSigned(Number(event.target.value))}
-                disabled={busy || tokens < 1}
-                aria-label={STAKE_INPUT_LABEL}
-              />
-              <span className="stake-slider-ends" aria-hidden="true">
-                <span className="market-con" title={`Buys bad-argument shares, paying ${BAD_SHARE_PAYOUT} each.`}>
-                  Overrated ↓
-                </span>
-                <span className="market-pro" title={`Buys good-argument shares, paying ${GOOD_SHARE_PAYOUT} each.`}>
-                  Underrated ↑
-                </span>
-              </span>
-            </span>
+    <Modal title="Stake on this argument" onClose={onClose}>
+      <div className="stake-amount">
+        <span className="stake-amount-label">Balance {formatVotes(tokens)} ⬡</span>
+        <span className="stake-amount-inputs">
+          <span className="stake-slider">
             <input
-              type="number"
-              min={-toTokens(tokens)}
-              max={toTokens(tokens)}
-              step={0.01}
-              value={toTokens(signed)}
-              onChange={(event) => setSigned(toUnits(Number(event.target.value)))}
+              type="range"
+              className="stake-range"
+              style={trackStyle}
+              min={-max}
+              max={max}
+              step={1}
+              value={signed}
+              onChange={(event) => setSigned(Number(event.target.value))}
               disabled={busy || tokens < 1}
               aria-label={STAKE_INPUT_LABEL}
             />
-            ⬡
+            <span className="stake-slider-ends" aria-hidden="true">
+              <span className="market-con" title={`Buys bad-argument shares, paying ${BAD_SHARE_PAYOUT} each.`}>
+                Overrated ↓
+              </span>
+              <span className="market-pro" title={`Buys good-argument shares, paying ${GOOD_SHARE_PAYOUT} each.`}>
+                Underrated ↑
+              </span>
+            </span>
           </span>
-        </div>
-
-        <dl className="detail-facts">
-          <dt title={MARKET_HINT}>Market</dt>
-          <dd>
-            <Shift before={centered(node.approval)} after={preview ? centered(preview.approval) : null} />
-          </dd>
-          <dt title={RATING_HINT}>Rating</dt>
-          <dd>
-            <Shift before={before?.rating ?? 0} after={after ? after.rating : null} />
-          </dd>
-          <dt title={IMPACT_HINT}>Parent impact</dt>
-          <dd>
-            <Shift before={before?.impact ?? 0} after={after ? after.impact : null} />
-          </dd>
-          <dt>Fee to the creator</dt>
-          <dd className="mono">{preview ? `${formatVotes(preview.fee)} ⬡` : '—'}</dd>
-        </dl>
-
-        <button
-          type="button"
-          className={`btn stake-submit ${side === 'pro' ? 'stake-submit-pro' : side === 'con' ? 'stake-submit-con' : ''}`}
-          onClick={() => void stake()}
-          disabled={busy || !valid}
-        >
-          {busy ? (
-            'Staking…'
-          ) : side === null ? (
-            'Move the slider to stake'
-          ) : !valid ? (
-            `You only have ${formatVotes(tokens)} ⬡ in this debate`
-          ) : (
-            <>
-              Stake {formatVotes(amount)} ⬡ · {side === 'pro' ? 'Underrated' : 'Overrated'} <DirectionArrow side={side} />
-            </>
-          )}
-        </button>
-        <p className="composer-hint">
-          {tokens < 1
-            ? 'You have no vote tokens left in this debate.'
-            : 'You profit if the rating corrects your way once the debate finishes. The figures are a ' +
-              'projection: the tally weighs each price by how long it stood, so a late stake moves them less.'}
-        </p>
-        {error && <p className="action-error">{error}</p>}
+          <input
+            type="number"
+            min={-toTokens(tokens)}
+            max={toTokens(tokens)}
+            step={0.01}
+            value={toTokens(signed)}
+            onChange={(event) => setSigned(toUnits(Number(event.target.value)))}
+            disabled={busy || tokens < 1}
+            aria-label={STAKE_INPUT_LABEL}
+          />
+          ⬡
+        </span>
       </div>
-    </div>
+
+      <dl className="detail-facts">
+        <dt title={MARKET_HINT}>Market</dt>
+        <dd>
+          <Shift before={centered(node.approval)} after={preview ? centered(preview.approval) : null} />
+        </dd>
+        <dt title={RATING_HINT}>Rating</dt>
+        <dd>
+          <Shift before={before?.rating ?? 0} after={after ? after.rating : null} />
+        </dd>
+        <dt title={IMPACT_HINT}>Parent impact</dt>
+        <dd>
+          <Shift before={before?.impact ?? 0} after={after ? after.impact : null} />
+        </dd>
+        <dt>Fee to the creator</dt>
+        <dd className="mono">{preview ? `${formatVotes(preview.fee)} ⬡` : '—'}</dd>
+      </dl>
+
+      <button
+        type="button"
+        className={`btn stake-submit ${side === 'pro' ? 'stake-submit-pro' : side === 'con' ? 'stake-submit-con' : ''}`}
+        onClick={() => void stake()}
+        disabled={busy || !valid}
+      >
+        {busy ? (
+          'Staking…'
+        ) : side === null ? (
+          'Move the slider to stake'
+        ) : !valid ? (
+          `You only have ${formatVotes(tokens)} ⬡ in this debate`
+        ) : (
+          <>
+            Stake {formatVotes(amount)} ⬡ · {side === 'pro' ? 'Underrated' : 'Overrated'} <DirectionArrow side={side} />
+          </>
+        )}
+      </button>
+      <p className="composer-hint">
+        {tokens < 1
+          ? 'You have no vote tokens left in this debate.'
+          : 'You profit if the rating corrects your way once the debate finishes. The figures are a ' +
+            'projection: the tally weighs each price by how long it stood, so a late stake moves them less.'}
+      </p>
+      {error && <p className="action-error">{error}</p>}
+    </Modal>
   );
 }

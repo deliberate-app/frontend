@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Modal } from './Modal';
 import { actionErrorMessage } from '../data/actions';
 import { formatDuration } from '../lib/time';
 import { formatTokenAmount, parseTokenAmount } from '../lib/tokens';
@@ -62,51 +63,37 @@ export function BountyTopUpChip({ debate, tx }: { debate: Debate; tx: DebateTx |
         </svg>
       </button>
       {open && (
-        <div className="modal-backdrop" onClick={close} role="presentation">
-          <div
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Top up the bounty"
-            onClick={(event) => event.stopPropagation()}
+        <Modal title="Top up the bounty" onClose={close}>
+          <p className="composer-hint">
+            The bounty - currently <strong className="mono">{formatTokenAmount(bounty.pool, bounty)}</strong> -
+            pays participants who end with more vote tokens than they were granted, once the debate
+            finishes. Top-ups are donations: they raise every claim and are not refundable.
+          </p>
+          <label className="duration-field">
+            <span className="duration-label">Amount</span>
+            <span className="duration-inputs">
+              <input
+                className="mono"
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
+                value={amountText}
+                onChange={(event) => setAmountText(event.target.value)}
+                aria-label={`Top-up amount in ${bounty.symbol}`}
+              />
+              <span className="duration-unit-label">{bounty.symbol}</span>
+            </span>
+          </label>
+          <button
+            type="button"
+            className="btn btn-solid"
+            disabled={busy || amountText.trim() === ''}
+            onClick={() => void topUp()}
           >
-            <div className="modal-head">
-              <h2 className="modal-title">Top up the bounty</h2>
-              <button type="button" className="modal-close" onClick={close} aria-label="Close">
-                ×
-              </button>
-            </div>
-            <p className="composer-hint">
-              The bounty - currently <strong className="mono">{formatTokenAmount(bounty.pool, bounty)}</strong> -
-              pays participants who end with more vote tokens than they were granted, once the debate
-              finishes. Top-ups are donations: they raise every claim and are not refundable.
-            </p>
-            <label className="duration-field">
-              <span className="duration-label">Amount</span>
-              <span className="duration-inputs">
-                <input
-                  className="mono"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0"
-                  value={amountText}
-                  onChange={(event) => setAmountText(event.target.value)}
-                  aria-label={`Top-up amount in ${bounty.symbol}`}
-                />
-                <span className="duration-unit-label">{bounty.symbol}</span>
-              </span>
-            </label>
-            <button
-              type="button"
-              className="btn btn-solid"
-              disabled={busy || amountText.trim() === ''}
-              onClick={() => void topUp()}
-            >
-              {busy ? 'Topping up…' : `Top up ${bounty.symbol}`}
-            </button>
-            {error && <p className="action-error">{error}</p>}
-          </div>
-        </div>
+            {busy ? 'Topping up…' : `Top up ${bounty.symbol}`}
+          </button>
+          {error && <p className="action-error">{error}</p>}
+        </Modal>
       )}
     </>
   );

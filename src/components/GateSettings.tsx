@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Modal } from './Modal';
 import { isAddress, zeroAddress, type Address } from 'viem';
 import { shortAddress } from '../lib/address';
 
@@ -49,79 +50,64 @@ export function GateSettings({
   const customValid = isAddress(customAddress);
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Who may join"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-head">
-          <h2 className="modal-title">Who may join</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        <div className="preset-row">
-          <button
-            type="button"
-            className={`btn btn-small ${gate.mode === 'open' ? 'preset-active' : ''}`}
-            onClick={() => onChange({ mode: 'open' })}
-          >
-            Everyone
-          </button>
-          <button
-            type="button"
-            className={`btn btn-small ${gate.mode === 'circles' ? 'preset-active' : ''}`}
-            title="Accounts registered as human in Circles on Gnosis Chain."
-            onClick={() => onChange({ mode: 'circles', address: circlesRegistry })}
-          >
-            Circles humans
-          </button>
-          <button
-            type="button"
-            className={`btn btn-small ${gate.mode === 'registry' ? 'preset-active' : ''}`}
-            onClick={() => {
-              if (customValid) onChange({ mode: 'registry', address: customAddress as Address });
-            }}
-            disabled={!customValid}
-          >
-            A registry
-          </button>
-        </div>
-
-        <label className="duration-field">
-          <span className="duration-label">Registry</span>
-          <span className="duration-inputs">
-            <input
-              type="text"
-              inputMode="text"
-              spellCheck={false}
-              placeholder="0x…"
-              value={customAddress}
-              onChange={(event) => {
-                const next = event.target.value.trim();
-                setCustomAddress(next);
-                if (isAddress(next)) onChange({ mode: 'registry', address: next as Address });
-              }}
-            />
-          </span>
-          <span className="duration-hint">
-            Any identity registry by address: an allowlist you maintain, or a Circles adapter anchored on a
-            group you curate. The same registry can gate any number of debates, and it is asked on each
-            join - so a member removed later cannot join, while debates already joined are unaffected.
-          </span>
-        </label>
-
-        {gate.mode !== 'open' && (
-          <p className="composer-hint">
-            Joining is refused to accounts the registry does not know. Choose <em>Everyone</em> for a
-            debate anyone may join.
-          </p>
-        )}
+    <Modal title="Who may join" onClose={onClose}>
+      <div className="preset-row">
+        <button
+          type="button"
+          className={`btn btn-small ${gate.mode === 'open' ? 'preset-active' : ''}`}
+          onClick={() => onChange({ mode: 'open' })}
+        >
+          Everyone
+        </button>
+        <button
+          type="button"
+          className={`btn btn-small ${gate.mode === 'circles' ? 'preset-active' : ''}`}
+          title="Accounts registered as human in Circles on Gnosis Chain."
+          onClick={() => onChange({ mode: 'circles', address: circlesRegistry })}
+        >
+          Circles humans
+        </button>
+        <button
+          type="button"
+          className={`btn btn-small ${gate.mode === 'registry' ? 'preset-active' : ''}`}
+          onClick={() => {
+            if (customValid) onChange({ mode: 'registry', address: customAddress as Address });
+          }}
+          disabled={!customValid}
+        >
+          A registry
+        </button>
       </div>
-    </div>
+
+      <label className="duration-field">
+        <span className="duration-label">Registry</span>
+        <span className="duration-inputs">
+          <input
+            type="text"
+            inputMode="text"
+            spellCheck={false}
+            placeholder="0x…"
+            value={customAddress}
+            onChange={(event) => {
+              const next = event.target.value.trim();
+              setCustomAddress(next);
+              if (isAddress(next)) onChange({ mode: 'registry', address: next as Address });
+            }}
+          />
+        </span>
+        <span className="duration-hint">
+          Any identity registry by address: an allowlist you maintain, or a Circles adapter anchored on a
+          group you curate. The same registry can gate any number of debates, and it is asked on each
+          join - so a member removed later cannot join, while debates already joined are unaffected.
+        </span>
+      </label>
+
+      {gate.mode !== 'open' && (
+        <p className="composer-hint">
+          Joining is refused to accounts the registry does not know. Choose <em>Everyone</em> for a
+          debate anyone may join.
+        </p>
+      )}
+    </Modal>
   );
 }

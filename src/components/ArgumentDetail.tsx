@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Modal } from './Modal';
 import { ArgumentHistory } from './ArgumentHistory';
 import { historyOf, type StakeEvent } from '../lib/history';
 import {
@@ -81,86 +82,71 @@ export function ArgumentDetail({
   }, [loadFeesEarned, feePercentage]);
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Argument details"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-head">
-          <h2 className="modal-title">Argument details</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
+    <Modal title="Argument details" onClose={onClose}>
+      <ArgumentHistory
+        points={points}
+        totalDebateStake={totalDebateStake}
+        ratingWindow={{
+          opens: debate.timing?.editingEndTime ?? 0,
+          closes: debate.timing?.ratingEndTime ?? 0,
+        }}
+      />
 
-        <ArgumentHistory
-          points={points}
-          totalDebateStake={totalDebateStake}
-          ratingWindow={{
-            opens: debate.timing?.editingEndTime ?? 0,
-            closes: debate.timing?.ratingEndTime ?? 0,
-          }}
-        />
-
-        <dl className="detail-facts">
-          {!charted && (
-            <>
-              <dt title={MARKET_HINT}>Market</dt>
-              <dd className="mono">{formatImpact(current.market)}</dd>
-              {corrected && (
-                <>
-                  <dt title={RATING_HINT}>Rating</dt>
-                  <dd className="mono">{formatImpact(current.rating)}</dd>
-                </>
-              )}
-              <dt title={STAKE_HINT}>Staked</dt>
-              <dd className="mono">{formatVotes(current.stake)} ⬡</dd>
-              {current.corrected && (
-                <>
-                  <dt title={SUBTREE_STAKE_HINT}>With sub-arguments</dt>
-                  <dd className="mono">{formatVotes(current.subtreeStake)} ⬡</dd>
-                </>
-              )}
-            </>
-          )}
-          {tally && (
-            <>
-              <dt title={IMPACT_HINT}>Parent impact</dt>
-              <dd className={`mono ${signClassOf(tally.impact)}`}>{formatImpact(tally.impact)}</dd>
-            </>
-          )}
-          <dt>Reserves</dt>
-          <dd className="mono">
-            {pro} <span className="market-pro">good-argument</span> / {con}{' '}
-            <span className="market-con">bad-argument</span>
-          </dd>
-          <dt>Fee</dt>
-          <dd>
-            {feePercentage > 0 ? (
+      <dl className="detail-facts">
+        {!charted && (
+          <>
+            <dt title={MARKET_HINT}>Market</dt>
+            <dd className="mono">{formatImpact(current.market)}</dd>
+            {corrected && (
               <>
-                <span className="mono">{feePercentage}%</span> of every stake, to the creator
+                <dt title={RATING_HINT}>Rating</dt>
+                <dd className="mono">{formatImpact(current.rating)}</dd>
               </>
-            ) : (
-              'none'
             )}
-          </dd>
-          {feesEarned !== null && (
+            <dt title={STAKE_HINT}>Staked</dt>
+            <dd className="mono">{formatVotes(current.stake)} ⬡</dd>
+            {current.corrected && (
+              <>
+                <dt title={SUBTREE_STAKE_HINT}>With sub-arguments</dt>
+                <dd className="mono">{formatVotes(current.subtreeStake)} ⬡</dd>
+              </>
+            )}
+          </>
+        )}
+        {tally && (
+          <>
+            <dt title={IMPACT_HINT}>Parent impact</dt>
+            <dd className={`mono ${signClassOf(tally.impact)}`}>{formatImpact(tally.impact)}</dd>
+          </>
+        )}
+        <dt>Reserves</dt>
+        <dd className="mono">
+          {pro} <span className="market-pro">good-argument</span> / {con}{' '}
+          <span className="market-con">bad-argument</span>
+        </dd>
+        <dt>Fee</dt>
+        <dd>
+          {feePercentage > 0 ? (
             <>
-              <dt>Creator earned</dt>
-              <dd>
-                <span className="mono">{formatVotes(feesEarned)} ⬡</span> so far
-              </dd>
+              <span className="mono">{feePercentage}%</span> of every stake, to the creator
             </>
+          ) : (
+            'none'
           )}
-        </dl>
-        <p className="composer-hint">
-          {SHARE_PAYOUT_HINT} Staking against a mispricing gains at most the reserve on that side, before
-          fees.
-        </p>
-      </div>
-    </div>
+        </dd>
+        {feesEarned !== null && (
+          <>
+            <dt>Creator earned</dt>
+            <dd>
+              <span className="mono">{formatVotes(feesEarned)} ⬡</span> so far
+            </dd>
+          </>
+        )}
+      </dl>
+      <p className="composer-hint">
+        {SHARE_PAYOUT_HINT} Staking against a mispricing gains at most the reserve on that side, before
+        fees.
+      </p>
+    </Modal>
   );
 }

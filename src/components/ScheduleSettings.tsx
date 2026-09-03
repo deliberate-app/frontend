@@ -1,3 +1,4 @@
+import { Modal } from './Modal';
 import {
   SCHEDULE_PRESETS,
   sameSchedule,
@@ -77,56 +78,41 @@ export function ScheduleSettings({
   const warning = error === null ? scheduleWarning(schedule) : null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Debate schedule"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-head">
-          <h2 className="modal-title">Debate schedule</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
-            ×
+    <Modal title="Debate schedule" onClose={onClose}>
+      <div className="preset-row">
+        {SCHEDULE_PRESETS.map(({ name, schedule: preset }) => (
+          <button
+            key={name}
+            type="button"
+            className={`btn btn-small ${sameSchedule(preset, schedule) ? 'preset-active' : ''}`}
+            onClick={() => onChange({ ...preset })}
+          >
+            {name}
           </button>
-        </div>
-
-        <div className="preset-row">
-          {SCHEDULE_PRESETS.map(({ name, schedule: preset }) => (
-            <button
-              key={name}
-              type="button"
-              className={`btn btn-small ${sameSchedule(preset, schedule) ? 'preset-active' : ''}`}
-              onClick={() => onChange({ ...preset })}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-
-        <DurationField
-          label="Locking"
-          hint="Time until a new or edited argument locks in; replies beneath it wait that long."
-          value={schedule.lockingDuration}
-          onChange={(lockingDuration) => onChange({ ...schedule, lockingDuration })}
-        />
-        <DurationField
-          label="Editing"
-          hint="Adding, altering and moving arguments; each nesting level needs one locking window."
-          value={schedule.editingDuration}
-          onChange={(editingDuration) => onChange({ ...schedule, editingDuration })}
-        />
-        <DurationField
-          label="Rating"
-          hint="Reading the debate and staking on underrated and overrated arguments."
-          value={schedule.ratingDuration}
-          onChange={(ratingDuration) => onChange({ ...schedule, ratingDuration })}
-        />
-
-        {error && <p className="action-error">{error}</p>}
-        {warning && <p className="schedule-warning">{warning}</p>}
+        ))}
       </div>
-    </div>
+
+      <DurationField
+        label="Locking"
+        hint="Time until a new or edited argument locks in; replies beneath it wait that long."
+        value={schedule.lockingDuration}
+        onChange={(lockingDuration) => onChange({ ...schedule, lockingDuration })}
+      />
+      <DurationField
+        label="Editing"
+        hint="Adding, altering and moving arguments; each nesting level needs one locking window."
+        value={schedule.editingDuration}
+        onChange={(editingDuration) => onChange({ ...schedule, editingDuration })}
+      />
+      <DurationField
+        label="Rating"
+        hint="Reading the debate and staking on underrated and overrated arguments."
+        value={schedule.ratingDuration}
+        onChange={(ratingDuration) => onChange({ ...schedule, ratingDuration })}
+      />
+
+      {error && <p className="action-error">{error}</p>}
+      {warning && <p className="schedule-warning">{warning}</p>}
+    </Modal>
   );
 }

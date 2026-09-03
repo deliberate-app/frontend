@@ -1,3 +1,4 @@
+import { Modal } from './Modal';
 import { feeError, MAX_FEE_PERCENT } from '../lib/fees';
 
 /**
@@ -17,42 +18,27 @@ export function FeeSettings({
   const error = feeError(feePercentage);
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Market fee"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-head">
-          <h2 className="modal-title">Market fee</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
+    <Modal title="Market fee" onClose={onClose}>
+      <label className="duration-field">
+        <span className="duration-label">Fee</span>
+        <span className="duration-inputs">
+          <input
+            type="number"
+            min={0}
+            max={MAX_FEE_PERCENT}
+            step={1}
+            value={feePercentage}
+            onChange={(event) => onChange(Number(event.target.value))}
+          />
+          <span className="duration-unit-label">%</span>
+        </span>
+        <span className="duration-hint">
+          Taken from every stake and paid to the argument's creator: their revenue, and the
+          threshold a mispricing must exceed to be worth staking against.
+        </span>
+      </label>
 
-        <label className="duration-field">
-          <span className="duration-label">Fee</span>
-          <span className="duration-inputs">
-            <input
-              type="number"
-              min={0}
-              max={MAX_FEE_PERCENT}
-              step={1}
-              value={feePercentage}
-              onChange={(event) => onChange(Number(event.target.value))}
-            />
-            <span className="duration-unit-label">%</span>
-          </span>
-          <span className="duration-hint">
-            Taken from every stake and paid to the argument's creator: their revenue, and the
-            threshold a mispricing must exceed to be worth staking against.
-          </span>
-        </label>
-
-        {error && <p className="action-error">{error}</p>}
-      </div>
-    </div>
+      {error && <p className="action-error">{error}</p>}
+    </Modal>
   );
 }
