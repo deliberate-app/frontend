@@ -103,7 +103,15 @@ export function ArgumentDetail({
           </button>
         </div>
 
-        <ArgumentHistory points={points} totalDebateStake={totalDebateStake} current={current} />
+        <ArgumentHistory
+          points={points}
+          totalDebateStake={totalDebateStake}
+          ratingWindow={{
+            opens: debate.timing?.editingEndTime ?? 0,
+            closes: debate.timing?.ratingEndTime ?? 0,
+          }}
+          current={current}
+        />
 
         <dl className="detail-facts">
           {!charted && (

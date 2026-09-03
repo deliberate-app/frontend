@@ -933,6 +933,13 @@ button {
   opacity: 0.3;
 }
 
+/* Where the chain's clock stands. Thin and solid against the dashed zero: the same role on the
+   other axis - the one point on it that is not a value but a position. */
+.history-now {
+  stroke: var(--slate);
+  stroke-width: 1;
+}
+
 .history-line {
   fill: none;
   stroke-width: 1.6;

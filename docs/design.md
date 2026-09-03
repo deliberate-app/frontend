@@ -88,7 +88,11 @@ contouring are exactly right — treat them as the baseline to protect.)
   the whole point is to read the verdict against the weight behind it. The left axis is the signed
   ±100% every other figure uses — always the full range, never fitted to the series, so two
   arguments' charts are read against one ruler. The right axis is stake from zero to the debate's
-  whole, for the same reason. Ratings are lines because a rating moves either way; stake is two
+  whole, and the x-axis the rating phase opening to close, for the same reason: an axis fitted to
+  its series rescales itself per argument, so a flurry inside an hour and a week of steady
+  correction would draw the same picture. The empty stretch to the right of a live argument is the
+  time still left to correct it, which is worth seeing; a thin mark stands where the chain's clock
+  is, and once the window has closed there is nothing left to mark. Ratings are lines because a rating moves either way; stake is two
   stacked washes because it only accumulates and an argument's own is always part of its branch's,
   which makes the paler band exactly what its sub-arguments hold — the ring beside it, unrolled.
   The washes are laid down first and held faint: the stake is the weight behind the verdict, so it
