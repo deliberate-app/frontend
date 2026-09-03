@@ -87,17 +87,10 @@ const span = (from: number, to: number, roundFrom: boolean, roundTo: boolean) =>
 export function RatingGauge({
   rating,
   market,
-  highlight,
   presentational,
 }: {
   rating: number;
   market?: number;
-  /**
-   * The share of the sub-debate's contribution that comes from one child, 0..1 - drawn over the
-   * correction from the market end while that child is pointed at, or over the whole bar on the
-   * thesis, whose bar is nothing but its children.
-   */
-  highlight?: number;
   /** Set where a surrounding control already names the figure, so it is not announced twice. */
   presentational?: boolean;
 }) {
@@ -165,19 +158,6 @@ export function RatingGauge({
           title={`Rating ${formatImpact(rating)}, ${formatImpact(rating - base)} off its own market price. ${RATING_HINT}`}
         />
       ))}
-      {/* The pointed-at child's share of what its parent owes to its sub-debate: a slice of the
-          correction, measured from the market end. On the thesis there is no market to correct, so
-          the whole bar is what the children built and the slice is measured from neutral. */}
-      {highlight !== undefined && highlight > 0 && (correcting || thesis) && (
-        <span
-          className="gauge-highlight"
-          style={
-            thesis
-              ? span(0, rating * highlight, false, false)
-              : span(base, base + (rating - base) * highlight, false, false)
-          }
-        />
-      )}
     </span>
   );
 }
@@ -198,7 +178,6 @@ export function StakeRing({
   stake,
   subtreeStake,
   total,
-  highlight,
   presentational,
 }: {
   /** The argument's own market stake, in vote token units. */
@@ -207,8 +186,6 @@ export function StakeRing({
   subtreeStake: number;
   /** Every stake the tally counts - what the two arcs are a share of. */
   total: number;
-  /** The share of the sub-debate's arc that one sub-argument accounts for, 0..1. */
-  highlight?: number;
   /** Set where a surrounding control already names the figure, so it is not announced twice. */
   presentational?: boolean;
 }) {
@@ -231,16 +208,6 @@ export function StakeRing({
       {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': ringLabel(subtreeStake, total) })}
     >
       <circle className="ring-track" cx="9" cy="9" r={RING_RADIUS} />
-      {highlight !== undefined && highlight > 0 && (
-        <circle
-          className="ring-highlight"
-          cx="9"
-          cy="9"
-          r={RING_RADIUS}
-          strokeDasharray={`${arc(subtreeStake - stake) * highlight} ${RING_CIRCUMFERENCE}`}
-          strokeDashoffset={-own}
-        />
-      )}
       {arcs.map(({ key, length, offset, stake: units, of }) => (
         <circle
           key={key}
@@ -280,15 +247,12 @@ export const ArgumentFigures = ({
   node,
   tally,
   total,
-  highlight,
   presentational,
 }: {
   node: ArgumentNode;
   tally?: NodeTally;
   /** Every stake the tally counts - what the ring draws its share of. */
   total: number;
-  /** The share of this argument's sub-debate that one of its children accounts for, 0..1. */
-  highlight?: number;
   /** Set where a surrounding control names both figures itself (see `figuresLabel`). */
   presentational?: boolean;
 }) => {
@@ -297,17 +261,11 @@ export const ArgumentFigures = ({
   // aligns its items on text baselines has none to give them.
   return (
     <span className="figure-pair">
-      <RatingGauge
-        rating={tally?.rating ?? market}
-        market={market}
-        highlight={highlight}
-        presentational={presentational}
-      />
+      <RatingGauge rating={tally?.rating ?? market} market={market} presentational={presentational} />
       <StakeRing
         stake={node.weight}
         subtreeStake={tally?.subtreeWeight ?? node.weight}
         total={total}
-        highlight={highlight}
         presentational={presentational}
       />
     </span>

@@ -216,17 +216,6 @@ export function DebateView({
     [debate],
   );
   const focusTally = tallies.get(focus.id);
-  // Which child of the focused claim the pointer is on. The share of its parent's sub-debate that
-  // child accounts for is the weight the tally gives it among its siblings, so the slice
-  // highlighted in the parent's figures is the one those figures actually owe to it.
-  const [hoveredChild, setHoveredChild] = useState<number | null>(null);
-  const hoveredShare = useMemo(() => {
-    if (hoveredChild === null) return undefined;
-    const siblings = [...pros, ...cons].filter((child) => child.state === 'final');
-    const beneath = siblings.reduce((sum, child) => sum + (tallies.get(child.id)?.subtreeWeight ?? 0), 0);
-    const own = tallies.get(hoveredChild)?.subtreeWeight ?? 0;
-    return beneath > 0 ? own / beneath : undefined;
-  }, [hoveredChild, pros, cons, tallies]);
   // What the rings are a share of. The thesis' subtree stake, not the sum of every node's, because
   // that is the same accounting the arcs themselves come from: the tally leaves drafts out, so a
   // denominator that counted them would give arcs that cannot add up to their own circle. Zero
@@ -339,13 +328,7 @@ export function DebateView({
               aria-label={`${figuresLabel(focus, focusTally, talliedStake)}. Argument details`}
               onClick={() => setDetailOpen(true)}
             >
-              <ArgumentFigures
-                node={focus}
-                tally={focusTally}
-                total={talliedStake}
-                highlight={hoveredShare}
-                presentational
-              />
+              <ArgumentFigures node={focus} tally={focusTally} total={talliedStake} presentational />
             </button>{' '}
             · <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
           </p>
@@ -439,7 +422,6 @@ export function DebateView({
                 now={now}
                 totalStake={talliedStake}
                 onFocus={setFocusedId}
-                onHover={setHoveredChild}
               />
             ))
           )}
@@ -473,7 +455,6 @@ export function DebateView({
                 now={now}
                 totalStake={talliedStake}
                 onFocus={setFocusedId}
-                onHover={setHoveredChild}
               />
             ))
           )}

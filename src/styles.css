@@ -15,11 +15,6 @@
   /* The zero mark on a signed axis. Between --ink and --bark, so it reads as the one fixed point
      on the scale rather than as another of the greys the bar is made of - and short of --ink,
      which is the page's text and would put a stroke of body copy through a figure. */
-  /* What you are pointing at, wherever its contribution shows up in someone else's figure. The
-     one warm hue in the palette that is not a stance: leaf and redwood are spoken for, the greys
-     are structure, and a highlight has to be none of those or it reads as a fact rather than as a
-     pointer. Amber sits in the same natural family and survives on every ground the figures use. */
-  --amber: #d29a2c;
   --slate: #3c4535;
   /* The ring's diameter, the bar's thickness, and the space between the two figures. The zero mark
      is sized from the last two rather than given a length of its own: it stands half a gap clear of
@@ -1094,15 +1089,6 @@ button {
   background: var(--con-pale);
 }
 
-/* The part of the correction that comes from the argument being pointed at, drawn from the market
-   end over whatever colour the correction took. */
-.gauge-highlight {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: var(--amber);
-}
-
 /* The figures as one control: on the focused claim they open the market that produced them, so
    they carry the affordance an info chip used to. Bare button - the figures are the whole of it. */
 .figure-button {
@@ -1150,11 +1136,6 @@ button {
 
 .ring-own {
   stroke: var(--bark);
-}
-
-/* The pointed-at argument's share of the sub-debate's arc, over it and under nothing. */
-.ring-highlight {
-  stroke: var(--amber);
 }
 
 .ring-beneath {

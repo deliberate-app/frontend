@@ -62,20 +62,13 @@ contouring are exactly right — treat them as the baseline to protect.)
 ## Decision log
 
 - **2026-09-03 — the argument detail view became a history, and the figures moved to where they
-  are read.** Four changes, one thread: each figure belongs where it is answered.
+  are read.** Three changes, one thread: each figure belongs where it is answered.
 
   *Parent impact left the cards.* It is the one figure that is not about the argument you are
   looking at — it says what this argument does to its parent's rating, which is a fact about the
   parent. On a card, beside a gauge and a ring that are both about the argument itself, it read as
   a third figure of the same kind. It now sits in the detail view, where the reader has already
   asked about this argument specifically.
-
-  *Hovering a sub-argument highlights its share of the figures it feeds.* The correction on the
-  parent's gauge and the outer arc of its ring are both sums over the sub-debate; pointing at one
-  child paints the part of each that the child accounts for. The colour is `amber` — the palette's
-  greens and reds are stances and its greys are structure, so a highlight had to be none of the
-  three or it would read as a fact about the argument rather than as a pointer at it. It is the one
-  warm hue left, and it holds on every ground the figures use. (Principles 2, 5.)
 
   *"Rating market" became "Argument details", and the constant-product curve went with the name.*
   The curve drew the invariant the AMM is implemented with. Nobody staking needs it: what they need

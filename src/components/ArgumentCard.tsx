@@ -11,7 +11,6 @@ export function ArgumentCard({
   now,
   totalStake,
   onFocus,
-  onHover,
 }: {
   debate: Debate;
   node: ArgumentNode;
@@ -22,8 +21,6 @@ export function ArgumentCard({
   /** Every stake in the debate - what the card's ring draws its share of. */
   totalStake: number;
   onFocus: (id: number) => void;
-  /** Reports the pointer entering or leaving, so the parent's figures can show this card's share. */
-  onHover?: (id: number | null) => void;
 }) {
   const pros = childrenOf(debate, node.id, 'pro').length;
   const cons = childrenOf(debate, node.id, 'con').length;
@@ -41,17 +38,7 @@ export function ArgumentCard({
   ].filter(Boolean);
 
   return (
-    <button
-      type="button"
-      className={`card card-${node.side}`}
-      onClick={() => onFocus(node.id)}
-      // Focus as well as hover: the share is part of what the card says, and a keyboard reader
-      // tabbing the column should see it too.
-      onMouseEnter={() => onHover?.(node.id)}
-      onMouseLeave={() => onHover?.(null)}
-      onFocusCapture={() => onHover?.(node.id)}
-      onBlurCapture={() => onHover?.(null)}
-    >
+    <button type="button" className={`card card-${node.side}`} onClick={() => onFocus(node.id)}>
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
         <span className="card-figures">
