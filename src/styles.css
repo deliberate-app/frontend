@@ -605,16 +605,8 @@ button {
 }
 
 /* The card header: the kicker names the claim, the author badge signs it on the right. */
-.focus-kicker-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.35rem;
-}
-
 .focus-kicker {
-  margin: 0;
+  margin: 0 0 0.35rem;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -790,7 +782,19 @@ button {
 }
 
 
-/* The lock and the reply count, kept together at the end of the meta row. */
+/* Whose claim it is and whether it can still change: one element, one order, at the end of every
+   meta row - a card's, the focused argument's, the thesis'. The address sets the voice for both
+   its forms, so the badge inside a card reads exactly as the copy chip does outside one. */
+.byline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--bark);
+}
+
+/* The reply count and the byline, kept together at the end of the meta row. */
 .card-tail {
   display: inline-flex;
   align-items: center;

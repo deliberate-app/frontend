@@ -61,6 +61,14 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — every claim is signed, and the byline is one element.** Cards showed a lock but
+  no creator, while the focused claim showed its creator at the top and its lock at the bottom —
+  so the two views taught different orders for the same two facts. Both now end their meta row
+  with one `Byline`: the lock, then the identicon and address, on a card, on the focused argument
+  and on the thesis alike (the kicker is left naming the claim's kind). Inside a card, which is
+  itself a button, the address is the presentational badge rather than the copy chip — a control
+  cannot nest in a control, and the focused claim one click away is where it copies. (Principle 3:
+  a recurring element sits in the same place on each thing it recurs on.)
 - **2026-09-03 — one `Modal`, and the heading names the dialog.** Eight dialogs each carried the
   same backdrop, heading and cross, and each named itself twice — once as the visible heading, once
   as an `aria-label` on the dialog — and one pair had drifted ("Debate bounty" over "Bounty"). They
