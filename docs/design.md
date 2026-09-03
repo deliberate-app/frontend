@@ -61,6 +61,17 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — a correction is drawn only where a sub-debate caused one.** The gauge's pale
+  segment means "this is what the sub-arguments did to the price", so it must not appear where
+  there are none. It was appearing: once the tally has run, a settled rating is time-weighted and
+  so parts from the closing price even for a leaf (ADR-0013), and the gauge was drawing that gap as
+  though sub-arguments had made it — and handing them the bar's rounded end while it was at it, so
+  an undebated argument ended square, as if something continued past it. The test is whether any
+  stake sits beneath the argument; without it the bar is simply the rating, ending where it stops.
+  One consequence worth stating: on a leaf the card now shows the rating rather than the market,
+  and the two figures are only ever drawn together where the difference is something a reader can
+  act on. (Principles 1, 8.)
+
 - **2026-09-03 — the argument detail view became a history, and the figures moved to where they
   are read.** Three changes, one thread: each figure belongs where it is answered.
 
