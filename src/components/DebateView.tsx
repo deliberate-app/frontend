@@ -265,14 +265,9 @@ export function DebateView({
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
         <div className="focus-kicker-row">
-          {/* What this is and whether it can still change: both are facts about the claim itself,
-              so they are read together above it, and the figures below are left to be figures. */}
-          <span className="focus-kind">
-            <p className="focus-kicker">
-              {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
-            </p>
-            {!isThesis && <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />}
-          </span>
+          <p className="focus-kicker">
+            {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
+          </p>
           {focus.creator && <AddressChip address={focus.creator} />}
         </div>
         <h1 className="focus-text">{focus.text}</h1>
@@ -313,12 +308,13 @@ export function DebateView({
             )}
           </p>
         ) : (
-          <p className="focus-meta">
+          <p className="focus-meta focus-meta-row">
             {/* The figures are the way into the market that produced them, so there is nothing to
                 label with an "i": the thing you want to know more about is the thing you click. The
                 label carries the figures as well as the action, because the drawings inside are
                 marked presentational - a name that said only "about this market" would make the
-                two figures unreachable without a mouse. */}
+                two figures unreachable without a mouse. The lock sits where it sits on every card:
+                at the row's end, the same element in the same place. */}
             <button
               type="button"
               className="figure-button"
@@ -328,6 +324,7 @@ export function DebateView({
             >
               <ArgumentFigures node={focus} tally={focusTally} total={talliedStake} presentational />
             </button>
+            <LockChip locked={focusLocked} finalizesIn={focusFinalizesIn} />
           </p>
         )}
         {rating && tx && (

@@ -613,13 +613,6 @@ button {
   margin-bottom: 0.35rem;
 }
 
-/* The claim's kind and its lock state, read as one line above the text. */
-.focus-kind {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .focus-kicker {
   margin: 0;
   font-size: 0.75rem;
@@ -655,6 +648,14 @@ button {
   margin: 0.75rem 0 0;
   color: var(--bark);
   font-size: 0.85rem;
+}
+
+/* An argument's meta is composed like a card's: figures at the start, the lock at the end. */
+.focus-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 /* ── Columns ─────────────────────────────────────────────────────────── */
