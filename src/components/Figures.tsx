@@ -36,18 +36,26 @@ const figureRole = (presentational: boolean | undefined, label: () => string) =>
  * A drawing inside a button is not reached on its own, so the button has to carry the figures in
  * its own name or they exist for the mouse alone. One source for both, or the two would drift.
  */
-export const gaugeLabel = (rating: number, market?: number) =>
-  `Rating ${formatImpact(rating)}${
-    market !== undefined && readsDifferently(rating, market) ? `, market ${formatImpact(market)}` : ''
-  }`;
+export const gaugeLabel = (rating: number, market?: number) => {
+  const said = `Rating ${formatImpact(rating)}`;
+  // The rating leads wherever the gauge speaks - it is the figure the bar is about. Where the
+  // argument has a market of its own, the label ends by placing the rating against it: apart from
+  // it when the two read differently, on it when they do not. "(= market)" rather than silence,
+  // because an argument nobody has argued beneath still *has* a market, and a reader who has seen
+  // the two-figure form elsewhere would otherwise be left wondering where the second one went.
+  // The thesis passes none, and its label is the rating alone - it owns no market to be placed
+  // against.
+  if (market === undefined) return said;
+  return readsDifferently(rating, market) ? `${said}, market ${formatImpact(market)}` : `${said} (= market)`;
+};
 
 export const ringLabel = (subtreeStake: number, total: number) =>
   `Staked ${formatVotes(subtreeStake)} of the debate's ${formatVotes(total)} vote tokens`;
 
 /** Both of an argument's figures in words, for a control that wraps them. */
 export const figuresLabel = (node: ArgumentNode, tally: NodeTally | undefined, total: number) => {
-  const { market, rating, subtreeStake, corrected } = figuresOf(node, tally);
-  return `${gaugeLabel(rating, corrected ? market : undefined)}. ${ringLabel(subtreeStake, total)}`;
+  const { market, rating, subtreeStake } = figuresOf(node, tally);
+  return `${gaugeLabel(rating, market)}. ${ringLabel(subtreeStake, total)}`;
 };
 
 /**
@@ -126,38 +134,40 @@ export function gaugeSegments(rating: number, market?: number): GaugeSegment[] {
 
 /**
  * The rating on one signed axis: what the market priced, and what the sub-debate did to it.
- * `gaugeSegments` decides the shape; this draws it and names each piece. A correction is the gap
- * between the two figures, so it names both ends.
+ * `gaugeSegments` decides the shape; the whole bar answers with one label.
+ *
+ * One label, not one per piece: the pieces are two ends of a single reading, and a hover that
+ * answered "Market +84%" on the saturated run buried the very figure the gauge is about - the
+ * reader is on the bar to learn the rating, whichever half the pointer happens to land on. The
+ * pieces still mean what they draw; what they no longer do is each tell a different story.
  */
 export function RatingGauge({
   rating,
   market,
+  corrected,
   presentational,
 }: {
   rating: number;
-  /** The argument's own price, where a sub-debate moved the rating off it. */
+  /** The argument's own market price, where it has one. The thesis has none. */
   market?: number;
+  /** Whether a sub-debate moved the rating off that price - what draws the correction run. */
+  corrected?: boolean;
   /** Set where a surrounding control already names the figure, so it is not announced twice. */
   presentational?: boolean;
 }) {
-  const segments = gaugeSegments(rating, market);
-  const correcting = segments.length > 1;
+  // The market is the bar's base only where sub-arguments moved the rating off it. A settled leaf
+  // whose time-weighted rating parts from the standing price gets no correction run - nothing was
+  // argued beneath it to credit - but its label still names both figures.
+  const segments = gaugeSegments(rating, corrected ? market : undefined);
 
   return (
-    <span className="gauge" {...figureRole(presentational, () => gaugeLabel(rating, market))}>
+    <span
+      className="gauge"
+      title={gaugeLabel(rating, market)}
+      {...figureRole(presentational, () => gaugeLabel(rating, market))}
+    >
       {segments.map(({ kind, side, style }, index) => (
-        <span
-          key={index}
-          className={`gauge-${kind} ${side}`}
-          style={style}
-          title={
-            kind === 'correction'
-              ? gaugeLabel(rating, market)
-              : correcting
-                ? `Market ${formatImpact(market as number)}`
-                : gaugeLabel(rating)
-          }
-        />
+        <span key={index} className={`gauge-${kind} ${side}`} style={style} />
       ))}
     </span>
   );
@@ -304,11 +314,7 @@ export const ArgumentFigures = ({
   // aligns its items on text baselines has none to give them.
   return (
     <span className="figure-pair">
-      <RatingGauge
-        rating={rating}
-        market={corrected ? market : undefined}
-        presentational={presentational}
-      />
+      <RatingGauge rating={rating} market={market} corrected={corrected} presentational={presentational} />
       <StakeRing stake={stake} subtreeStake={subtreeStake} total={total} presentational={presentational} />
     </span>
   );

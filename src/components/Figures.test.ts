@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { gaugeSegments } from './Figures';
+import { gaugeLabel, gaugeSegments } from './Figures';
 
 /** The corner convention, read back off a segment: which of its two ends is an end. */
 const caps = (radius: string) => {
@@ -77,5 +77,23 @@ describe('gaugeSegments', () => {
     const [fill, eaten] = gaugeSegments(0, 0.4);
     expect(eaten!.side).toBe('');
     expect(eaten!.style).toEqual(fill!.style);
+  });
+});
+
+describe('gaugeLabel', () => {
+  test('the rating leads, and the market follows where it reads differently', () => {
+    expect(gaugeLabel(0.46, 0.84)).toBe('Rating +46%, market +84%');
+  });
+
+  test('an argument nobody argued beneath says its rating is its market', () => {
+    expect(gaugeLabel(0.46, 0.46)).toBe('Rating +46% (= market)');
+  });
+
+  test('figures too close to read apart count as equal, as the bar draws them', () => {
+    expect(gaugeLabel(0.4601, 0.46)).toBe('Rating +46% (= market)');
+  });
+
+  test('the thesis owns no market, so its label is the rating alone', () => {
+    expect(gaugeLabel(0.16)).toBe('Rating +16%');
   });
 });

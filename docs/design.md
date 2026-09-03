@@ -61,6 +61,17 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-03 — the gauge answers as one object, and the rating always leads.** Its two runs each
+  carried their own hover, so the saturated run - the bar's own body, and the obvious thing to
+  point at - answered "Market +84%" while the grey correction beside it answered "Rating +46%,
+  market +84%". Backwards: a reader is on the gauge to learn the rating, whichever half the pointer
+  lands on. One label now covers the whole bar, track included, and it opens with the rating. Where
+  the argument has a market of its own the label places the rating against it - `Rating +46%,
+  market +84%` when they read apart, `Rating +20% (= market)` when they do not, which is also the
+  answer to "why does this one show a single figure": nothing has been argued beneath it yet. The
+  thesis owns no market, so its label stays the rating alone. This narrows today's rule that a
+  drawing's hover is its figure: the *drawing's*, not each piece's - pieces that are two ends of
+  one reading share one. (Principles 9, 10.)
 - **2026-09-03 — the thesis gets the whole ring, and each arc names its own end.** The thesis used
   to read its stake as text ("Staked 148.60 ⬡") on the grounds that a share of itself is always the
   full circle. That was the argument for drawing it: the full circle is exactly what the debate's
