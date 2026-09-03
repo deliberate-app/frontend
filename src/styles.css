@@ -25,6 +25,17 @@
      than given a length of its own: it stands half a gap clear of the bar top and bottom, so the
      air around it is the same air that separates the pair. */
   --figure-size: 1.12rem;
+  /* A claim's box - the focused claim, and every card. Its content sits `--claim-inset` from the
+     outside edge on both sides, whichever box it is, so the two stack into one column on a narrow
+     screen without the bylines and figures stepping sideways. The value is the page's own gutter
+     (`.debate` padding), so the inset a reader meets at the edge of the screen is the inset they
+     meet again inside a claim - one distance, used at both levels, and it changes with the gutter
+     rather than beside it. The borders are named here too because the padding is measured from the
+     outside in: each side subtracts the border it wears, a hairline everywhere except the stance
+     stripe (a card's left edge, the focused claim's top). */
+  --claim-inset: 1.5rem;
+  --claim-hairline: 1px;
+  --claim-stripe: 4px;
   --gauge-height: 0.5rem;
   --figure-gap: 0.4rem;
   --stone: #b4b1a7;
@@ -166,6 +177,8 @@ button {
 .address-badge {
   display: inline-flex;
   align-items: center;
+  /* The truncation is one word - it breaks at the ellipsis if a narrow row lets it. */
+  white-space: nowrap;
   gap: 0.35rem;
   /* Inline-flex boxes take the icon's edge as their baseline; centering on the line instead
      keeps the badge from riding high inside text. */
@@ -601,10 +614,10 @@ button {
 /* ── Focused claim ───────────────────────────────────────────────────── */
 .focus {
   background: var(--card);
-  border: 1px solid var(--hairline);
+  border: var(--claim-hairline) solid var(--hairline);
+  border-top: var(--claim-stripe) solid var(--ink);
   border-radius: 1rem;
-  padding: 1.5rem 1.75rem;
-  border-top: 4px solid var(--ink);
+  padding: 1.5rem calc(var(--claim-inset) - var(--claim-hairline));
 }
 
 .focus-pro {
@@ -653,11 +666,12 @@ button {
   font-size: 0.85rem;
 }
 
-/* Three tracks: what made the claim, what the market made of it, what followed. The middle one is
-   sized to its content and the sides share what is left, so the figures hold the row's centre
-   whichever side is empty. */
+/* Three tracks, named for what they carry: who made the claim, what came of it, and the figures.
+   The middle is sized to its content between two equal sides, so what came of it holds the row's
+   centre whichever side is emptier. */
 .focus-meta-row {
   display: grid;
+  grid-template-areas: 'who outcome figures';
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 0.75rem;
@@ -670,11 +684,17 @@ button {
   min-width: 0;
 }
 
+.focus-meta-who {
+  grid-area: who;
+}
+
 .focus-meta-middle {
+  grid-area: outcome;
   justify-content: center;
 }
 
 .focus-meta-end {
+  grid-area: figures;
   justify-content: flex-end;
 }
 
@@ -756,10 +776,12 @@ button {
   gap: 0.7rem;
   text-align: left;
   background: var(--card);
-  border: 1px solid var(--hairline);
-  border-left-width: 4px;
+  border: var(--claim-hairline) solid var(--hairline);
+  border-left-width: var(--claim-stripe);
   border-radius: 0.75rem;
-  padding: 0.9rem 1rem;
+  /* Right of the hairline, left of the stripe - both landing on `--claim-inset`. */
+  padding: 0.9rem calc(var(--claim-inset) - var(--claim-hairline)) 0.9rem
+    calc(var(--claim-inset) - var(--claim-stripe));
   cursor: pointer;
   transition: border-color 120ms ease, transform 120ms ease;
 }
@@ -1966,6 +1988,12 @@ button {
 
 /* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 44rem) {
+  /* One column, so every claim's box is the same width and the inset holds them all to one line
+     down the page. It follows the page gutter down to 1rem, as it does at full width. */
+  :root {
+    --claim-inset: 1rem;
+  }
+
   .columns {
     grid-template-columns: 1fr;
   }
@@ -1979,6 +2007,20 @@ button {
   }
 
   .focus {
-    padding: 1.1rem 1.25rem;
+    padding-block: 1.1rem;
+  }
+
+  /* Three of them will not fit a phone's width, and the byline and the figures are the pair that
+     has to keep its column with the cards below - so what came of the claim takes its own line
+     underneath, where it has room to be read. */
+  .focus-meta-row {
+    grid-template-areas:
+      'who figures'
+      'outcome outcome';
+    grid-template-columns: 1fr auto;
+  }
+
+  .focus-meta-middle {
+    justify-content: flex-start;
   }
 }

@@ -301,7 +301,7 @@ export function DebateView({
             presentational - a name that said only "about this market" would make them unreachable
             without a mouse. */}
         <p className="focus-meta focus-meta-row">
-          <span className="focus-meta-side">
+          <span className="focus-meta-side focus-meta-who">
             <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
             {isThesis && debate.bounty && <BountyTopUpChip debate={debate} tx={tx} />}
           </span>

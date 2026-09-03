@@ -68,6 +68,18 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-04 — one inset governs every claim box, and it is the page's own gutter.** The focused
+  claim held its content 29px from its edge and a card held it 20px on the left and 17px on the
+  right, so stacking them in one column - which is what a phone does - stepped the bylines and the
+  figures sideways at every boundary. They now share `--claim-inset`, whose value *is* `.debate`'s
+  side padding: the distance a reader meets at the edge of the screen is the distance they meet
+  again inside a claim, and it narrows with the gutter rather than beside it. Each box subtracts
+  the border it actually wears (`--claim-hairline`, `--claim-stripe`), because a card carries its
+  stance as a 4px left edge and the arithmetic is what keeps the *content* aligned rather than the
+  boxes. Measured after the change: 24px on both sides of the focused claim and of every card at
+  full width, 16px at 375px. The narrow layout also forced the row's third track out - three of
+  them do not fit a phone - so what came of the claim takes its own line underneath, leaving the
+  byline and the figures to keep their columns with the cards below. (Principles 1, 3.)
 - **2026-09-03 — the four figures share two nouns: argument/weighted rating, argument/accumulated
   stake.** *Market* was AMM jargon standing in for a figure, and its partner *rating* was an
   unrelated word, so the pair taught nothing and a reader had to be told which was which. Each pair
