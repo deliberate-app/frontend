@@ -2,3 +2,8 @@
 # finds under api/ is deployed as a public endpoint, and api/v0/add.test shipped as one (890 KB)
 # until this file existed.
 api/**/*.test.ts
+
+# A .vercelignore supersedes .gitignore for what the CLI uploads, so the env files git keeps out of
+# the repo have to be named again here or a `vercel deploy` would carry them into the build.
+.env*
+!.env*.example
