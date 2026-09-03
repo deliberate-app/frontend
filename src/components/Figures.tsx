@@ -79,10 +79,10 @@ const span = (from: number, to: number, roundFrom: boolean, roundTo: boolean) =>
  * The saturated bar runs from the centre to `market`, coloured by which side of neutral it lands.
  * The correction runs from there to `rating` and is drawn over it, so a sub-debate that cut the
  * price eats visibly into the bar rather than sitting beside it. Where the sub-debate added to the
- * bar - carrying the argument further from neutral, or across it - the correction takes the pale
- * hue of the side it added on; where it only pulled the argument back toward neutral it is grey.
- * Omit `market` for the thesis, which owns no market of its own: the bar is then simply its rating,
- * and the tooltip says so.
+ * bar - carrying the argument further from neutral - the correction takes the pale hue of the side
+ * it added on; where it only pulled the argument back toward neutral it is grey. A correction that
+ * crosses neutral does both, and is drawn as both. Omit `market` for the thesis, which owns no
+ * market of its own: the bar is then simply its rating, and the tooltip says so.
  */
 export function RatingGauge({
   rating,
@@ -114,12 +114,35 @@ export function RatingGauge({
   const sameSide = base === 0 || rating === 0 || Math.sign(rating) === Math.sign(base);
   const extendsBar = sameSide && Math.abs(rating) > Math.abs(base);
   // What decides the correction's colour is whether it adds to the bar or eats into it. A
-  // sub-debate that carried the argument further from neutral, or across it, put conviction on a
-  // side, and that side's pale hue says which. One that only pulled the argument back toward
-  // neutral took conviction away without putting any anywhere, so it is grey - the figure moved,
-  // nothing took a side. A rating landing exactly on neutral has not crossed it.
-  const crossesNeutral = rating !== 0 && Math.sign(rating) !== Math.sign(base);
+  // sub-debate that carried the argument further from neutral put conviction on a side, and that
+  // side's pale hue says which. One that only pulled the argument back toward neutral took
+  // conviction away without putting any anywhere, so it is grey - the figure moved, nothing took a
+  // side. A rating landing exactly on neutral has not crossed it, and neither has one correcting a
+  // market that was already there.
+  const crossesNeutral = base !== 0 && rating !== 0 && Math.sign(rating) !== Math.sign(base);
   const addsToBar = extendsBar || crossesNeutral;
+  const addedTone = rating > 0 ? 'gauge-added-pro' : 'gauge-added-con';
+
+  // A correction that crosses neutral is two facts, not one, so it is two spans. Everything from
+  // the market price back to neutral is conviction taken away from the side the market had picked,
+  // which is grey by the rule above; only what lies beyond neutral was put on the other side.
+  // Painting the crossing in one pale hue would claim the market's own stretch for a side that
+  // never held it. The join sits on neutral, where the zero mark stands, so the two square edges
+  // that meet there are the ones already covered.
+  const corrections = !correcting
+    ? []
+    : crossesNeutral
+      ? [
+          { tone: 'gauge-eaten', style: span(base, 0, true, false) },
+          { tone: addedTone, style: span(0, rating, false, true) },
+        ]
+      : [
+          {
+            tone: addsToBar ? addedTone : 'gauge-eaten',
+            // Square where it meets the market's fill, round where the bar actually stops.
+            style: span(base, rating, !extendsBar, extendsBar),
+          },
+        ];
 
   return (
     <span className="gauge" {...(presentational ? { 'aria-hidden': true } : { role: 'img', 'aria-label': gaugeLabel(rating, market) })}>
@@ -134,16 +157,14 @@ export function RatingGauge({
             : `Market ${formatImpact(base)}. ${MARKET_HINT}`
         }
       />
-      {correcting && (
+      {corrections.map(({ tone, style }) => (
         <span
-          className={`gauge-correction ${
-            addsToBar ? (rating > 0 ? 'gauge-added-pro' : 'gauge-added-con') : 'gauge-eaten'
-          }`}
-          // Square where it meets the market's fill, round where the bar actually stops.
-          style={span(base, rating, !extendsBar, extendsBar || !sameSide)}
+          key={tone}
+          className={`gauge-correction ${tone}`}
+          style={style}
           title={`Rating ${formatImpact(rating)}, ${formatImpact(rating - base)} off its own market price. ${RATING_HINT}`}
         />
-      )}
+      ))}
       {/* The pointed-at child's share of what its parent owes to its sub-debate: a slice of the
           correction, measured from the market end. On the thesis there is no market to correct, so
           the whole bar is what the children built and the slice is measured from neutral. */}
