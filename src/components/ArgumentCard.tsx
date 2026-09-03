@@ -39,20 +39,21 @@ export function ArgumentCard({
 
   return (
     <button type="button" className={`card card-${node.side}`} onClick={() => onFocus(node.id)}>
-      {/* Whose claim this is and whether it can still change, before the claim itself - the same
-          element in the same corner as on the focused claim. */}
-      <span className="card-head">
-        <Byline locked={locked} finalizesIn={finalizesIn} creator={node.creator} presentational />
-      </span>
       <span className="card-text">{node.text}</span>
       <span className="card-meta">
         {/* The gauge answers "how does this stand", the ring "how much is behind it" - the two
             questions a column of cards is scanned for. The figures themselves are on hover. */}
         <ArgumentFigures node={node} tally={tally} total={totalStake} />
-        <span className="card-replies">
-          {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays
-              empty - the padlock above owns that story. Final and childless reads as an invitation. */}
-          {replies.length > 0 ? `${replies.join(' · ')} →` : locked ? 'Undebated' : null}
+        {/* What has been said beneath the argument, then whose it is and whether it can still
+            change. The byline ends the row here exactly as it ends the focused claim's. */}
+        <span className="card-tail">
+          <span className="card-replies">
+            {/* A draft cannot be replied to (nesting needs a locked-in parent), so its slot stays
+                empty - the countdown padlock owns that story. Final and childless reads as an
+                invitation. */}
+            {replies.length > 0 ? `${replies.join(' · ')} →` : locked ? 'Undebated' : null}
+          </span>
+          <Byline locked={locked} finalizesIn={finalizesIn} creator={node.creator} presentational />
         </span>
       </span>
     </button>
