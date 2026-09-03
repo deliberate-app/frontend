@@ -1,8 +1,9 @@
 import type { NodeTally } from '../lib/impact';
 import type { ArgumentNode, Debate } from '../types';
-import { childrenOf, liveChainTime } from '../types';
+import { liveChainTime } from '../types';
 import { Byline } from './Byline';
 import { ArgumentFigures } from './Figures';
+import { Replies } from './Replies';
 
 export function ArgumentCard({
   debate,
@@ -25,9 +26,6 @@ export function ArgumentCard({
   startsAt?: number;
   onFocus: (id: number) => void;
 }) {
-  const pros = childrenOf(debate, node.id, 'pro').length;
-  const cons = childrenOf(debate, node.id, 'con').length;
-
   // Time until the draft can be locked in; null without a chain clock (sample data).
   const finalizesIn =
     node.state === 'created' && debate.timing
@@ -35,13 +33,6 @@ export function ArgumentCard({
       : null;
   // Final once the argument is locked in, or once the live clock has passed its finalization time.
   const locked = node.state === 'final' || (finalizesIn !== null && finalizesIn <= 0);
-  const replies = [
-    pros > 0 ? `${pros} pro` : null,
-    cons > 0 ? `${cons} con` : null,
-  ].filter(Boolean);
-  // A draft cannot be replied to (nesting needs a locked-in parent), so it gets no footer at all -
-  // the countdown padlock in the head owns that story. Final and childless reads as an invitation.
-  const beneath = replies.length > 0 ? `${replies.join(' · ')} →` : locked ? 'Undebated' : null;
 
   return (
     <button type="button" className={`card card-${node.side}`} onClick={() => onFocus(node.id)}>
@@ -54,7 +45,7 @@ export function ArgumentCard({
         <ArgumentFigures node={node} tally={tally} total={totalStake} startsAt={startsAt} />
       </span>
       <span className="card-text">{node.text}</span>
-      {beneath !== null && <span className="card-replies">{beneath}</span>}
+      <Replies debate={debate} node={node} locked={locked} />
     </button>
   );
 }

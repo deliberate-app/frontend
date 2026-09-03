@@ -642,12 +642,25 @@ button {
   font-size: 0.85rem;
 }
 
-/* An argument's meta is composed like a card's: figures at the start, the lock at the end. */
+/* Three tracks: what made the claim, what the market made of it, what followed. The middle one is
+   sized to its content and the sides share what is left, so the figures hold the row's centre
+   whichever side is empty. */
 .focus-meta-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
+}
+
+.focus-meta-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.focus-meta-end {
+  justify-content: flex-end;
 }
 
 /* ── Columns ─────────────────────────────────────────────────────────── */
@@ -794,14 +807,18 @@ button {
   gap: 0.75rem;
 }
 
-/* The footer: what has been said beneath, pinned to the card's bottom edge - row-paired cards
-   share a height, so their footers sit on one line. */
-.card-replies {
-  margin-top: auto;
-  align-self: flex-end;
+/* What has been argued beneath a claim, wherever it appears. */
+.replies {
   font-size: 0.78rem;
   color: var(--bark);
   white-space: nowrap;
+}
+
+/* On a card it is the footer, pinned to the bottom edge - row-paired cards share a height, so
+   their footers sit on one line. */
+.card > .replies {
+  margin-top: auto;
+  align-self: flex-end;
 }
 
 .card-lock {
@@ -854,10 +871,13 @@ button {
 }
 
 /* ── Verdict (thesis, once finished) ─────────────────────────────────── */
+/* The outcome sits at the end of the thesis' row, as its consequence. */
 .verdict {
-  margin: 0.75rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .verdict-approved {

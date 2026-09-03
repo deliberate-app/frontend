@@ -12,6 +12,7 @@ import { ancestryOf, childrenOf, editingOpen, liveChainTime, livePhaseOf, stakeW
 import { VerdictMark, verdictLabel } from './VerdictMark';
 import { BountyPanel, BountyTopUpChip } from './BountyPanel';
 import { ArgumentCard } from './ArgumentCard';
+import { Replies } from './Replies';
 import { ArgumentFigures, DebateStakeRing, figuresLabel, gaugeLabel, RatingGauge } from './Figures';
 import { Composer } from './Composer';
 import { DraftControls, type MoveTarget } from './DraftControls';
@@ -292,65 +293,47 @@ export function DebateView({
           {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
         </p>
         <h1 className="focus-text">{focus.text}</h1>
-        {isThesis && phase === 'finished' && debate.approved !== undefined && (
-          <p className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
-            {verdictLabel(debate.approved)} <VerdictMark approved={debate.approved} />
-          </p>
-        )}
-        {isThesis ? (
-          <p className="focus-meta focus-meta-row">
+        {/* One row, read left to right in the order it happened (principle 11): who made the claim
+            and on what terms, then what the market made of it, then what followed from that. Three
+            tracks rather than a spread, so the figures hold the row's centre whether or not there
+            is a consequence to put at the end - an argument has none, the finished thesis has its
+            outcome. The figures are the way into the market that produced them, so there is nothing
+            to label with an "i": the thing you want to know more about is the thing you click. The
+            label carries the figures as well as the action, because the drawings inside are marked
+            presentational - a name that said only "about this market" would make them unreachable
+            without a mouse. */}
+        <p className="focus-meta focus-meta-row">
+          <span className="focus-meta-side">
             <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
-            <span>
-              {/* The thesis owns no market, so its gauge is its rating alone, and its ring is the
-                  whole circle every argument's is a share of. Both open the debate's detail, as an
-                  argument's figures open its own. */}
-              <button
-                type="button"
-                className="figure-button"
-                aria-label={`Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens${focusTally ? `. ${gaugeLabel(focusTally.rating)}` : ''}. Debate details`}
-                onClick={() => setDetailOpen(true)}
-              >
-                <span className="figure-pair">
-                  <DebateStakeRing total={stakeWithDrafts(debate)} presentational />
-                  {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
+            {isThesis &&
+              debate.identityRegistry !== undefined &&
+              (debate.identityRegistry === zeroAddress ? (
+                <span>open to everyone</span>
+              ) : (
+                <span title={`Identity registry ${debate.identityRegistry}`}>
+                  members of <span className="mono">{shortAddress(debate.identityRegistry)}</span>
                 </span>
-              </button>
-              {debate.bounty && (
-                <>
-                  {' '}
-                  · <BountyTopUpChip debate={debate} tx={tx} />
-                </>
-              )}
-              {debate.identityRegistry !== undefined && (
-                <>
-                  {' '}
-                  ·{' '}
-                  {debate.identityRegistry === zeroAddress ? (
-                    <span>open to everyone</span>
-                  ) : (
-                    <span title={`Identity registry ${debate.identityRegistry}`}>
-                      members of <span className="mono">{shortAddress(debate.identityRegistry)}</span>
-                    </span>
-                  )}
-                </>
-              )}
-            </span>
-          </p>
-        ) : (
-          <p className="focus-meta focus-meta-row">
-            {/* Left to right in the order it happened, as on every card (principle 11): the
-                byline, then the figures. The figures are the way into the market that produced
-                them, so there is nothing to label with an "i" - the thing you want to know more
-                about is the thing you click. The label carries the figures as well as the action,
-                because the drawings inside are marked presentational: a name that said only "about
-                this market" would make the two figures unreachable without a mouse. */}
-            <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
-            <button
-              type="button"
-              className="figure-button"
-              aria-label={`${figuresLabel(focus, focusTally, talliedStake)}. Argument details`}
-              onClick={() => setDetailOpen(true)}
-            >
+              ))}
+            {isThesis && debate.bounty && <BountyTopUpChip debate={debate} tx={tx} />}
+          </span>
+          <button
+            type="button"
+            className="figure-button"
+            aria-label={
+              isThesis
+                ? `Staked ${formatVotes(stakeWithDrafts(debate))} vote tokens${focusTally ? `. ${gaugeLabel(focusTally.rating)}` : ''}. Debate details`
+                : `${figuresLabel(focus, focusTally, talliedStake)}. Argument details`
+            }
+            onClick={() => setDetailOpen(true)}
+          >
+            {isThesis ? (
+              // The thesis owns no market, so its gauge is its rating alone, and its ring is the
+              // whole circle every argument's is a share of.
+              <span className="figure-pair">
+                <DebateStakeRing total={stakeWithDrafts(debate)} presentational />
+                {focusTally && <RatingGauge rating={focusTally.rating} presentational />}
+              </span>
+            ) : (
               <ArgumentFigures
                 node={focus}
                 tally={focusTally}
@@ -358,9 +341,23 @@ export function DebateView({
                 startsAt={ringOffsets.get(focus.id)}
                 presentational
               />
-            </button>
-          </p>
-        )}
+            )}
+          </button>
+          <span className="focus-meta-side focus-meta-end">
+            {/* What followed from the claim: for an argument what was argued beneath it, for the
+                finished thesis its outcome. */}
+            {isThesis ? (
+              phase === 'finished' &&
+              debate.approved !== undefined && (
+                <span className={`verdict ${debate.approved ? 'verdict-approved' : 'verdict-objected'}`}>
+                  {verdictLabel(debate.approved)} <VerdictMark approved={debate.approved} />
+                </span>
+              )
+            ) : (
+              <Replies debate={debate} node={focus} locked={focusLocked} />
+            )}
+          </span>
+        </p>
         {rating && tx && (
           <div className="action-panel">
             <div className="action-row">
