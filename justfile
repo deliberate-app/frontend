@@ -29,6 +29,14 @@ sync-abi:
 test:
     bun test
 
+# Format the source
+fmt:
+    bun run format
+
+# Check the formatting without writing
+fmt-check:
+    bun run format:check
+
 # Type-check and build for production
 build:
     bun run build

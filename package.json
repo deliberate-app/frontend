@@ -8,6 +8,8 @@
     "dev:anvil": "bun scripts/dev-anvil.ts",
     "dev:gnosis": "vite --mode gnosis",
     "test": "bun test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },
@@ -22,6 +24,7 @@
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.0",
     "playwright": "^1.61.1",
+    "prettier": "^3.9.6",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"
   }
