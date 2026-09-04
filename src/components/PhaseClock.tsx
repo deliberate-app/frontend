@@ -14,7 +14,8 @@ export function PhaseClock({ debate, now }: { debate: Debate; now: number }) {
   if (!timing || phase === 'finished') return null;
 
   const time = liveChainTime(timing, now);
-  const schedule = `Editing until ${formatClockTime(timing.editingEndTime)} · rating until ${formatClockTime(timing.ratingEndTime)}`;
+  // Two lines rather than two clauses: a tooltip is the one place a gap has to be a line break.
+  const schedule = `Editing until ${formatClockTime(timing.editingEndTime)}\nRating until ${formatClockTime(timing.ratingEndTime)}`;
 
   const deadline =
     phase === 'editing' ? timing.editingEndTime : phase === 'rating' ? timing.ratingEndTime : null;

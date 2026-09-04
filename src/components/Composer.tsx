@@ -36,7 +36,10 @@ export function Composer({
         disabled={!affordable}
         title={affordable ? undefined : `You only have ${formatVotes(tokens)} ⬡ in this debate.`}
       >
-        + Add {side} argument · min deposit {formatVotes(MIN_DEPOSIT_UNITS)} ⬡
+        <span className="facts">
+          <span>+ Add {side} argument</span>
+          <span>min deposit {formatVotes(MIN_DEPOSIT_UNITS)} ⬡</span>
+        </span>
       </button>
     );
   }
@@ -102,7 +105,14 @@ export function Composer({
       </p>
       <div className="action-row">
         <button type="submit" className="btn btn-solid" disabled={!canSubmit}>
-          {busy ? 'Adding…' : `Add · ${formatVotes(deposit)} ⬡`}
+          {busy ? (
+            'Adding…'
+          ) : (
+            <span className="facts">
+              <span>Add</span>
+              <span>{formatVotes(deposit)} ⬡</span>
+            </span>
+          )}
         </button>
         <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
           Cancel

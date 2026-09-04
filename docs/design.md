@@ -68,6 +68,15 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-04 — facts are separated by the space between them, not by a mark.** The interpunct
+  had spread everywhere two small facts sat on one line - reply counts, the schedule chip, browse
+  rows, the bounty line, the stake and compose buttons, the fee note beside the stake hint - and a
+  mark that appears that often stops being read and starts being texture. They are now laid out
+  with a gap: one `.facts` class, `inline-flex` with a 0.75rem gap, wider than the word spaces
+  inside a fact, wrapping between facts and never inside one. Where a gap cannot exist, the copy
+  carries it instead: the phase clock's tooltip puts its two deadlines on two lines, since a title
+  attribute collapses whitespace but honours a newline. (Principle 1: as little chrome as
+  possible - punctuation between elements is chrome.)
 - **2026-09-04 — one inset governs every claim box, and it is the page's own gutter.** The focused
   claim held its content 29px from its edge and a card held it 20px on the left and 17px on the
   right, so stacking them in one column - which is what a phone does - stepped the bylines and the

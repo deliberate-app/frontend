@@ -184,7 +184,10 @@ export function StakeModal({
           `You only have ${formatVotes(tokens)} ⬡ in this debate`
         ) : (
           <>
-            Stake {formatVotes(amount)} ⬡ · {side === 'pro' ? 'Underrated' : 'Overrated'} <DirectionArrow side={side} />
+            <span>Stake {formatVotes(amount)} ⬡</span>
+            <span>
+              {side === 'pro' ? 'Underrated' : 'Overrated'} <DirectionArrow side={side} />
+            </span>
           </>
         )}
       </button>

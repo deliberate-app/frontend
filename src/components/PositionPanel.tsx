@@ -65,9 +65,13 @@ export function PositionPanel({
               title={SHARE_PAYOUT_HINT}
             >
               Your shares:{' '}
-              <strong className="mono">
-                {position.proShares} <span className="market-pro">good-argument</span> ·{' '}
-                {position.conShares} <span className="market-con">bad-argument</span>
+              <strong className="mono facts">
+                <span>
+                  {position.proShares} <span className="market-pro">good-argument</span>
+                </span>
+                <span>
+                  {position.conShares} <span className="market-con">bad-argument</span>
+                </span>
               </strong>
             </span>
             <button type="button" className="btn btn-solid" onClick={() => run(onRedeem)} disabled={busy}>

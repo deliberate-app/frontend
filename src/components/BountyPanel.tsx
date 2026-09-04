@@ -148,14 +148,18 @@ export function BountyPanel({ debate, tx, now }: { debate: Debate; tx: DebateTx 
 
   return (
     <div className="bounty-panel">
-      <span className="action-hint">
-        Bounty <strong className="mono">{formatTokenAmount(bounty.pool, bounty)}</strong>
-        {bounty.claimed > 0n && <> · claimed {formatTokenAmount(bounty.claimed, bounty)}</>}
-        {bounty.swept
-          ? ' · remainder swept'
-          : windowOpen
-            ? ` · claims close in ${formatDuration(Math.max(0, bounty.claimEndTime - chainNow))}`
-            : ' · claims closed'}
+      <span className="action-hint facts">
+        <span>
+          Bounty <strong className="mono">{formatTokenAmount(bounty.pool, bounty)}</strong>
+        </span>
+        {bounty.claimed > 0n && <span>claimed {formatTokenAmount(bounty.claimed, bounty)}</span>}
+        <span>
+          {bounty.swept
+            ? 'remainder swept'
+            : windowOpen
+              ? `claims close in ${formatDuration(Math.max(0, bounty.claimEndTime - chainNow))}`
+              : 'claims closed'}
+        </span>
       </span>
       {windowOpen && tx.joined && !tx.bountyClaimed && (
         <button

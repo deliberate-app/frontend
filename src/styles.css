@@ -1362,6 +1362,16 @@ button {
   color: var(--bark);
 }
 
+/* A run of small facts, set apart by the space between them rather than by a mark between them:
+   the gap is wider than the spaces inside a fact, which is all the separation a reader needs. It
+   wraps between facts and never inside one. */
+.facts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
 .action-error {
   margin: 0.6rem 0 0;
   font-size: 0.82rem;
@@ -1738,7 +1748,8 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  /* The amount and the direction are two facts, held apart by the same gap they are everywhere. */
+  gap: 0.75rem;
 }
 
 .stake-submit-pro,

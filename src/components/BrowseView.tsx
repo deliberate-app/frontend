@@ -154,8 +154,11 @@ function CreatePanel({
           title="The locking window and the lengths of the editing and rating phases."
           onClick={() => setSettingsOpen(true)}
         >
-          locking {formatDuration(schedule.lockingDuration)} · editing {formatDuration(schedule.editingDuration)}{' '}
-          · rating {formatDuration(schedule.ratingDuration)}
+          <span className="facts">
+            <span>locking {formatDuration(schedule.lockingDuration)}</span>
+            <span>editing {formatDuration(schedule.editingDuration)}</span>
+            <span>rating {formatDuration(schedule.ratingDuration)}</span>
+          </span>
           <GearIcon />
         </button>
         <button
@@ -359,14 +362,17 @@ export function BrowseView({
             <div className="debate-row" key={debate.id}>
               <button type="button" className="debate-open" onClick={() => onOpen(debate.id)}>
                 <span className="debate-thesis">{debate.thesis}</span>
-                <span className="debate-meta">
-                  {debate.argumentsCount} {debate.argumentsCount === 1 ? 'argument' : 'arguments'} ·{' '}
-                  <span className="mono">{formatVotes(debate.stake)} ⬡</span> staked
+                <span className="debate-meta facts">
+                  <span>
+                    {debate.argumentsCount} {debate.argumentsCount === 1 ? 'argument' : 'arguments'}
+                  </span>
+                  <span>
+                    <span className="mono">{formatVotes(debate.stake)} ⬡</span> staked
+                  </span>
                   {debate.bounty && (
-                    <>
-                      {' '}
-                      · <span className="mono">{formatTokenAmount(debate.bounty.pool, debate.bounty)}</span> bounty
-                    </>
+                    <span>
+                      <span className="mono">{formatTokenAmount(debate.bounty.pool, debate.bounty)}</span> bounty
+                    </span>
                   )}
                 </span>
               </button>

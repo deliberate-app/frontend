@@ -1,7 +1,8 @@
 import { childrenOf, type ArgumentNode, type Debate } from '../types';
 
 /**
- * What has been argued beneath a claim: `3 pro · 2 con`, or `Undebated` where nothing has been.
+ * What has been argued beneath a claim - `3 pro` and `2 con` set a gap apart, or `Undebated`
+ * where nothing has been.
  *
  * The consequence of an argument, which is why it sits where the thesis' outcome sits - at the end
  * of the row, after the figures (principle 11) - and reads the same on a card as on the focused
@@ -15,11 +16,16 @@ export function Replies({ debate, node, locked }: { debate: Debate; node: Argume
   ];
   const said = counted
     .map((count, index) => (count > 0 ? `${count} ${index === 0 ? 'pro' : 'con'}` : null))
-    .filter(Boolean)
-    .join(' · ');
+    .filter((part) => part !== null);
 
-  if (said === '') {
+  if (said.length === 0) {
     return locked ? <span className="replies">Undebated</span> : null;
   }
-  return <span className="replies">{said}</span>;
+  return (
+    <span className="replies facts">
+      {said.map((part) => (
+        <span key={part}>{part}</span>
+      ))}
+    </span>
+  );
 }
