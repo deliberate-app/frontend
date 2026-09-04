@@ -83,24 +83,41 @@ try {
     return receipt.contractAddress;
   };
 
-  // Who may join is chosen per debate, so Deliberate takes no constructor arguments. An allowlist
-  // registry owned by the deployer is deployed alongside as a curated group to point a debate at;
-  // `cast send <registry> "setMembership(address[],bool)" "[<account>]" true` admits an account.
+  // A registry created through the factory, which returns its address rather than emitting only.
+  const createRegistry = async (factory: `0x${string}`, abi: Artifact['abi'], call: string, args: unknown[]) => {
+    const { result, request } = await client.simulateContract({
+      address: factory,
+      abi,
+      functionName: call,
+      args,
+      account: deployer,
+    });
+    await client.waitForTransactionReceipt({ hash: await client.writeContract(request) });
+    return result as `0x${string}`;
+  };
+
+  // Who may join is chosen per debate, so Deliberate takes no constructor arguments. The registries a
+  // debate can name are cloned from the factory: an allowlist owned by the deployer to point a debate at
+  // (`cast send <registry> "setMembership(address[],bool)" "[<account>]" true` admits an account), and one
+  // reading Circles - here a mock hub, since anvil has no Circles (`cast send <hub>
+  // "setHuman(address,bool)" <account> true` marks an account human).
   const deliberateArtifact = await loadArtifact(contractsDir, 'Deliberate.sol', 'Deliberate');
   const deliberate = await deploy(deliberateArtifact, []);
-  const allowlistRegistry = await deploy(
-    await loadArtifact(contractsDir, 'AllowlistIdentityRegistry.sol', 'AllowlistIdentityRegistry'),
-    [deployer.address],
-  );
-  // The Circles gate every deployment offers, here against a mock hub (anvil has no Circles). Mark an
-  // account human on the mock to let it through: `cast send <hub> "setHuman(address,bool)" <account> true`.
   const mockHub = await deploy(await loadArtifact(contractsDir, 'MockCirclesHub.m.sol', 'MockCirclesHub'), []);
-  const circlesRegistry = await deploy(
-    await loadArtifact(contractsDir, 'CirclesIdentityRegistry.sol', 'CirclesIdentityRegistry'),
-    [mockHub, '0x0000000000000000000000000000000000000000', true],
-  );
+  const factoryArtifact = await loadArtifact(contractsDir, 'IdentityRegistryFactory.sol', 'IdentityRegistryFactory');
+  const factory = await deploy(factoryArtifact, [mockHub]);
+  const allowlistRegistry = await createRegistry(factory, factoryArtifact.abi, 'createAllowlistRegistry', [
+    deployer.address,
+  ]);
+  const circlesRegistry = await createRegistry(factory, factoryArtifact.abi, 'createCirclesRegistry', [
+    '0x0000000000000000000000000000000000000000',
+    true,
+  ]);
   log(`Deliberate deployed at ${deliberate}`);
-  log(`gates: allowlist registry owned by the deployer at ${allowlistRegistry}, Circles preset at ${circlesRegistry} (mock hub ${mockHub})`);
+  log(
+    `registries from factory ${factory}: allowlist owned by the deployer at ${allowlistRegistry}, ` +
+      `every Circles human at ${circlesRegistry} (mock hub ${mockHub})`,
+  );
 
   const { debateId, personas } = await runDebateScript(climateDebate, {
     client,
