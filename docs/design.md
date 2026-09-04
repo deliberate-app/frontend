@@ -68,6 +68,26 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-05 — an owner keeps their allowlists from the wallet menu.** A list is the owner's, not
+  a debate's, so it is managed where the account is: the account menu gains "Your allowlists",
+  which opens the lists the index knows this account owns, the accounts on each, an address to add
+  and a Remove per row. Members are labelled with their Circles name where Circles knows one, from
+  the same profile lookup the registry picker uses. Every debate that names a list admits from it
+  at the moment of joining, so a change here reaches them all, and the hint says the one thing an
+  owner must know about that: removing an account bars it from joining afterwards, and leaves the
+  debates it already joined alone. (Principle 5: settings live on the value they edit.)
+- **2026-09-05 — a creator picks a registry, or makes one, in "Who may join".** The modal used to
+  offer three shapes and a bare address field; a creator with a group of their own had to deploy a
+  contract elsewhere and paste it. It now lists what exists - the allowlists the connected account
+  owns and every Circles registry the factory has cloned, read from the index - and makes new ones
+  through the factory: an allowlist in one click, or a Circles registry anchored on an avatar found
+  by name. Names come from the Circles profile service (`rpc.aboutcircles.com/profiles/search`, a
+  CORS-enabled GET that answers by name or by address and says whether an avatar is a group, an
+  organization or a human); `circles_query` on the same host sends no CORS header and would have
+  needed a proxy, and indexing the Hub's registrations ourselves would only duplicate the service.
+  A registry picked or made here carries the name it was picked by, so the chip says "Circles humans
+  Berlin Group trusts" rather than an address. Where the network has no factory the modal still
+  offers what exists and simply has no "new" section. (Principles 5, 10.)
 - **2026-09-04 — facts are separated by the space between them, not by a mark.** The interpunct
   had spread everywhere two small facts sat on one line - reply counts, the schedule chip, browse
   rows, the bounty line, the stake and compose buttons, the fee note beside the stake hint - and a

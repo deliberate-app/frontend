@@ -53,6 +53,31 @@ export interface DebateSource {
    * source that keeps no participant list: the chain stores balances per account, not per debate.
    */
   participants(debateId: number): Promise<DebateParticipant[]>;
+  /**
+   * The registries a creator can name for a debate: every Circles registry the factory made, and the
+   * allowlists the account owns. Empty from a source that keeps no list: only the index knows what
+   * the factory has cloned.
+   */
+  registries(account?: string): Promise<IdentityRegistryInfo[]>;
+  /**
+   * The accounts on an allowlist, as the index has folded its membership events. Empty from a
+   * source that keeps no list.
+   */
+  memberships(registry: Address): Promise<Address[]>;
+}
+
+/** An identity registry the factory made, as the index records it. */
+export interface IdentityRegistryInfo {
+  address: Address;
+  kind: 'allowlist' | 'circles';
+  /** The factory that cloned it. Factories are immutable and superseded, so a client prefers the current one's. */
+  factory: Address;
+  /** The account that keeps the list. Allowlists only. */
+  owner?: Address;
+  /** The Circles avatar whose trust admits an account. Circles registries only; the zero address admits every registered human. */
+  anchor?: Address;
+  /** Whether an admitted account must also be a registered Circles human. Circles registries only. */
+  requireHuman?: boolean;
 }
 
 /** One account's standing in a debate, in the contract's units. */
@@ -72,6 +97,9 @@ const sampleDebates = [climateDebate, confirmedDebate, objectedDebate, editingDe
 
 export const mockSource: DebateSource = {
   load: async (debateId) => sampleDebates.find((debate) => debate.id === debateId) ?? climateDebate,
+  // The sample knows no factory, so there is nothing to pick from and no list to read.
+  registries: async () => [],
+  memberships: async () => [],
   list: async () =>
     sampleDebates.map((debate) => ({
       id: debate.id,
@@ -482,6 +510,14 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
     async participants(): Promise<DebateParticipant[]> {
       return [];
     },
+
+    // What the factory cloned, and who is on a list, is only known from events the index has folded.
+    async registries(): Promise<IdentityRegistryInfo[]> {
+      return [];
+    },
+    async memberships(): Promise<Address[]> {
+      return [];
+    },
   };
 }
 
@@ -680,6 +716,21 @@ const INDEXER_HISTORY_QUERY = `query DebateStakes($argumentPrefix: String!) {
 
 const INDEXER_PARTICIPANTS_QUERY = `query DebateParticipants($debateId: String!) {
   Participant(where: { debate_id: { _eq: $debateId } }, order_by: { tokens: desc }) { account tokens }
+}`;
+
+// Every Circles registry, and the allowlists one account owns. The enum is written into the query,
+// as Hasura takes it unquoted; the owner is lowercased to match how the index stores addresses.
+const INDEXER_REGISTRIES_QUERY = `query Registries($chainId: Int!, $owner: String!) {
+  IdentityRegistry(
+    where: { chainId: { _eq: $chainId }, _or: [{ kind: { _eq: CIRCLES } }, { owner: { _eq: $owner } }] }
+    order_by: { createdAt: desc }
+  ) { address kind factory owner anchor requireHuman }
+}`;
+
+const INDEXER_MEMBERSHIPS_QUERY = `query Memberships($registryId: String!) {
+  Membership(where: { registry_id: { _eq: $registryId }, member: { _eq: true } }, order_by: { updatedAt: desc }) {
+    account
+  }
 }`;
 
 const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
@@ -919,6 +970,34 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
       );
       return data.Participant.map((row) => ({ account: row.account, tokens: Number(row.tokens) }));
     },
+
+    async registries(account?: string): Promise<IdentityRegistryInfo[]> {
+      const data = await graphql<{
+        IdentityRegistry: Array<{
+          address: string;
+          kind: 'ALLOWLIST' | 'CIRCLES';
+          factory: string;
+          owner: string | null;
+          anchor: string | null;
+          requireHuman: boolean | null;
+        }>;
+      }>(INDEXER_REGISTRIES_QUERY, { chainId: await chainId(), owner: account?.toLowerCase() ?? '' });
+      return data.IdentityRegistry.map((row) => ({
+        address: getAddress(row.address),
+        kind: row.kind === 'ALLOWLIST' ? 'allowlist' : 'circles',
+        factory: getAddress(row.factory),
+        ...(row.owner ? { owner: getAddress(row.owner) } : {}),
+        ...(row.anchor ? { anchor: getAddress(row.anchor) } : {}),
+        ...(row.requireHuman !== null ? { requireHuman: row.requireHuman } : {}),
+      }));
+    },
+
+    async memberships(registry: Address): Promise<Address[]> {
+      const data = await graphql<{ Membership: Array<{ account: string }> }>(INDEXER_MEMBERSHIPS_QUERY, {
+        registryId: `${await chainId()}_${registry.toLowerCase()}`,
+      });
+      return data.Membership.map((row) => getAddress(row.account));
+    },
   };
 }
 
@@ -944,6 +1023,8 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
     markets: guarded((source) => source.markets.bind(source)),
     history: guarded((source) => source.history.bind(source)),
     participants: guarded((source) => source.participants.bind(source)),
+    registries: guarded((source) => source.registries.bind(source)),
+    memberships: guarded((source) => source.memberships.bind(source)),
   };
 }
 

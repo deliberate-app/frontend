@@ -191,6 +191,8 @@ describe('withFallback', () => {
   const markets: ArgumentMarket[] = [{ id: 1, approval: 0.8, proReserve: 2, conReserve: 8, weight: 10, rating: null }];
   const userState = { joined: true, tokens: 90, bountyClaimed: false };
   const source = (result: Debate | Error): DebateSource => ({
+    registries: async () => [],
+    memberships: async () => [],
     load: async () => {
       if (result instanceof Error) throw result;
       return result;
