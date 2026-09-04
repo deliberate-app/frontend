@@ -65,6 +65,8 @@ export interface DebateSource {
 export interface IdentityRegistryInfo {
   address: Address;
   kind: 'allowlist' | 'circles';
+  /** The factory that cloned it. Factories are immutable and superseded, so a client prefers the current one's. */
+  factory: Address;
   /** The account that keeps the list. Allowlists only. */
   owner?: Address;
   /** The Circles avatar whose trust admits an account. Circles registries only; the zero address admits every registered human. */
@@ -713,7 +715,7 @@ const INDEXER_REGISTRIES_QUERY = `query Registries($chainId: Int!, $owner: Strin
   IdentityRegistry(
     where: { chainId: { _eq: $chainId }, _or: [{ kind: { _eq: CIRCLES } }, { owner: { _eq: $owner } }] }
     order_by: { createdAt: desc }
-  ) { address kind owner anchor requireHuman }
+  ) { address kind factory owner anchor requireHuman }
 }`;
 
 const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
@@ -959,6 +961,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
         IdentityRegistry: Array<{
           address: string;
           kind: 'ALLOWLIST' | 'CIRCLES';
+          factory: string;
           owner: string | null;
           anchor: string | null;
           requireHuman: boolean | null;
@@ -967,6 +970,7 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
       return data.IdentityRegistry.map((row) => ({
         address: getAddress(row.address),
         kind: row.kind === 'ALLOWLIST' ? 'allowlist' : 'circles',
+        factory: getAddress(row.factory),
         ...(row.owner ? { owner: getAddress(row.owner) } : {}),
         ...(row.anchor ? { anchor: getAddress(row.anchor) } : {}),
         ...(row.requireHuman !== null ? { requireHuman: row.requireHuman } : {}),

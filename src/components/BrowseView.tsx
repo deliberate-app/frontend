@@ -68,6 +68,7 @@ function CreatePanel({
   resolveToken,
   circlesRegistry,
   registries,
+  registryFactory,
   canCreateRegistry,
   onCreateAllowlist,
   onCreateCirclesRegistry,
@@ -91,6 +92,8 @@ function CreatePanel({
   circlesRegistry?: Address;
   /** The registries the creator can pick from: their allowlists and every Circles registry. */
   registries: IdentityRegistryInfo[];
+  /** The network's current factory, where it has one. */
+  registryFactory?: Address;
   /** Whether a new registry can be cloned here: a wallet is connected and the network has a factory. */
   canCreateRegistry: boolean;
   onCreateAllowlist: () => Promise<Address>;
@@ -215,6 +218,7 @@ function CreatePanel({
           onClose={() => setGateOpen(false)}
           circlesRegistry={circlesRegistry}
           registries={registries}
+          currentFactory={registryFactory}
           canCreate={canCreateRegistry}
           onCreateAllowlist={onCreateAllowlist}
           onCreateCirclesRegistry={onCreateCirclesRegistry}
@@ -275,6 +279,7 @@ export function BrowseView({
   resolveToken,
   circlesRegistry,
   registries,
+  registryFactory,
   canCreateRegistry,
   onCreateAllowlist,
   onCreateCirclesRegistry,
@@ -305,6 +310,8 @@ export function BrowseView({
   circlesRegistry?: Address;
   /** The registries the creator can pick from: their allowlists and every Circles registry. */
   registries: IdentityRegistryInfo[];
+  /** The network's current factory, where it has one. */
+  registryFactory?: Address;
   /** Whether a new registry can be cloned here: a wallet is connected and the network has a factory. */
   canCreateRegistry: boolean;
   onCreateAllowlist: () => Promise<Address>;
@@ -322,6 +329,7 @@ export function BrowseView({
         resolveToken={resolveToken}
         circlesRegistry={circlesRegistry}
         registries={registries}
+        registryFactory={registryFactory}
         canCreateRegistry={canCreateRegistry}
         onCreateAllowlist={onCreateAllowlist}
         onCreateCirclesRegistry={onCreateCirclesRegistry}

@@ -584,6 +584,7 @@ export default function App() {
             resolveToken={resolveToken}
             circlesRegistry={deployment?.circlesRegistry}
             registries={registries}
+            registryFactory={deployment?.registryFactory}
             canCreateRegistry={actions !== null && deployment?.registryFactory !== undefined}
             onCreateAllowlist={createAllowlist}
             onCreateCirclesRegistry={createCirclesRegistry}

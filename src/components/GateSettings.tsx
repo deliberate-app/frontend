@@ -58,6 +58,7 @@ export function GateSettings({
   onClose,
   circlesRegistry,
   registries,
+  currentFactory,
   canCreate,
   onCreateAllowlist,
   onCreateCirclesRegistry,
@@ -69,6 +70,8 @@ export function GateSettings({
   circlesRegistry: Address;
   /** The registries the index knows: the creator's allowlists and every Circles registry. */
   registries: IdentityRegistryInfo[];
+  /** The network's current factory. Factories are immutable and superseded, so registries from an older one are marked. */
+  currentFactory?: Address;
   /** Whether a new registry can be made here - a wallet is connected and the network has a factory. */
   canCreate: boolean;
   onCreateAllowlist: () => Promise<Address>;
@@ -137,11 +140,17 @@ export function GateSettings({
     }
   };
 
-  const allowlists = registries.filter((registry) => registry.kind === 'allowlist');
+  // A registry from an older factory still works - a clone keeps the code it was cloned against - so it
+  // stays on offer, after the current factory's and marked as older.
+  const fromOlderFactory = (registry: IdentityRegistryInfo) =>
+    currentFactory !== undefined && registry.factory.toLowerCase() !== currentFactory.toLowerCase();
+  const currentFirst = (a: IdentityRegistryInfo, b: IdentityRegistryInfo) =>
+    Number(fromOlderFactory(a)) - Number(fromOlderFactory(b));
+  const allowlists = registries.filter((registry) => registry.kind === 'allowlist').sort(currentFirst);
   // The preset already stands for the deployment's own any-human registry.
-  const circles = registries.filter(
-    (registry) => registry.kind === 'circles' && registry.address.toLowerCase() !== circlesRegistry.toLowerCase(),
-  );
+  const circles = registries
+    .filter((registry) => registry.kind === 'circles' && registry.address.toLowerCase() !== circlesRegistry.toLowerCase())
+    .sort(currentFirst);
   const chosen = (address: Address) => gate.mode === 'registry' && gate.address === address;
 
   return (
@@ -187,7 +196,9 @@ export function GateSettings({
             >
               <span className="registry-kind">Allowlist</span>
               <span className="mono">{shortAddress(registry.address)}</span>
-              <span className="registry-note">you keep the list</span>
+              <span className="registry-note">
+                {fromOlderFactory(registry) ? 'you keep the list, older factory' : 'you keep the list'}
+              </span>
             </button>
           ))}
           {circles.map((registry) => {
@@ -201,7 +212,10 @@ export function GateSettings({
               >
                 <span className="registry-kind">Circles</span>
                 <span>{label}</span>
-                <span className="mono registry-note">{shortAddress(registry.address)}</span>
+                <span className="mono registry-note">
+                  {shortAddress(registry.address)}
+                  {fromOlderFactory(registry) ? ', older factory' : ''}
+                </span>
               </button>
             );
           })}
