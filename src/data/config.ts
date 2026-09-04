@@ -33,6 +33,11 @@ export interface ContractConfig {
    * Shared by every network, because one indexer covers them all and a query names its chain.
    */
   indexerUrl?: string;
+  /**
+   * The `IdentityRegistryFactory` a creator clones registries from. Optional: a network without one
+   * still offers every registry the index knows, it only cannot make new ones.
+   */
+  registryFactory?: Address;
 }
 
 /** A deployment: a contract config plus the identity the app routes and labels it by. */
@@ -109,6 +114,7 @@ export function deployments(): Deployment[] {
         // One indexer for every network, reached through the same-origin proxy unless overridden.
         indexerUrl: env.VITE_INDEXER_URL || '/api/graphql',
         circlesRegistry,
+        registryFactory: envFor(slug, 'VITE_REGISTRY_FACTORY') as Address | undefined,
       },
     ];
   });
@@ -128,6 +134,7 @@ function legacyDeployment(): Deployment | null {
     rpcUrl,
     indexerUrl: env.VITE_INDEXER_URL || undefined,
     circlesRegistry,
+    registryFactory: (env.VITE_REGISTRY_FACTORY as Address | undefined) || undefined,
   };
 }
 

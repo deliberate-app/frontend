@@ -126,7 +126,10 @@ try {
     log,
   });
 
-  const indexerNotified = await upsertIndexerEnv({ ENVIO_DELIBERATE_ADDRESS: deliberate });
+  const indexerNotified = await upsertIndexerEnv({
+    ENVIO_DELIBERATE_ADDRESS: deliberate,
+    ENVIO_REGISTRY_FACTORY: factory,
+  });
   if (indexerNotified) {
     log('indexer/.env updated - `just dev` in ../indexer (re)indexes this deployment');
   }
@@ -134,6 +137,7 @@ try {
   const env = [
     `VITE_DELIBERATE_ADDRESS=${deliberate}`,
     `VITE_CIRCLES_REGISTRY=${circlesRegistry}`,
+    `VITE_REGISTRY_FACTORY=${factory}`,
     `VITE_RPC_URL=${RPC_URL}`,
     // The app reads from the index when it is up and falls back to the chain when not.
     ...(indexerNotified ? [`VITE_INDEXER_URL=${INDEXER_GRAPHQL_URL}`] : []),

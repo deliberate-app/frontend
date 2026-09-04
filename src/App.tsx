@@ -15,7 +15,7 @@ import {
   type UserState,
 } from './data/actions';
 import { deploymentFor, deployments } from './data/config';
-import { sourceFor } from './data/source';
+import { sourceFor, type IdentityRegistryInfo } from './data/source';
 import { deploymentChain } from './lib/chains';
 import { hashFor, routeFromHash, type Route } from './lib/route';
 import type { DebateSchedule } from './lib/debateTiming';
@@ -432,6 +432,32 @@ export default function App() {
     }
   };
 
+  // What a creator can name as a debate's registry: reloaded when the account or network changes,
+  // and after this account makes one.
+  const [registries, setRegistries] = useState<IdentityRegistryInfo[]>([]);
+  const reloadRegistries = useCallback(async () => {
+    try {
+      setRegistries(await source.registries(actions?.account));
+    } catch {
+      setRegistries([]);
+    }
+  }, [source, actions?.account]);
+  useEffect(() => {
+    void reloadRegistries();
+  }, [reloadRegistries]);
+  const createAllowlist = async () => {
+    if (!actions) throw new Error('Connect a wallet first.');
+    const address = await actions.createAllowlistRegistry();
+    await reloadRegistries();
+    return address;
+  };
+  const createCirclesRegistry = async (anchor: Address, requireHuman: boolean) => {
+    if (!actions) throw new Error('Connect a wallet first.');
+    const address = await actions.createCirclesRegistry(anchor, requireHuman);
+    await reloadRegistries();
+    return address;
+  };
+
   const createDebate = async (
     thesis: string,
     schedule: DebateSchedule,
@@ -557,6 +583,10 @@ export default function App() {
             onCreate={createDebate}
             resolveToken={resolveToken}
             circlesRegistry={deployment?.circlesRegistry}
+            registries={registries}
+            canCreateRegistry={actions !== null && deployment?.registryFactory !== undefined}
+            onCreateAllowlist={createAllowlist}
+            onCreateCirclesRegistry={createCirclesRegistry}
           />
         )
       ) : debate ? (

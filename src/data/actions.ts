@@ -25,6 +25,7 @@ import {
 } from 'viem';
 
 import abi from '../abi/Deliberate.abi.json';
+import factoryAbi from '../abi/IdentityRegistryFactory.abi.json';
 import { deploymentChain } from '../lib/chains';
 import type { DebateSchedule } from '../lib/debateTiming';
 import { contentError } from '../lib/content';
@@ -65,6 +66,17 @@ export interface DebateActions {
     bounty?: BountyFunding,
   ): Promise<number>;
   join(debateId: number): Promise<void>;
+  /**
+   * Clones an allowlist registry owned by this account from the deployment's factory and returns
+   * its address. Rejects where the deployment has no factory.
+   */
+  createAllowlistRegistry(): Promise<Address>;
+  /**
+   * Clones a Circles registry from the deployment's factory and returns its address: `anchor` is
+   * the avatar whose trust admits an account (the zero address admits every registered human), and
+   * `requireHuman` whether an admitted account must also be a registered human.
+   */
+  createCirclesRegistry(anchor: Address, requireHuman: boolean): Promise<Address>;
   /** Authors an argument beneath a parent; the text goes to the chain as it is, within its bounds. */
   createArgument(
     debateId: number,
@@ -181,13 +193,14 @@ export async function connectDebateActions(
   // receipt. Returns the receipt so callers can read the *mined* effects from the
   // events - the simulation's return value reflects pre-transaction state and can
   // be stale by the time the transaction lands.
-  const write = async (
+  const writeTo = async (
+    target: { address: Address; abi: Abi },
     functionName: string,
     args: unknown[],
     opts: { settle?: boolean } = {},
   ): Promise<TransactionReceipt> => {
     await ensureWalletChain(walletClient, chain);
-    const call = { account, address: config.address, abi: abi as Abi, functionName, args };
+    const call = { account, address: target.address, abi: target.abi, functionName, args };
     const [{ request }, estimate] = await Promise.all([
       publicClient.simulateContract(call),
       publicClient.estimateContractGas(call),
@@ -207,6 +220,26 @@ export async function connectDebateActions(
       await waitForIndexerBlock(config.indexerUrl, receipt.blockNumber);
     }
     return receipt;
+  };
+  const write = (functionName: string, args: unknown[], opts: { settle?: boolean } = {}) =>
+    writeTo({ address: config.address, abi: abi as Abi }, functionName, args, opts);
+
+  /** The factory to clone registries from, or the reason there is none to ask. */
+  const factory = (): { address: Address; abi: Abi } => {
+    if (!config.registryFactory) {
+      throw new Error('This network has no registry factory, so no new registry can be made here.');
+    }
+    return { address: config.registryFactory, abi: factoryAbi as Abi };
+  };
+
+  /** The registry a factory transaction created, read from the event it emitted once mined. */
+  const createdRegistry = (receipt: TransactionReceipt, eventName: string): Address => {
+    const [created] = parseEventLogs({ abi: factoryAbi as Abi, eventName, logs: receipt.logs });
+    const registry = (created as { args?: { registry?: Address } } | undefined)?.args?.registry;
+    if (registry === undefined) {
+      throw new Error('The registry was created but its address could not be read from the transaction.');
+    }
+    return registry;
   };
 
   /** The text as content, or the reason it cannot be - said here, before a simulate learns it in bytes. */
@@ -290,6 +323,16 @@ export async function connectDebateActions(
         throw new Error('The debate was created but its id could not be read from the transaction.');
       }
       return Number(debateId);
+    },
+
+    async createAllowlistRegistry() {
+      const receipt = await writeTo(factory(), 'createAllowlistRegistry', [account]);
+      return createdRegistry(receipt, 'AllowlistRegistryCreated');
+    },
+
+    async createCirclesRegistry(anchor, requireHuman) {
+      const receipt = await writeTo(factory(), 'createCirclesRegistry', [anchor, requireHuman]);
+      return createdRegistry(receipt, 'CirclesRegistryCreated');
     },
 
     async join(debateId) {
