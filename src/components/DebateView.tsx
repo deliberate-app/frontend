@@ -302,7 +302,12 @@ export function DebateView({
             without a mouse. */}
         <p className="focus-meta focus-meta-row">
           <span className="focus-meta-side focus-meta-who">
-            <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
+            {/* The thesis shows no lock. It stands with its debate, whose countdown is in the header. */}
+            {isThesis ? (
+              <Byline creator={focus.creator} />
+            ) : (
+              <Byline locked={focusLocked} finalizesIn={focusFinalizesIn} creator={focus.creator} />
+            )}
             {isThesis && debate.bounty && <BountyTopUpChip debate={debate} tx={tx} />}
           </span>
           <span className="focus-meta-side focus-meta-middle">
