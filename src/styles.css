@@ -195,12 +195,9 @@ button {
   overflow: hidden;
 }
 
-/* The viewer's own account, named rather than spelled out. Darker than a stranger's address - it
-   is the one row a reader is looking for - and held to the width of the truncation it replaces, so
-   the badges around it keep their column. */
+/* The viewer's own account, marked after the address rather than in place of it. Darker than the
+   address it follows, because this is the row a reader is looking for. */
 .address-viewer {
-  display: inline-block;
-  min-width: 11ch;
   color: var(--ink);
 }
 

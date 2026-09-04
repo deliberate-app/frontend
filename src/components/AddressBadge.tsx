@@ -37,13 +37,12 @@ function IdenticonIcon({ address }: { address: string }) {
 
 /**
  * The one way an account renders anywhere in the app: its identicon plus the canonical
- * `0x1234…abcd` truncation, or **You** where that account is the one connected. Presentational -
- * interactive wrappers (the copy chip, the wallet button) compose it.
+ * `0x1234…abcd` truncation, marked **(You)** where that account is the one connected.
+ * Presentational - interactive wrappers (the copy chip, the wallet button) compose it.
  *
- * "You" keeps the truncation's width (11 monospace characters), so a column of badges stays a
- * column: the identicons line up down the left and whatever follows the name lines up down the
- * right, whether or not one of the rows is yours. The wallet button opts out - its whole job is to
- * say *which* account is connected, and "You" would answer a question nobody asked there.
+ * The marker follows the address instead of replacing it, so every row still names an account a
+ * reader can read, copy and look up. The wallet button opts out - its whole job is to say *which*
+ * account is connected, and the marker would answer a question nobody asked there.
  */
 export function AddressBadge({
   address,
@@ -52,7 +51,7 @@ export function AddressBadge({
 }: {
   address: string;
   label?: string;
-  /** Render the address even where it is the viewer's own. */
+  /** Leave the marker off where the address is already known to be the viewer's own. */
   asAddress?: boolean;
 }) {
   const viewer = useContext(ViewerAccount);
@@ -60,9 +59,8 @@ export function AddressBadge({
   return (
     <span className="address-badge">
       <IdenticonIcon address={address} />
-      <span className={`mono ${isViewer ? 'address-viewer' : ''}`}>
-        {label ?? (isViewer ? 'You' : shortAddress(address))}
-      </span>
+      <span className="mono">{label ?? shortAddress(address)}</span>
+      {isViewer && <span className="address-viewer">(You)</span>}
     </span>
   );
 }
