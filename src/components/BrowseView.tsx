@@ -204,11 +204,7 @@ function CreatePanel({
         </button>
       </div>
       {settingsOpen && (
-        <ScheduleSettings
-          schedule={schedule}
-          onChange={setSchedule}
-          onClose={() => setSettingsOpen(false)}
-        />
+        <ScheduleSettings schedule={schedule} onChange={setSchedule} onClose={() => setSettingsOpen(false)} />
       )}
       {feeOpen && <FeeSettings feePercentage={fee} onChange={setFee} onClose={() => setFeeOpen(false)} />}
       {gateOpen && circlesRegistry && (
@@ -422,9 +418,7 @@ export function BrowseView({
               {/* The verdict slot is always rendered so the phase chips align across rows. */}
               <span
                 className={`verdict-mark ${debate.approved === undefined ? '' : debate.approved ? 'verdict-approved' : 'verdict-objected'}`}
-                title={
-                  debate.approved === undefined ? undefined : verdictLabel(debate.approved)
-                }
+                title={debate.approved === undefined ? undefined : verdictLabel(debate.approved)}
               >
                 {debate.approved === undefined ? null : <VerdictMark approved={debate.approved} />}
               </span>

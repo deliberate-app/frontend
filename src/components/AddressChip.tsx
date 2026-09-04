@@ -19,12 +19,7 @@ export function AddressChip({ address }: { address: string }) {
   };
 
   return (
-    <button
-      type="button"
-      className="address"
-      title={`${address} - click to copy`}
-      onClick={copy}
-    >
+    <button type="button" className="address" title={`${address} - click to copy`} onClick={copy}>
       <AddressBadge address={address} label={copied ? 'copied ✓' : undefined} />
     </button>
   );

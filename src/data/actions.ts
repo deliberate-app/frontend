@@ -149,10 +149,7 @@ function isUnknownChainError(cause: unknown): boolean {
   if ((cause as { code?: number } | null)?.code === 4902) {
     return true;
   }
-  return (
-    cause instanceof BaseError &&
-    cause.walk((error) => (error as { code?: number }).code === 4902) !== null
-  );
+  return cause instanceof BaseError && cause.walk((error) => (error as { code?: number }).code === 4902) !== null;
 }
 
 /**

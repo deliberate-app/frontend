@@ -156,7 +156,9 @@ try {
   // and leave two UIs on different contracts (exactly the confusion this prevents).
   // Exit without the finally: the stack (chain + restarted dev server) stays up.
   if (portInUse(VITE_PORT)) {
-    log(`a dev server is already running on port ${VITE_PORT} and has picked up the new deployment - not starting another`);
+    log(
+      `a dev server is already running on port ${VITE_PORT} and has picked up the new deployment - not starting another`,
+    );
     process.exit(0);
   }
 

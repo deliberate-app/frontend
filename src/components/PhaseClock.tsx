@@ -17,8 +17,7 @@ export function PhaseClock({ debate, now }: { debate: Debate; now: number }) {
   // Two lines rather than two clauses: a tooltip is the one place a gap has to be a line break.
   const schedule = `Editing until ${formatClockTime(timing.editingEndTime)}\nRating until ${formatClockTime(timing.ratingEndTime)}`;
 
-  const deadline =
-    phase === 'editing' ? timing.editingEndTime : phase === 'rating' ? timing.ratingEndTime : null;
+  const deadline = phase === 'editing' ? timing.editingEndTime : phase === 'rating' ? timing.ratingEndTime : null;
   const text =
     deadline === null
       ? 'awaiting the tally'

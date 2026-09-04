@@ -1,0 +1,13 @@
+# Build output, and trees written by tools rather than by hand.
+dist
+ds-bundle
+.ds-sync
+.design-sync
+.vercel
+bun.lock
+
+# Generated from the contracts build by `just sync-abi`.
+src/abi
+
+# Prose is written by hand, to rules in CLAUDE.md that prettier does not know.
+*.md

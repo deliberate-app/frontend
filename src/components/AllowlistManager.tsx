@@ -113,8 +113,8 @@ export function AllowlistManager({
           )}
           {registries.length === 1 && (
             <p className="composer-hint">
-              Allowlist <span className="mono">{shortAddress(registries[0]!.address)}</span>. Name it as a
-              debate's registry to admit only the accounts below.
+              Allowlist <span className="mono">{shortAddress(registries[0]!.address)}</span>. Name it as a debate's
+              registry to admit only the accounts below.
             </p>
           )}
 
@@ -162,8 +162,8 @@ export function AllowlistManager({
               </button>
             </span>
             <span className="duration-hint">
-              An account on the list may join every debate that names it. Removing one bars it from
-              joining afterwards; debates it already joined are unaffected.
+              An account on the list may join every debate that names it. Removing one bars it from joining afterwards;
+              debates it already joined are unaffected.
             </span>
           </label>
           {error && <p className="action-error">{error}</p>}

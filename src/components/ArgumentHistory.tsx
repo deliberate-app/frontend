@@ -78,8 +78,7 @@ export function historyPlot(
   /** The signed axis: +1 at the top, -1 at the bottom, 0 in the middle - the page's own scale. */
   const yRating = (value: number) => padTop + (1 - axisPercent(value) / 100) * plotHeight;
   /** The stake axis: the debate's whole stake at the top, nothing at the bottom. */
-  const yStake = (value: number) =>
-    padTop + (1 - Math.max(0, Math.min(1, value / totalDebateStake))) * plotHeight;
+  const yStake = (value: number) => padTop + (1 - Math.max(0, Math.min(1, value / totalDebateStake))) * plotHeight;
 
   /** A series as the points it actually passes through: flat to the next stake, then a step at it. */
   const stepped = (pick: (point: HistoryPoint) => number, y: (value: number) => number) => {
@@ -173,8 +172,10 @@ export function ArgumentHistory({
   // The series hold their value between stakes, so the figure in force at an instant is the last
   // one that landed at or before it - and the point to mark sits under the pointer, not back at
   // the stake that set it.
-  const time = at === null ? null : ratingWindow.opens + ((at - padLeft) / plotWidth) * (ratingWindow.closes - ratingWindow.opens);
-  const held = time === null ? undefined : points.reduce((held, point) => (point.at <= time ? point : held), points[0]!);
+  const time =
+    at === null ? null : ratingWindow.opens + ((at - padLeft) / plotWidth) * (ratingWindow.closes - ratingWindow.opens);
+  const held =
+    time === null ? undefined : points.reduce((held, point) => (point.at <= time ? point : held), points[0]!);
   // Both of the pair's figures, whichever of its two series the reader picked up: on this plot one
   // is only meaningful against the other - a rating says little without the price it corrects, and
   // an argument's own stake little without its branch's.
@@ -276,7 +277,9 @@ export function ArgumentHistory({
           <text className="history-tick" x={width - padRight + 4} y={yStake(totalDebateStake) + 3}>
             {formatVotes(totalDebateStake)}
           </text>
-          <text className="history-tick" x={width - padRight + 4} y={yStake(0) + 3}>0</text>
+          <text className="history-tick" x={width - padRight + 4} y={yStake(0) + 3}>
+            0
+          </text>
         </g>
 
         {/* Neutral, and the two axes it sits between - over the fill, which may reach past it. */}
@@ -297,16 +300,28 @@ export function ArgumentHistory({
         <g className={groupClass('ratings')}>
           {!thesis && <path className="history-line history-market" d={path(market)} />}
           <path className="history-line history-rating" d={path(rating)} />
-          <text className="history-tick" x={padLeft - 4} y={yRating(1) + 3} textAnchor="end">+100%</text>
-          <text className="history-tick" x={padLeft - 4} y={yRating(0) + 3} textAnchor="end">±0%</text>
-          <text className="history-tick" x={padLeft - 4} y={yRating(-1) + 3} textAnchor="end">−100%</text>
+          <text className="history-tick" x={padLeft - 4} y={yRating(1) + 3} textAnchor="end">
+            +100%
+          </text>
+          <text className="history-tick" x={padLeft - 4} y={yRating(0) + 3} textAnchor="end">
+            ±0%
+          </text>
+          <text className="history-tick" x={padLeft - 4} y={yRating(-1) + 3} textAnchor="end">
+            −100%
+          </text>
         </g>
 
-        <text className="history-tick" x={padLeft} y={height - 6}>rating opens</text>
-        <text className="history-tick" x={width - padRight} y={height - 6} textAnchor="end">closes</text>
+        <text className="history-tick" x={padLeft} y={height - 6}>
+          rating opens
+        </text>
+        <text className="history-tick" x={width - padRight} y={height - 6} textAnchor="end">
+          closes
+        </text>
         {/* Named only where the name fits between the two it sits between. */}
         {nowAt !== undefined && nowAt > padLeft + 30 && nowAt < width - padRight - 22 && (
-          <text className="history-tick" x={nowAt} y={height - 6} textAnchor="middle">now</text>
+          <text className="history-tick" x={nowAt} y={height - 6} textAnchor="middle">
+            now
+          </text>
         )}
 
         {/* A line is 1.6px of ink; this is the width that makes it something a pointer can find. */}
@@ -317,13 +332,7 @@ export function ArgumentHistory({
             what each of the pair's series stood at there, and the two figures themselves. */}
         {reading && (
           <g className={`history-reading history-reading-${group}`}>
-            <line
-              className="history-cursor"
-              x1={reading.at}
-              y1={padTop}
-              x2={reading.at}
-              y2={padTop + plotHeight}
-            />
+            <line className="history-cursor" x1={reading.at} y1={padTop} x2={reading.at} y2={padTop + plotHeight} />
             {reading.rows.map(({ dot }, index) => (
               <circle key={index} className="history-dot" cx={reading.at} cy={dot} r="2" />
             ))}

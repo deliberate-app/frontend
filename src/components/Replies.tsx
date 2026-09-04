@@ -10,10 +10,7 @@ import { childrenOf, type ArgumentNode, type Debate } from '../types';
  * to make yet, and the countdown padlock beside it already says why.
  */
 export function Replies({ debate, node, locked }: { debate: Debate; node: ArgumentNode; locked: boolean }) {
-  const counted = [
-    childrenOf(debate, node.id, 'pro').length,
-    childrenOf(debate, node.id, 'con').length,
-  ];
+  const counted = [childrenOf(debate, node.id, 'pro').length, childrenOf(debate, node.id, 'con').length];
   const said = counted
     .map((count, index) => (count > 0 ? `${count} ${index === 0 ? 'pro' : 'con'}` : null))
     .filter((part) => part !== null);

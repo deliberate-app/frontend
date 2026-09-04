@@ -50,207 +50,226 @@ const anvilProvider = {
 } as unknown as EIP1193Provider;
 
 describe('debate actions (against a fresh deployment on the local anvil)', () => {
-  test.skipIf(!anvilAvailable)('drive a debate end to end through the action layer', async () => {
-    const client = devChainClient(RPC_URL);
-    const deployer = anvilAccount(0);
+  test.skipIf(!anvilAvailable)(
+    'drive a debate end to end through the action layer',
+    async () => {
+      const client = devChainClient(RPC_URL);
+      const deployer = anvilAccount(0);
 
-    const deploy = async (sourceFile: string, name: string, args: unknown[]): Promise<Address> => {
-      const artifact = await loadArtifact(CONTRACTS_DIR, sourceFile, name);
-      const hash = await client.deployContract({
-        abi: artifact.abi,
-        bytecode: artifact.bytecode,
-        args,
-        account: deployer,
+      const deploy = async (sourceFile: string, name: string, args: unknown[]): Promise<Address> => {
+        const artifact = await loadArtifact(CONTRACTS_DIR, sourceFile, name);
+        const hash = await client.deployContract({
+          abi: artifact.abi,
+          bytecode: artifact.bytecode,
+          args,
+          account: deployer,
+        });
+        const receipt = await client.waitForTransactionReceipt({ hash });
+        if (!receipt.contractAddress) throw new Error('no contract address');
+        return receipt.contractAddress;
+      };
+      const address = await deploy('Deliberate.sol', 'Deliberate', []);
+
+      const warp = async (seconds: number) => {
+        await client.increaseTime({ seconds });
+        await client.mine({ blocks: 1 });
+      };
+      const warpTo = async (timestamp: number) => warp(timestamp - Number((await client.getBlock()).timestamp));
+
+      // The action layer, as the UI uses it.
+      const config = { address, rpcUrl: RPC_URL };
+      const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
+      const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
+      // The keeper never joins: the tally is permissionless.
+      const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
+      // Reads come from the source layer (here the chain source; the app prefers the indexer).
+      const reads = contractSource(address, RPC_URL);
+
+      // The author starts the debate through the action layer and gets its ID back.
+      const timeUnit = 60;
+      expect(await author.createDebate('Test thesis', classicSchedule(timeUnit), 5, zeroAddress)).toBe(0);
+
+      // Join.
+      expect((await reads.userState(0, author.account)).joined).toBe(false);
+      await author.join(0);
+      expect(await reads.userState(0, author.account)).toEqual({ joined: true, tokens: 10_000, bountyClaimed: false });
+
+      // Author an argument at 80% initial approval with the minimum deposit (market reserves 200 pro / 800 con).
+      await author.createArgument(0, 0, 'pro', 80, 1000, 'A machine-authored argument');
+      expect((await reads.userState(0, author.account)).tokens).toBe(9000);
+
+      // Time passes: the argument finalizes automatically once its window elapses, and the debate enters
+      // Rating by the clock alone - no poke. The rater joins beforehand and stakes in the window's opening
+      // seconds, so the corrected price stands for (nearly) the whole time-weighted window.
+      await rater.join(0);
+      await warpTo(ratingOpens(await reads.load(0)));
+
+      // The rater disagrees: 20 tokens on con (fee 1, net 19) buy 8 + 19 - ceil(16/21) = 26 shares.
+      await rater.stake(0, 1, 'con', 2000);
+      const raterPosition = await reads.argumentPosition(0, 1, rater.account);
+      expect(raterPosition.conShares).toBe(2623);
+      expect(raterPosition.proShares).toBe(0);
+      expect(raterPosition.claimableFees).toBe(0); // not the creator
+
+      // The market refetch reads the moved market as the full load does: 2100 pro / 77 con, 2900 staked.
+      const [, market] = await reads.markets(0);
+      expect(market).toEqual({
+        id: 1,
+        approval: 77 / 2177,
+        proReserve: 2100,
+        conReserve: 77,
+        weight: 2900,
+        rating: null,
       });
-      const receipt = await client.waitForTransactionReceipt({ hash });
-      if (!receipt.contractAddress) throw new Error('no contract address');
-      return receipt.contractAddress;
-    };
-    const address = await deploy('Deliberate.sol', 'Deliberate', []);
+      expect((await reads.load(0)).nodes.find((node) => node.id === 1)).toMatchObject(market);
 
-    const warp = async (seconds: number) => {
-      await client.increaseTime({ seconds });
+      // The rating window closes by the clock; the keeper finishes the debate with the tally.
+      await warp(10 * timeUnit);
+      await keeper.tallyTree(0);
+
+      // The correcting rater profits: a con share settles at (1 - rating) / 2 of a token, and a
+      // childless argument's rating is its market's time-weighted centered approval - the 1/22 close
+      // (-0.91) held for all but the window's first second or two, so 26 shares x 0.95 = 24 tokens
+      // back on 20 staked.
+      await rater.redeemShares(0, 1);
+      expect((await reads.userState(0, rater.account)).tokens).toBe(10519);
+
+      // The author claims the accrued market fee - the one fee the argument has earned so far.
+      expect(await reads.feesEarned(0, 1)).toBe(100);
+      expect((await reads.argumentPosition(0, 1, author.account)).claimableFees).toBe(100);
+      await author.claimFees(0, 1);
+      expect((await reads.userState(0, author.account)).tokens).toBe(9100);
+    },
+    30_000,
+  );
+
+  test.skipIf(!anvilAvailable)(
+    'edits and moves a draft argument through the action layer',
+    async () => {
+      const client = devChainClient(RPC_URL);
+      const deployer = anvilAccount(0);
+      const deploy = async (sourceFile: string, name: string, args: unknown[]): Promise<Address> => {
+        const artifact = await loadArtifact(CONTRACTS_DIR, sourceFile, name);
+        const hash = await client.deployContract({
+          abi: artifact.abi,
+          bytecode: artifact.bytecode,
+          args,
+          account: deployer,
+        });
+        const receipt = await client.waitForTransactionReceipt({ hash });
+        if (!receipt.contractAddress) throw new Error('no contract address');
+        return receipt.contractAddress;
+      };
+      const address = await deploy('Deliberate.sol', 'Deliberate', []);
+
+      const config = { address, rpcUrl: RPC_URL };
+      const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
+
+      const timeUnit = 60;
+      await author.createDebate('A movable thesis', classicSchedule(timeUnit), 5, zeroAddress);
+      await author.join(0);
+
+      // A draft directly under the thesis, edited while still inside its editing window.
+      await author.createArgument(0, 0, 'pro', 60, 1000, 'first draft'); // argument 1
+      await author.alterArgument(0, 1, 'first draft, edited');
+      // The text lives in the log; the chain source reads it back from there.
+      const edited = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 1);
+      expect(edited?.text).toBe('first draft, edited');
+      // The bounds are checked before anything is sent.
+      await expect(author.alterArgument(0, 1, 'x'.repeat(257))).rejects.toThrow('257 bytes');
+
+      // Argument 1's editing window elapses, so it finalizes automatically and becomes a valid move
+      // target. A fresh draft (argument 2) is then added and moved beneath it, re-seeding its market
+      // at 80% approval (reserves become 2 pro / 8 con).
+      await client.increaseTime({ seconds: 2 * timeUnit });
       await client.mine({ blocks: 1 });
-    };
-    const warpTo = async (timestamp: number) => warp(timestamp - Number((await client.getBlock()).timestamp));
+      await author.createArgument(0, 0, 'con', 60, 1000, 'second draft'); // argument 2, a fresh draft
+      await author.moveArgument(0, 2, 1, 80);
 
-    // The action layer, as the UI uses it.
-    const config = { address, rpcUrl: RPC_URL };
-    const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
-    const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
-    // The keeper never joins: the tally is permissionless.
-    const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
-    // Reads come from the source layer (here the chain source; the app prefers the indexer).
-    const reads = contractSource(address, RPC_URL);
+      const moved = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 2);
+      expect(moved?.parentId).toBe(1);
+      // Approval is the pro-share price con/(pro+con) = 8/10.
+      expect(moved?.approval).toBeCloseTo(0.8, 5);
+    },
+    30_000,
+  );
 
-    // The author starts the debate through the action layer and gets its ID back.
-    const timeUnit = 60;
-    expect(await author.createDebate('Test thesis', classicSchedule(timeUnit), 5, zeroAddress)).toBe(0);
+  test.skipIf(!anvilAvailable)(
+    'redeems shares across arguments in one batch',
+    async () => {
+      const client = devChainClient(RPC_URL);
+      const deployer = anvilAccount(0);
+      const deploy = async (sourceFile: string, name: string, args: unknown[]): Promise<Address> => {
+        const artifact = await loadArtifact(CONTRACTS_DIR, sourceFile, name);
+        const hash = await client.deployContract({
+          abi: artifact.abi,
+          bytecode: artifact.bytecode,
+          args,
+          account: deployer,
+        });
+        const receipt = await client.waitForTransactionReceipt({ hash });
+        if (!receipt.contractAddress) throw new Error('no contract address');
+        return receipt.contractAddress;
+      };
+      const address = await deploy('Deliberate.sol', 'Deliberate', []);
 
-    // Join.
-    expect((await reads.userState(0, author.account)).joined).toBe(false);
-    await author.join(0);
-    expect(await reads.userState(0, author.account)).toEqual({ joined: true, tokens: 10_000, bountyClaimed: false });
+      const warp = async (seconds: number) => {
+        await client.increaseTime({ seconds });
+        await client.mine({ blocks: 1 });
+      };
+      const warpTo = async (timestamp: number) => warp(timestamp - Number((await client.getBlock()).timestamp));
 
-    // Author an argument at 80% initial approval with the minimum deposit (market reserves 200 pro / 800 con).
-    await author.createArgument(0, 0, 'pro', 80, 1000, 'A machine-authored argument');
-    expect((await reads.userState(0, author.account)).tokens).toBe(9000);
+      const config = { address, rpcUrl: RPC_URL };
+      const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
+      const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
+      const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
+      // Reads come from the source layer (here the indexer-less chain source).
+      const reads = contractSource(address, RPC_URL);
 
-    // Time passes: the argument finalizes automatically once its window elapses, and the debate enters
-    // Rating by the clock alone - no poke. The rater joins beforehand and stakes in the window's opening
-    // seconds, so the corrected price stands for (nearly) the whole time-weighted window.
-    await rater.join(0);
-    await warpTo(ratingOpens(await reads.load(0)));
+      const timeUnit = 60;
+      await author.createDebate('Batch redeem thesis', classicSchedule(timeUnit), 5, zeroAddress);
+      await author.join(0);
 
-    // The rater disagrees: 20 tokens on con (fee 1, net 19) buy 8 + 19 - ceil(16/21) = 26 shares.
-    await rater.stake(0, 1, 'con', 2000);
-    const raterPosition = await reads.argumentPosition(0, 1, rater.account);
-    expect(raterPosition.conShares).toBe(2623);
-    expect(raterPosition.proShares).toBe(0);
-    expect(raterPosition.claimableFees).toBe(0); // not the creator
+      // Two arguments at 50% approval (reserves 500/500 each), the minimum deposit.
+      await author.createArgument(0, 0, 'pro', 50, 1000, 'first argument'); // id 1
+      await author.createArgument(0, 0, 'pro', 50, 1000, 'second argument'); // id 2
 
-    // The market refetch reads the moved market as the full load does: 2100 pro / 77 con, 2900 staked.
-    const [, market] = await reads.markets(0);
-    expect(market).toEqual({ id: 1, approval: 77 / 2177, proReserve: 2100, conReserve: 77, weight: 2900, rating: null });
-    expect((await reads.load(0)).nodes.find((node) => node.id === 1)).toMatchObject(market);
+      // The arguments finalize automatically once their editing windows elapse, and the debate enters
+      // Rating by the clock. The rater joins beforehand and stakes as the window opens.
+      await rater.join(0);
+      await warpTo(ratingOpens(await reads.load(0)));
 
-    // The rating window closes by the clock; the keeper finishes the debate with the tally.
-    await warp(10 * timeUnit);
-    await keeper.tallyTree(0);
+      // The rater takes a con position in both arguments, twenty tokens each.
+      await rater.stake(0, 1, 'con', 2000);
+      await rater.stake(0, 2, 'con', 2000);
+      expect((await reads.userState(0, rater.account)).tokens).toBe(6000);
 
-    // The correcting rater profits: a con share settles at (1 - rating) / 2 of a token, and a
-    // childless argument's rating is its market's time-weighted centered approval - the 1/22 close
-    // (-0.91) held for all but the window's first second or two, so 26 shares x 0.95 = 24 tokens
-    // back on 20 staked.
-    await rater.redeemShares(0, 1);
-    expect((await reads.userState(0, rater.account)).tokens).toBe(10519);
+      // The source reads the account's positions straight from the chain.
+      const held = await reads.positions(0, anvilAccount(8).address);
+      expect(held.map((position) => position.argumentId).sort()).toEqual([1, 2]);
+      expect(held.every((position) => position.conShares > 0)).toBe(true);
 
-    // The author claims the accrued market fee - the one fee the argument has earned so far.
-    expect(await reads.feesEarned(0, 1)).toBe(100);
-    expect((await reads.argumentPosition(0, 1, author.account)).claimableFees).toBe(100);
-    await author.claimFees(0, 1);
-    expect((await reads.userState(0, author.account)).tokens).toBe(9100);
-  }, 30_000);
+      // Finish the debate (the rating window closes by the clock), then redeem both positions in one transaction.
+      await warp(10 * timeUnit);
+      await keeper.tallyTree(0);
+      await rater.redeemSharesBatch(
+        0,
+        held.map((position) => position.argumentId),
+      );
 
-  test.skipIf(!anvilAvailable)('edits and moves a draft argument through the action layer', async () => {
-    const client = devChainClient(RPC_URL);
-    const deployer = anvilAccount(0);
-    const deploy = async (sourceFile: string, name: string, args: unknown[]): Promise<Address> => {
-      const artifact = await loadArtifact(CONTRACTS_DIR, sourceFile, name);
-      const hash = await client.deployContract({
-        abi: artifact.abi,
-        bytecode: artifact.bytecode,
-        args,
-        account: deployer,
-      });
-      const receipt = await client.waitForTransactionReceipt({ hash });
-      if (!receipt.contractAddress) throw new Error('no contract address');
-      return receipt.contractAddress;
-    };
-    const address = await deploy('Deliberate.sol', 'Deliberate', []);
+      // A con share settles at (1 - rating) / 2 of a token; each market closed at 2/26 (-0.85) for
+      // all but the window's opening seconds, so 22 shares x 0.92 = 20 tokens back per argument:
+      // 60 + 20 + 20 = 100.
+      expect((await reads.userState(0, rater.account)).tokens).toBe(10384);
+      expect(await reads.positions(0, anvilAccount(8).address)).toEqual([]);
 
-    const config = { address, rpcUrl: RPC_URL };
-    const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
-
-    const timeUnit = 60;
-    await author.createDebate('A movable thesis', classicSchedule(timeUnit), 5, zeroAddress);
-    await author.join(0);
-
-    // A draft directly under the thesis, edited while still inside its editing window.
-    await author.createArgument(0, 0, 'pro', 60, 1000, 'first draft'); // argument 1
-    await author.alterArgument(0, 1, 'first draft, edited');
-    // The text lives in the log; the chain source reads it back from there.
-    const edited = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 1);
-    expect(edited?.text).toBe('first draft, edited');
-    // The bounds are checked before anything is sent.
-    await expect(author.alterArgument(0, 1, 'x'.repeat(257))).rejects.toThrow('257 bytes');
-
-    // Argument 1's editing window elapses, so it finalizes automatically and becomes a valid move
-    // target. A fresh draft (argument 2) is then added and moved beneath it, re-seeding its market
-    // at 80% approval (reserves become 2 pro / 8 con).
-    await client.increaseTime({ seconds: 2 * timeUnit });
-    await client.mine({ blocks: 1 });
-    await author.createArgument(0, 0, 'con', 60, 1000, 'second draft'); // argument 2, a fresh draft
-    await author.moveArgument(0, 2, 1, 80);
-
-    const moved = (await contractSource(address, RPC_URL).load(0)).nodes.find((node) => node.id === 2);
-    expect(moved?.parentId).toBe(1);
-    // Approval is the pro-share price con/(pro+con) = 8/10.
-    expect(moved?.approval).toBeCloseTo(0.8, 5);
-  }, 30_000);
-
-  test.skipIf(!anvilAvailable)('redeems shares across arguments in one batch', async () => {
-    const client = devChainClient(RPC_URL);
-    const deployer = anvilAccount(0);
-    const deploy = async (sourceFile: string, name: string, args: unknown[]): Promise<Address> => {
-      const artifact = await loadArtifact(CONTRACTS_DIR, sourceFile, name);
-      const hash = await client.deployContract({
-        abi: artifact.abi,
-        bytecode: artifact.bytecode,
-        args,
-        account: deployer,
-      });
-      const receipt = await client.waitForTransactionReceipt({ hash });
-      if (!receipt.contractAddress) throw new Error('no contract address');
-      return receipt.contractAddress;
-    };
-    const address = await deploy('Deliberate.sol', 'Deliberate', []);
-
-    const warp = async (seconds: number) => {
-      await client.increaseTime({ seconds });
-      await client.mine({ blocks: 1 });
-    };
-    const warpTo = async (timestamp: number) => warp(timestamp - Number((await client.getBlock()).timestamp));
-
-    const config = { address, rpcUrl: RPC_URL };
-    const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
-    const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
-    const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
-    // Reads come from the source layer (here the indexer-less chain source).
-    const reads = contractSource(address, RPC_URL);
-
-    const timeUnit = 60;
-    await author.createDebate('Batch redeem thesis', classicSchedule(timeUnit), 5, zeroAddress);
-    await author.join(0);
-
-    // Two arguments at 50% approval (reserves 500/500 each), the minimum deposit.
-    await author.createArgument(0, 0, 'pro', 50, 1000, 'first argument'); // id 1
-    await author.createArgument(0, 0, 'pro', 50, 1000, 'second argument'); // id 2
-
-    // The arguments finalize automatically once their editing windows elapse, and the debate enters
-    // Rating by the clock. The rater joins beforehand and stakes as the window opens.
-    await rater.join(0);
-    await warpTo(ratingOpens(await reads.load(0)));
-
-    // The rater takes a con position in both arguments, twenty tokens each.
-    await rater.stake(0, 1, 'con', 2000);
-    await rater.stake(0, 2, 'con', 2000);
-    expect((await reads.userState(0, rater.account)).tokens).toBe(6000);
-
-    // The source reads the account's positions straight from the chain.
-    const held = await reads.positions(0, anvilAccount(8).address);
-    expect(held.map((position) => position.argumentId).sort()).toEqual([1, 2]);
-    expect(held.every((position) => position.conShares > 0)).toBe(true);
-
-    // Finish the debate (the rating window closes by the clock), then redeem both positions in one transaction.
-    await warp(10 * timeUnit);
-    await keeper.tallyTree(0);
-    await rater.redeemSharesBatch(
-      0,
-      held.map((position) => position.argumentId),
-    );
-
-    // A con share settles at (1 - rating) / 2 of a token; each market closed at 2/26 (-0.85) for
-    // all but the window's opening seconds, so 22 shares x 0.92 = 20 tokens back per argument:
-    // 60 + 20 + 20 = 100.
-    expect((await reads.userState(0, rater.account)).tokens).toBe(10384);
-    expect(await reads.positions(0, anvilAccount(8).address)).toEqual([]);
-
-    // Every transaction went to the wallet with its limit decided by the app, none left to the
-    // wallet's own estimate (see gasLimitFor).
-    expect(sentTransactions.length).toBeGreaterThan(0);
-    expect(sentTransactions.every((transaction) => transaction.gas !== undefined)).toBe(true);
-  }, 30_000);
+      // Every transaction went to the wallet with its limit decided by the app, none left to the
+      // wallet's own estimate (see gasLimitFor).
+      expect(sentTransactions.length).toBeGreaterThan(0);
+      expect(sentTransactions.every((transaction) => transaction.gas !== undefined)).toBe(true);
+    },
+    30_000,
+  );
 });
 
 describe('gasLimitFor', () => {

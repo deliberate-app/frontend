@@ -16,7 +16,10 @@ export interface Route {
  * configured network.
  */
 export function routeFromHash(hash: string): Route {
-  const parts = hash.replace(/^#\/?/, '').split('/').filter((part) => part.length > 0);
+  const parts = hash
+    .replace(/^#\/?/, '')
+    .split('/')
+    .filter((part) => part.length > 0);
   const slug = parts[0] !== undefined && parts[0] !== 'debate' ? parts[0] : null;
   const rest = slug === null ? parts : parts.slice(1);
   const debateId = rest[0] === 'debate' && /^\d+$/.test(rest[1] ?? '') ? Number(rest[1]) : null;

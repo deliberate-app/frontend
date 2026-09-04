@@ -58,8 +58,7 @@ export function WalletMenu({
   // reverts on a chain that has no contract, and until now the mismatch only surfaced as a switch
   // prompt at signing time. It is a fact about the connection, so it belongs on the connection's
   // control.
-  const wrongChain =
-    wallet.chainId !== null && deploymentChainId != null && wallet.chainId !== deploymentChainId;
+  const wrongChain = wallet.chainId !== null && deploymentChainId != null && wallet.chainId !== deploymentChainId;
 
   const switchChain = async () => {
     if (!onSwitchChain) return;
@@ -98,8 +97,8 @@ export function WalletMenu({
             {wrongChain && deploymentChainId != null && (
               <>
                 <p className="wallet-menu-note">
-                  This deployment lives on {chainName(deploymentChainId)}, so nothing here can be
-                  signed until your wallet moves there.
+                  This deployment lives on {chainName(deploymentChainId)}, so nothing here can be signed until your
+                  wallet moves there.
                 </p>
                 {onSwitchChain && (
                   <button

@@ -42,10 +42,7 @@ function DurationField({
           value={amount}
           onChange={(event) => onChange(Math.round(Number(event.target.value) * unit))}
         />
-        <select
-          value={unit}
-          onChange={(event) => onChange(Math.round(amount * Number(event.target.value)))}
-        >
+        <select value={unit} onChange={(event) => onChange(Math.round(amount * Number(event.target.value)))}>
           {UNITS.map(({ label: unitLabel, seconds }) => (
             <option key={unitLabel} value={seconds}>
               {unitLabel}

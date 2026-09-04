@@ -65,7 +65,6 @@ export interface DebateScript {
 /** anvil's default, publicly known development mnemonic - local use only. */
 const ANVIL_MNEMONIC = 'test test test test test test test test test test test junk';
 
-
 export function anvilAccount(index: number): HDAccount {
   return mnemonicToAccount(ANVIL_MNEMONIC, { addressIndex: index });
 }
