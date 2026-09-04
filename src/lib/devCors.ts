@@ -20,7 +20,5 @@ const DEV_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 export function corsFor(request: Request): Record<string, string> {
   const origin = request.headers.get('origin');
-  return origin !== null && DEV_ORIGIN.test(origin)
-    ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' }
-    : {};
+  return origin !== null && DEV_ORIGIN.test(origin) ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {};
 }

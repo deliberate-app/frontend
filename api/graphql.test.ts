@@ -65,7 +65,7 @@ describe('the indexer proxy', () => {
   });
 
   test('rejects a body past the forward cap', async () => {
-    expect((await handler(post('x'.repeat(16 * 1024 + 1))).then((r) => r.status))).toBe(413);
+    expect(await handler(post('x'.repeat(16 * 1024 + 1))).then((r) => r.status)).toBe(413);
   });
 
   test('rejects anything that is not a POST', async () => {

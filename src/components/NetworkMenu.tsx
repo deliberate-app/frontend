@@ -94,10 +94,7 @@ export function NetworkMenu({
   return (
     <div className="wallet network" ref={menuRef}>
       <button type="button" className="wallet-button network-button" onClick={() => setOpen((o) => !o)}>
-        <span
-          className={`network-dot${deploymentIsTestnet(selected) ? ' network-dot-testnet' : ''}`}
-          aria-hidden
-        />
+        <span className={`network-dot${deploymentIsTestnet(selected) ? ' network-dot-testnet' : ''}`} aria-hidden />
         {deploymentLabel(selected)}
       </button>
       {open && (
@@ -112,11 +109,7 @@ export function NetworkMenu({
                 className="wallet-menu-item network-toggle"
                 onClick={toggleTestnets}
                 disabled={deploymentIsTestnet(selected)}
-                title={
-                  deploymentIsTestnet(selected)
-                    ? 'You are on a testnet, so they stay listed.'
-                    : undefined
-                }
+                title={deploymentIsTestnet(selected) ? 'You are on a testnet, so they stay listed.' : undefined}
               >
                 Testnets
                 <span className={`network-switch${listTestnets ? ' network-switch-on' : ''}`} aria-hidden />

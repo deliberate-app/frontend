@@ -75,10 +75,7 @@ export function tallyOf(debate: Debate): Map<number, NodeTally> {
 
     const centered = 2 * node.approval - 1;
     const total = node.weight + childrenWeight;
-    const projected =
-      total === 0
-        ? centered
-        : (centered * node.weight + descendants * childrenWeight) / total;
+    const projected = total === 0 ? centered : (centered * node.weight + descendants * childrenWeight) / total;
     // The stored settlement rating, once the tally has written it, replaces the projection.
     const rating = node.rating ?? projected;
     return { rating, weight: total };
@@ -99,8 +96,7 @@ export function tallyOf(debate: Debate): Map<number, NodeTally> {
  */
 
 /** What an argument's own market says about it. */
-export const ARGUMENT_RATING_HINT =
-  'The price of a good-argument share on its own market, ±0% when undecided.';
+export const ARGUMENT_RATING_HINT = 'The price of a good-argument share on its own market, ±0% when undecided.';
 
 /** The tally's verdict on an argument. */
 export const WEIGHTED_RATING_HINT =
@@ -109,20 +105,17 @@ export const WEIGHTED_RATING_HINT =
 
 /** The thesis' rating: it has no market, so its rating is its arguments' alone. */
 export const THESIS_RATING_HINT =
-  "The top-level arguments' parent impacts, summed: above zero confirms the thesis, at or below " +
-  'objects it.';
+  "The top-level arguments' parent impacts, summed: above zero confirms the thesis, at or below " + 'objects it.';
 
 /** What an argument moves its parent's weighted rating by. */
 export const IMPACT_HINT =
-  "Its weighted rating, ±0 if refuted, at its branch's share of the stake beneath the parent, " +
-  'signed by its side.';
+  "Its weighted rating, ±0 if refuted, at its branch's share of the stake beneath the parent, " + 'signed by its side.';
 
 /** The vote tokens on an argument's own market. */
 export const ARGUMENT_STAKE_HINT = 'Vote tokens staked on its own market.';
 
 /** The stake behind an argument's weighted rating. */
-export const ACCUMULATED_STAKE_HINT =
-  "Its argument stake plus every sub-argument's - what the tally weighs it by.";
+export const ACCUMULATED_STAKE_HINT = "Its argument stake plus every sub-argument's - what the tally weighs it by.";
 
 /** The debate's whole stake, which the thesis shows instead of a share of itself. */
 export const DEBATE_STAKE_HINT = 'Vote tokens staked across the whole debate.';

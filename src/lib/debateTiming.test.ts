@@ -31,15 +31,11 @@ describe('scheduleWarning', () => {
   });
 
   test('flags editing phases too short for nesting and moving', () => {
-    expect(scheduleWarning({ lockingDuration: 600, editingDuration: 2_400, ratingDuration: 1_200 })).toContain(
-      'nest',
-    );
+    expect(scheduleWarning({ lockingDuration: 600, editingDuration: 2_400, ratingDuration: 1_200 })).toContain('nest');
   });
 
   test('flags rating phases far shorter than editing', () => {
-    expect(
-      scheduleWarning({ lockingDuration: 60, editingDuration: 86_400, ratingDuration: 3_600 }),
-    ).toContain('read');
+    expect(scheduleWarning({ lockingDuration: 60, editingDuration: 86_400, ratingDuration: 3_600 })).toContain('read');
   });
 });
 

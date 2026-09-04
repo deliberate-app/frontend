@@ -250,8 +250,6 @@ button {
   background: var(--canvas);
 }
 
-
-
 .wallet-menu {
   position: absolute;
   right: 0;
@@ -777,10 +775,11 @@ button {
   border-left-width: var(--claim-stripe);
   border-radius: 0.75rem;
   /* Right of the hairline, left of the stripe - both landing on `--claim-inset`. */
-  padding: 0.9rem calc(var(--claim-inset) - var(--claim-hairline)) 0.9rem
-    calc(var(--claim-inset) - var(--claim-stripe));
+  padding: 0.9rem calc(var(--claim-inset) - var(--claim-hairline)) 0.9rem calc(var(--claim-inset) - var(--claim-stripe));
   cursor: pointer;
-  transition: border-color 120ms ease, transform 120ms ease;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
 }
 
 .card:hover {
@@ -817,9 +816,6 @@ button {
   font-weight: 500;
   overflow-wrap: anywhere;
 }
-
-
-
 
 /* Whose claim it is and whether it can still change: one element, one order, at the end of every
    meta row - a card's, the focused argument's, the thesis'. The address sets the voice for both
@@ -1137,10 +1133,20 @@ button {
   background: var(--bark);
 }
 
-.history-swatch.history-rating { border-top-color: var(--ink); }
-.history-swatch.history-market { border-top-color: var(--ink); border-top-style: dashed; opacity: 0.55; }
-.history-swatch-area.history-stake { opacity: 0.4; }
-.history-swatch-area.history-subtree { opacity: 0.14; }
+.history-swatch.history-rating {
+  border-top-color: var(--ink);
+}
+.history-swatch.history-market {
+  border-top-color: var(--ink);
+  border-top-style: dashed;
+  opacity: 0.55;
+}
+.history-swatch-area.history-stake {
+  opacity: 0.4;
+}
+.history-swatch-area.history-subtree {
+  opacity: 0.14;
+}
 
 /* ── Figures ─────────────────────────────────────────────────────────── */
 /* A labelled figure in words, which is now only the thesis' total stake: the rest are drawings.

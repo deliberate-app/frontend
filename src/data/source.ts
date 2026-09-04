@@ -300,12 +300,7 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
           return {
             id: argumentId,
             parentId: argumentId === 0 ? null : argument.parentArgumentId,
-            side:
-              argumentId === 0
-                ? null
-                : argument.isSupporting
-                  ? ('pro' as const)
-                  : ('con' as const),
+            side: argumentId === 0 ? null : argument.isSupporting ? ('pro' as const) : ('con' as const),
             text: textOf(texts, argumentId, 'argument'),
             // Approval is the pro-share price of the argument's constant-product market:
             // the scarcer the pro reserve, the higher the approval.
@@ -315,10 +310,7 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
             weight: argument.stake,
             // The stored settlement rating exists once the tally has run; before that the
             // field reads zero, which is a legal rating, so the phase decides null.
-            rating:
-              currentPhase === PHASE_FINISHED && argumentId !== 0
-                ? Number(argument.rating) / MAX_APPROVAL
-                : null,
+            rating: currentPhase === PHASE_FINISHED && argumentId !== 0 ? Number(argument.rating) / MAX_APPROVAL : null,
             // Final-ness is by time: an argument locks in automatically once its editing window elapses.
             state: chainTime >= Number(argument.finalizationTime) ? ('final' as const) : ('created' as const),
             finalizationTime: Number(argument.finalizationTime),
@@ -394,9 +386,10 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
               readBounty(client, address, id),
             ]);
           // The outcome exists only once the debate is finished (the read reverts before the tally).
-          const approved = currentPhase === PHASE_FINISHED
-            ? ((await client.readContract({ address, abi, functionName: 'outcome', args: [id] })) as boolean)
-            : undefined;
+          const approved =
+            currentPhase === PHASE_FINISHED
+              ? ((await client.readContract({ address, abi, functionName: 'outcome', args: [id] })) as boolean)
+              : undefined;
           return {
             id: debateId,
             thesis: textOf(theses, debateId, 'debate'),
@@ -425,7 +418,12 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
     async argumentPosition(debateId: number, argumentId: number, account: string): Promise<ArgumentPosition> {
       const id = BigInt(debateId);
       const [shares, argument] = (await Promise.all([
-        client.readContract({ address, abi, functionName: 'getUserShares', args: [id, argumentId, account as Address] }),
+        client.readContract({
+          address,
+          abi,
+          functionName: 'getUserShares',
+          args: [id, argumentId, account as Address],
+        }),
         client.readContract({ address, abi, functionName: 'getArgument', args: [id, argumentId] }),
       ])) as [{ pro: number; con: number }, { creator: Address; fees: number }];
       const isCreator = argument.creator.toLowerCase() === account.toLowerCase();
@@ -479,14 +477,20 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
     async markets(debateId: number): Promise<ArgumentMarket[]> {
       const id = BigInt(debateId);
       const [[currentPhase], [, argumentsCount]] = await Promise.all([
-        client.readContract({ address, abi, functionName: 'phases', args: [id] }) as Promise<[number, bigint, bigint, bigint]>,
-        client.readContract({ address, abi, functionName: 'debates', args: [id] }) as Promise<[number, number, number, number]>,
+        client.readContract({ address, abi, functionName: 'phases', args: [id] }) as Promise<
+          [number, bigint, bigint, bigint]
+        >,
+        client.readContract({ address, abi, functionName: 'debates', args: [id] }) as Promise<
+          [number, number, number, number]
+        >,
       ]);
       // Argument ids are contiguous 0..argumentsCount-1; the thesis (0) has no market of its own,
       // its columns read as the empty market load() gives it.
       const ids = Array.from({ length: Number(argumentsCount) }, (_, i) => i);
       const rows = (await Promise.all(
-        ids.map((argumentId) => client.readContract({ address, abi, functionName: 'getArgument', args: [id, argumentId] })),
+        ids.map((argumentId) =>
+          client.readContract({ address, abi, functionName: 'getArgument', args: [id, argumentId] }),
+        ),
       )) as OnChainArgument[];
       return rows.map((argument, i) => {
         const marketSize = argument.pro + argument.con;

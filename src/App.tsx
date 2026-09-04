@@ -47,15 +47,9 @@ export default function App() {
   // whole read path at that network's contract and indexer, and a constant can only be the first.
   const source = useMemo(() => sourceFor(deployment), [deployment]);
   // Sample data has no markets to have earned anything; the deployed sources answer from the index.
-  const feesEarnedOf = useMemo(
-    () => (deployment ? source.feesEarned.bind(source) : undefined),
-    [deployment, source],
-  );
+  const feesEarnedOf = useMemo(() => (deployment ? source.feesEarned.bind(source) : undefined), [deployment, source]);
   // The stake history the argument detail's chart replays; sample data has none to replay.
-  const historyOfDebate = useMemo(
-    () => (deployment ? source.history.bind(source) : undefined),
-    [deployment, source],
-  );
+  const historyOfDebate = useMemo(() => (deployment ? source.history.bind(source) : undefined), [deployment, source]);
   // The ranked participants the debate detail lists; sample data has no one to rank.
   const participantsOf = useMemo(
     () => (deployment ? source.participants.bind(source) : undefined),
@@ -309,10 +303,7 @@ export default function App() {
   const phase = debate === null ? undefined : livePhaseOf(debate, now);
 
   const joinable =
-    actions !== null &&
-    userState !== null &&
-    !userState.joined &&
-    (phase === 'editing' || phase === 'rating');
+    actions !== null && userState !== null && !userState.joined && (phase === 'editing' || phase === 'rating');
 
   // Tallying is permissionless - any connected account can finish a debate once its rating window
   // closes. The ticking clock opens the gate live, without waiting for the next poll.
@@ -492,9 +483,7 @@ export default function App() {
   // Two reasons creating can be unavailable, and they deserve opposite treatments: no deployment
   // is a dead end the visitor cannot act on, while no wallet is simply the next step - so the
   // latter never disables anything, it asks.
-  const createUnavailableHint = deployment
-    ? null
-    : 'Configure a deployment to start debates.';
+  const createUnavailableHint = deployment ? null : 'Configure a deployment to start debates.';
   const needsWallet = deployment !== null && actions === null;
 
   const browsing = debateId === null;
@@ -506,12 +495,7 @@ export default function App() {
       <header className="topbar">
         <a className="wordmark" href="#/">
           <svg className="wordmark-mark" viewBox="0 0 96 96" aria-hidden="true">
-            <g
-              transform="translate(-15.12 -15.12) scale(1.3151)"
-              fill="none"
-              strokeWidth="9"
-              strokeLinecap="butt"
-            >
+            <g transform="translate(-15.12 -15.12) scale(1.3151)" fill="none" strokeWidth="9" strokeLinecap="butt">
               <path d="M49 16 H32 a16 16 0 0 0 -16 16 V64 a16 16 0 0 0 16 16 H49" stroke="#31703f" />
               <path d="M48 80 H64 a16 16 0 0 0 16 -16 V32 a16 16 0 0 0 -16 -16 H48" stroke="#a5432c" />
             </g>
@@ -529,9 +513,7 @@ export default function App() {
             ‹ All debates
           </a>
         )}
-        {!browsing && debate && phase && (
-          <span className={`phase phase-${phase}`}>{PHASE_LABEL[phase]}</span>
-        )}
+        {!browsing && debate && phase && <span className={`phase phase-${phase}`}>{PHASE_LABEL[phase]}</span>}
         {!browsing && redeemable && redeemable.length > 0 && (
           <button
             type="button"
@@ -576,8 +558,8 @@ export default function App() {
       {redeemError && <p className="load-error">Could not redeem: {redeemError}</p>}
       {error && (
         <p className="load-error">
-          Could not load {browsing ? 'the debates' : 'the debate'}: {error}. Check
-          VITE_DELIBERATE_ADDRESS and VITE_RPC_URL, or unset them to browse the sample debate.
+          Could not load {browsing ? 'the debates' : 'the debate'}: {error}. Check VITE_DELIBERATE_ADDRESS and
+          VITE_RPC_URL, or unset them to browse the sample debate.
         </p>
       )}
 

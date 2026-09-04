@@ -114,7 +114,13 @@ describe('withMarkets', () => {
     ]);
 
     expect(fresh.nodes).toHaveLength(2);
-    expect(fresh.nodes[1]).toMatchObject({ text: 'kept', creator: '0xabc', approval: 25 / 26, weight: 30, proReserve: 1 });
+    expect(fresh.nodes[1]).toMatchObject({
+      text: 'kept',
+      creator: '0xabc',
+      approval: 25 / 26,
+      weight: 30,
+      proReserve: 1,
+    });
     // A market the refetch does not mention stands as it was.
     expect(fresh.nodes[0]).toBe(thesis);
     expect(debate.nodes[1]).toBe(argument);

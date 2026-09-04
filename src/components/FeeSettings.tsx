@@ -33,8 +33,8 @@ export function FeeSettings({
           <span className="duration-unit-label">%</span>
         </span>
         <span className="duration-hint">
-          Taken from every stake and paid to the argument's creator: their revenue, and the
-          threshold a mispricing must exceed to be worth staking against.
+          Taken from every stake and paid to the argument's creator: their revenue, and the threshold a mispricing must
+          exceed to be worth staking against.
         </span>
       </label>
 

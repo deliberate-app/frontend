@@ -234,12 +234,8 @@ describe('withFallback', () => {
   test('serves from the primary while it works', async () => {
     expect(await withFallback(source(debate), source(new Error('unused'))).load(0)).toBe(debate);
     expect(await withFallback(source(debate), source(new Error('unused'))).list()).toBe(summaries);
-    expect(await withFallback(source(debate), source(new Error('unused'))).positions(0, '0xabc')).toBe(
-      positions,
-    );
-    expect(await withFallback(source(debate), source(new Error('unused'))).userState(0, '0xabc')).toBe(
-      userState,
-    );
+    expect(await withFallback(source(debate), source(new Error('unused'))).positions(0, '0xabc')).toBe(positions);
+    expect(await withFallback(source(debate), source(new Error('unused'))).userState(0, '0xabc')).toBe(userState);
     expect(await withFallback(source(debate), source(new Error('unused'))).feesEarned(0, 1)).toBe(3);
     expect(await withFallback(source(debate), source(new Error('unused'))).markets(0)).toBe(markets);
   });
@@ -247,12 +243,8 @@ describe('withFallback', () => {
   test('falls back when the primary fails', async () => {
     expect(await withFallback(source(new Error('indexer down')), source(debate)).load(0)).toBe(debate);
     expect(await withFallback(source(new Error('indexer down')), source(debate)).list()).toBe(summaries);
-    expect(
-      await withFallback(source(new Error('indexer down')), source(debate)).positions(0, '0xabc'),
-    ).toBe(positions);
-    expect(
-      await withFallback(source(new Error('indexer down')), source(debate)).userState(0, '0xabc'),
-    ).toBe(userState);
+    expect(await withFallback(source(new Error('indexer down')), source(debate)).positions(0, '0xabc')).toBe(positions);
+    expect(await withFallback(source(new Error('indexer down')), source(debate)).userState(0, '0xabc')).toBe(userState);
     expect(await withFallback(source(new Error('indexer down')), source(debate)).feesEarned(0, 1)).toBe(3);
     expect(await withFallback(source(new Error('indexer down')), source(debate)).markets(0)).toBe(markets);
   });
@@ -265,9 +257,7 @@ const INDEXER_URL = 'http://localhost:8090/v1/graphql';
 // Read the deployment straight from .env.local - bun skips env files under NODE_ENV=test.
 const envFile = Bun.file(new URL('../../.env.local', import.meta.url).pathname);
 const address = (await envFile.exists())
-  ? ((await envFile.text()).match(/^VITE_DELIBERATE_ADDRESS=(0x[0-9a-fA-F]{40})$/m)?.[1] as
-      | `0x${string}`
-      | undefined)
+  ? ((await envFile.text()).match(/^VITE_DELIBERATE_ADDRESS=(0x[0-9a-fA-F]{40})$/m)?.[1] as `0x${string}` | undefined)
   : undefined;
 
 const indexerUp = await fetch(INDEXER_URL, {
@@ -280,26 +270,38 @@ const indexerUp = await fetch(INDEXER_URL, {
 const stackUp = indexerUp && address !== undefined && (await rpcUp(RPC_URL));
 
 describe('indexerSource (against the local dev stack)', () => {
-  test.skipIf(!stackUp)('serves the same debate as the chain traversal', async () => {
-    const fromIndex = await indexerSource(INDEXER_URL, RPC_URL).load(0);
-    const fromChain = await contractSource(address!, RPC_URL).load(0);
+  test.skipIf(!stackUp)(
+    'serves the same debate as the chain traversal',
+    async () => {
+      const fromIndex = await indexerSource(INDEXER_URL, RPC_URL).load(0);
+      const fromChain = await contractSource(address!, RPC_URL).load(0);
 
-    expect(fromIndex.phase).toBe(fromChain.phase);
-    expect(fromIndex.timing!.editingEndTime).toBe(fromChain.timing!.editingEndTime);
-    expect(fromIndex.timing!.ratingEndTime).toBe(fromChain.timing!.ratingEndTime);
-    expect(fromIndex.nodes).toEqual(fromChain.nodes);
-  }, 30_000);
+      expect(fromIndex.phase).toBe(fromChain.phase);
+      expect(fromIndex.timing!.editingEndTime).toBe(fromChain.timing!.editingEndTime);
+      expect(fromIndex.timing!.ratingEndTime).toBe(fromChain.timing!.ratingEndTime);
+      expect(fromIndex.nodes).toEqual(fromChain.nodes);
+    },
+    30_000,
+  );
 
-  test.skipIf(!stackUp)('lists the same debates as the chain enumeration', async () => {
-    const fromIndex = await indexerSource(INDEXER_URL, RPC_URL).list();
-    const fromChain = await contractSource(address!, RPC_URL).list();
-    expect(fromIndex.length).toBeGreaterThan(0);
-    expect(fromIndex).toEqual(fromChain);
-  }, 30_000);
+  test.skipIf(!stackUp)(
+    'lists the same debates as the chain enumeration',
+    async () => {
+      const fromIndex = await indexerSource(INDEXER_URL, RPC_URL).list();
+      const fromChain = await contractSource(address!, RPC_URL).list();
+      expect(fromIndex.length).toBeGreaterThan(0);
+      expect(fromIndex).toEqual(fromChain);
+    },
+    30_000,
+  );
 
-  test.skipIf(!stackUp)('rejects a nonexistent debate id instead of fabricating one', async () => {
-    const count = (await contractSource(address!, RPC_URL).list()).length;
-    // An id past the counter has never been created: the read is all-zero.
-    await expect(contractSource(address!, RPC_URL).load(count + 5)).rejects.toThrow('does not exist');
-  }, 30_000);
+  test.skipIf(!stackUp)(
+    'rejects a nonexistent debate id instead of fabricating one',
+    async () => {
+      const count = (await contractSource(address!, RPC_URL).list()).length;
+      // An id past the counter has never been created: the read is all-zero.
+      await expect(contractSource(address!, RPC_URL).load(count + 5)).rejects.toThrow('does not exist');
+    },
+    30_000,
+  );
 });

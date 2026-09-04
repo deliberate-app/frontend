@@ -49,9 +49,10 @@ describe('availablePhasePoke', () => {
   });
 
   test('never closes again on a wall clock running behind the load-time estimate', () => {
-    expect(
-      availablePhasePoke(debate('rating', { ...TIMING, chainTime: 1001, loadedAt: 1000 }), 100),
-    ).toEqual({ kind: 'tally', target: 'finished' });
+    expect(availablePhasePoke(debate('rating', { ...TIMING, chainTime: 1001, loadedAt: 1000 }), 100)).toEqual({
+      kind: 'tally',
+      target: 'finished',
+    });
   });
 });
 
@@ -158,11 +159,7 @@ describe('filterDebates', () => {
   });
 
   test('sorts by stake, highest first, breaking ties by newest', () => {
-    const debates = [
-      summary(0, { stake: 50 }),
-      summary(1, { stake: 5 }),
-      summary(2, { stake: 50 }),
-    ];
+    const debates = [summary(0, { stake: 50 }), summary(1, { stake: 5 }), summary(2, { stake: 50 })];
     expect(filterDebates(debates, { ...all, sort: 'stake' }).map((d) => d.id)).toEqual([2, 0, 1]);
   });
 

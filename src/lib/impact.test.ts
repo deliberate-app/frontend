@@ -14,7 +14,12 @@ const node = (partial: Partial<ArgumentNode> & { id: number }): ArgumentNode => 
 });
 
 const thesis = node({ id: 0, parentId: null, side: null, approval: 0.5, weight: 0 });
-const debate = (nodes: ArgumentNode[]): Debate => ({ id: 0, phase: 'rating', feePercentage: 5, nodes: [thesis, ...nodes] });
+const debate = (nodes: ArgumentNode[]): Debate => ({
+  id: 0,
+  phase: 'rating',
+  feePercentage: 5,
+  nodes: [thesis, ...nodes],
+});
 
 describe('tallyOf', () => {
   test('a lone supporting argument carries its centered approval into the thesis rating', () => {
@@ -50,9 +55,7 @@ describe('tallyOf', () => {
   test('descendants correct their parent in proportion to their stake', () => {
     // A fully-approved 10-stake pro child against a 10-stake neutral parent market:
     // rating(parent) = (0 x 10 + 1.0 x 10) / 20 = 0.5, carried at the full sibling share.
-    const impacts = tallyOf(
-      debate([node({ id: 1, approval: 0.5 }), node({ id: 2, parentId: 1, approval: 1.0 })]),
-    );
+    const impacts = tallyOf(debate([node({ id: 1, approval: 0.5 }), node({ id: 2, parentId: 1, approval: 1.0 })]));
     expect(impacts.get(2)?.impact).toBeCloseTo(1.0);
     expect(impacts.get(1)?.impact).toBeCloseTo(0.5);
     expect(impacts.get(0)?.rating).toBeCloseTo(0.5);
@@ -173,7 +176,10 @@ describe('tallyOf subtree stake', () => {
 
   test('a draft carries its own stake but adds nothing to its parent', () => {
     const tally = tallyOf(
-      debate([node({ id: 1, approval: 0.8, weight: 30 }), node({ id: 2, parentId: 1, approval: 0.8, weight: 10, state: 'created' })]),
+      debate([
+        node({ id: 1, approval: 0.8, weight: 30 }),
+        node({ id: 2, parentId: 1, approval: 0.8, weight: 10, state: 'created' }),
+      ]),
     );
     expect(tally.get(2)?.subtreeWeight).toBe(10);
     expect(tally.get(1)?.subtreeWeight).toBe(30);

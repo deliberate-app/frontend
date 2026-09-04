@@ -13,9 +13,7 @@ import { circlesAvatarOf, searchCirclesAvatars, type CirclesAvatar } from '../li
  * carries the name it was picked by, so the chip can say it.
  */
 export type GateDraft =
-  | { mode: 'open' }
-  | { mode: 'circles'; address: Address }
-  | { mode: 'registry'; address: Address; label?: string };
+  { mode: 'open' } | { mode: 'circles'; address: Address } | { mode: 'registry'; address: Address; label?: string };
 
 /** The address the contract stores for a gate. */
 export function gateAddress(gate: GateDraft): Address {
@@ -88,9 +86,7 @@ export function GateSettings({
       .filter((anchor): anchor is Address => anchor !== undefined && anchor !== zeroAddress);
     if (anchors.length === 0) return;
     const controller = new AbortController();
-    void Promise.all(
-      anchors.map(async (anchor) => [anchor, await circlesAvatarOf(anchor, controller.signal)] as const),
-    )
+    void Promise.all(anchors.map(async (anchor) => [anchor, await circlesAvatarOf(anchor, controller.signal)] as const))
       .then((found) => {
         setAnchorNames(
           Object.fromEntries(found.flatMap(([anchor, avatar]) => (avatar ? [[anchor, avatar.name]] : []))),
@@ -149,7 +145,9 @@ export function GateSettings({
   const allowlists = registries.filter((registry) => registry.kind === 'allowlist').sort(currentFirst);
   // The preset already stands for the deployment's own any-human registry.
   const circles = registries
-    .filter((registry) => registry.kind === 'circles' && registry.address.toLowerCase() !== circlesRegistry.toLowerCase())
+    .filter(
+      (registry) => registry.kind === 'circles' && registry.address.toLowerCase() !== circlesRegistry.toLowerCase(),
+    )
     .sort(currentFirst);
   const chosen = (address: Address) => gate.mode === 'registry' && gate.address === address;
 
@@ -190,9 +188,7 @@ export function GateSettings({
               key={registry.address}
               type="button"
               className={`registry-item ${chosen(registry.address) ? 'registry-item-active' : ''}`}
-              onClick={() =>
-                onChange({ mode: 'registry', address: registry.address, label: 'your allowlist' })
-              }
+              onClick={() => onChange({ mode: 'registry', address: registry.address, label: 'your allowlist' })}
             >
               <span className="registry-kind">Allowlist</span>
               <span className="mono">{shortAddress(registry.address)}</span>
@@ -247,9 +243,7 @@ export function GateSettings({
                 onChange={(event) => setQuery(event.target.value)}
               />
             </span>
-            <span className="duration-hint">
-              A new Circles registry admits the accounts this avatar trusts.
-            </span>
+            <span className="duration-hint">A new Circles registry admits the accounts this avatar trusts.</span>
           </label>
           {found.length > 0 && (
             <div className="registry-list">
@@ -314,16 +308,15 @@ export function GateSettings({
           />
         </span>
         <span className="duration-hint">
-          Any identity registry by address. The same registry can serve any number of debates, and it is
-          asked on each join - so an account removed later cannot join, while debates already joined are
-          unaffected.
+          Any identity registry by address. The same registry can serve any number of debates, and it is asked on each
+          join - so an account removed later cannot join, while debates already joined are unaffected.
         </span>
       </label>
 
       {gate.mode !== 'open' && (
         <p className="composer-hint">
-          Joining is refused to accounts the registry does not know. Choose <em>Everyone</em> for a
-          debate anyone may join.
+          Joining is refused to accounts the registry does not know. Choose <em>Everyone</em> for a debate anyone may
+          join.
         </p>
       )}
     </Modal>

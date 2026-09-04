@@ -39,8 +39,7 @@ export function upsideOf(node: ArgumentNode): { underrated: number; overrated: n
  */
 export const GOOD_SHARE_PAYOUT = '(1 + weighted rating) / 2 of a vote token';
 export const BAD_SHARE_PAYOUT = '(1 − weighted rating) / 2 of a vote token';
-export const SHARE_PAYOUT_HINT =
-  `A good-argument share pays ${GOOD_SHARE_PAYOUT}, a bad-argument share ${BAD_SHARE_PAYOUT}.`;
+export const SHARE_PAYOUT_HINT = `A good-argument share pays ${GOOD_SHARE_PAYOUT}, a bad-argument share ${BAD_SHARE_PAYOUT}.`;
 
 /** What one stake would do to an argument's market, before it is sent. */
 export interface StakePreview {

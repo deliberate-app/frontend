@@ -144,8 +144,7 @@ export function ArgumentDetail({
         )}
       </dl>
       <p className="composer-hint">
-        {SHARE_PAYOUT_HINT} Staking against a mispricing gains at most the reserve on that side, before
-        fees.
+        {SHARE_PAYOUT_HINT} Staking against a mispricing gains at most the reserve on that side, before fees.
       </p>
     </Modal>
   );

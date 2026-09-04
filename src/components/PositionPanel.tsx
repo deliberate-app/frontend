@@ -60,10 +60,7 @@ export function PositionPanel({
       <div className="action-row">
         {hasShares && (
           <>
-            <span
-              className="action-hint"
-              title={SHARE_PAYOUT_HINT}
-            >
+            <span className="action-hint" title={SHARE_PAYOUT_HINT}>
               Your shares:{' '}
               <strong className="mono facts">
                 <span>

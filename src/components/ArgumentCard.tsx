@@ -28,9 +28,7 @@ export function ArgumentCard({
 }) {
   // Time until the draft can be locked in; null without a chain clock (sample data).
   const finalizesIn =
-    node.state === 'created' && debate.timing
-      ? node.finalizationTime - liveChainTime(debate.timing, now)
-      : null;
+    node.state === 'created' && debate.timing ? node.finalizationTime - liveChainTime(debate.timing, now) : null;
   // Final once the argument is locked in, or once the live clock has passed its finalization time.
   const locked = node.state === 'final' || (finalizesIn !== null && finalizesIn <= 0);
 

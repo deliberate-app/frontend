@@ -70,9 +70,7 @@ export function ThesisDetail({
                   <td>
                     <AddressChip address={participant.account} />
                   </td>
-                  <td className={`leaderboard-points mono ${signClassOf(points)}`}>
-                    {formatSignedVotes(points)} ⬡
-                  </td>
+                  <td className={`leaderboard-points mono ${signClassOf(points)}`}>{formatSignedVotes(points)} ⬡</td>
                 </tr>
               );
             })}
@@ -85,8 +83,8 @@ export function ThesisDetail({
       )}
       {finished && participants.length > 0 && (
         <p className="composer-hint">
-          Excess: vote tokens beyond the {formatVotes(INITIAL_UNITS)} granted on joining, which a bounty
-          claim is proportional to. Shares not yet redeemed and fees not yet claimed do not count.
+          Excess: vote tokens beyond the {formatVotes(INITIAL_UNITS)} granted on joining, which a bounty claim is
+          proportional to. Shares not yet redeemed and fees not yet claimed do not count.
         </p>
       )}
     </Modal>

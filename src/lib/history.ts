@@ -54,11 +54,7 @@ interface Reserves {
  * The series for one argument across the rating window, oldest first. Empty without a clock (the
  * bundled sample) or without a window to plot.
  */
-export function historyOf(
-  debate: Debate,
-  stakes: readonly StakeEvent[],
-  argumentId: number,
-): HistoryPoint[] {
+export function historyOf(debate: Debate, stakes: readonly StakeEvent[], argumentId: number): HistoryPoint[] {
   const { timing } = debate;
   if (!timing) {
     return [];

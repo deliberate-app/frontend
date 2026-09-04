@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { isAddress } from 'viem';
-import {
-  BOUNTY_TOKEN_PRESETS,
-  formatTokenAmount,
-  parseTokenAmount,
-  type TokenInfo,
-} from '../lib/tokens';
+import { BOUNTY_TOKEN_PRESETS, formatTokenAmount, parseTokenAmount, type TokenInfo } from '../lib/tokens';
 
 /** A bounty as configured in the create form: the token's identity plus the raw amount. */
 export interface BountyDraft {
@@ -78,9 +73,9 @@ export function BountySettings({
   return (
     <Modal title="Bounty" onClose={onClose}>
       <p className="composer-hint">
-        An ERC-20 bounty for participants who end with an excess - more vote tokens than they were
-        granted on joining. Unclaimed remainder returns to you after the 7-day claim window; anyone
-        can top the bounty up while the debate runs.
+        An ERC-20 bounty for participants who end with an excess - more vote tokens than they were granted on joining.
+        Unclaimed remainder returns to you after the 7-day claim window; anyone can top the bounty up while the debate
+        runs.
       </p>
 
       <div className="preset-row">
@@ -138,8 +133,8 @@ export function BountySettings({
             <span className="duration-unit-label">{bounty.token.symbol}</span>
           </span>
           <span className="duration-hint">
-            Pulled from your wallet at creation (an approval is asked first); zero names the token
-            and leaves the funding to top-ups.
+            Pulled from your wallet at creation (an approval is asked first); zero names the token and leaves the
+            funding to top-ups.
           </span>
           {amountError && <span className="action-error">{amountError}</span>}
         </label>

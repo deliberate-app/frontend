@@ -52,9 +52,7 @@ export function useWallet(): WalletState {
   useEffect(() => {
     const onAnnounce = (event: Event) => {
       const wallet = (event as EIP6963AnnounceEvent).detail;
-      setWallets((known) =>
-        known.some((w) => w.info.uuid === wallet.info.uuid) ? known : [...known, wallet],
-      );
+      setWallets((known) => (known.some((w) => w.info.uuid === wallet.info.uuid) ? known : [...known, wallet]));
     };
     window.addEventListener('eip6963:announceProvider', onAnnounce);
     window.dispatchEvent(new Event('eip6963:requestProvider'));

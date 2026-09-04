@@ -121,11 +121,7 @@ function AncestryRail({
           type="button"
           className="rail-toggle"
           aria-expanded={expanded}
-          title={
-            expanded
-              ? 'One line per argument.'
-              : 'Every argument in full.'
-          }
+          title={expanded ? 'One line per argument.' : 'Every argument in full.'}
           onClick={() => onExpandedChange(!expanded)}
         >
           <Chevron up={expanded} />
@@ -287,9 +283,7 @@ export function DebateView({
       {isThesis && <BountyPanel debate={debate} tx={tx} now={now} />}
 
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
-        <p className="focus-kicker">
-          {isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}
-        </p>
+        <p className="focus-kicker">{isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}</p>
         <h1 className="focus-text">{focus.text}</h1>
         {/* Three tracks by role (principle 11): who made the claim, what came of
             it - the arguments beneath, or the finished thesis' outcome - and, at the trailing edge
@@ -357,11 +351,7 @@ export function DebateView({
         {rating && tx && (
           <div className="action-panel">
             <div className="action-row">
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setStakeOpen(true)}
-              >
+              <button type="button" className="btn" onClick={() => setStakeOpen(true)}>
                 Stake ⬡
               </button>
               <span className="action-hint facts">
@@ -441,9 +431,7 @@ export function DebateView({
         <section className="column column-pro" aria-label="Pro arguments">
           <h2 className="column-title">Pros</h2>
           {pros.length === 0 ? (
-            <p className="column-empty">
-              No pros yet. Arguments can be added during the editing phase.
-            </p>
+            <p className="column-empty">No pros yet. Arguments can be added during the editing phase.</p>
           ) : (
             pros.map((node) => (
               <ArgumentCard
@@ -464,9 +452,7 @@ export function DebateView({
                 key={`pro-${focus.id}`}
                 side="pro"
                 tokens={tx.tokens}
-                onAdd={(side, approval, deposit, text) =>
-                  tx.createArgument(focus.id, side, approval, deposit, text)
-                }
+                onAdd={(side, approval, deposit, text) => tx.createArgument(focus.id, side, approval, deposit, text)}
               />
             </div>
           )}
@@ -475,9 +461,7 @@ export function DebateView({
         <section className="column column-con" aria-label="Con arguments">
           <h2 className="column-title">Cons</h2>
           {cons.length === 0 ? (
-            <p className="column-empty">
-              No cons yet. Arguments can be added during the editing phase.
-            </p>
+            <p className="column-empty">No cons yet. Arguments can be added during the editing phase.</p>
           ) : (
             cons.map((node) => (
               <ArgumentCard
@@ -498,9 +482,7 @@ export function DebateView({
                 key={`con-${focus.id}`}
                 side="con"
                 tokens={tx.tokens}
-                onAdd={(side, approval, deposit, text) =>
-                  tx.createArgument(focus.id, side, approval, deposit, text)
-                }
+                onAdd={(side, approval, deposit, text) => tx.createArgument(focus.id, side, approval, deposit, text)}
               />
             </div>
           )}

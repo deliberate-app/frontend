@@ -59,15 +59,21 @@ export function BountyTopUpChip({ debate, tx }: { debate: Debate; tx: DebateTx |
         onClick={() => setOpen(true)}
       >
         <svg className="chip-glyph" viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M8 3.75 V12.25 M3.75 8 H12.25" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+          <path
+            d="M8 3.75 V12.25 M3.75 8 H12.25"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            fill="none"
+          />
         </svg>
       </button>
       {open && (
         <Modal title="Top up the bounty" onClose={close}>
           <p className="composer-hint">
-            The bounty - currently <strong className="mono">{formatTokenAmount(bounty.pool, bounty)}</strong> -
-            pays participants who end with more vote tokens than they were granted, once the debate
-            finishes. Top-ups are donations: they raise every claim and are not refundable.
+            The bounty - currently <strong className="mono">{formatTokenAmount(bounty.pool, bounty)}</strong> - pays
+            participants who end with more vote tokens than they were granted, once the debate finishes. Top-ups are
+            donations: they raise every claim and are not refundable.
           </p>
           <label className="duration-field">
             <span className="duration-label">Amount</span>
@@ -174,7 +180,12 @@ export function BountyPanel({ debate, tx, now }: { debate: Debate; tx: DebateTx 
       )}
       {tx.bountyClaimed && <span className="action-hint">Your share is claimed.</span>}
       {!windowOpen && isCreator && !bounty.swept && remainder > 0n && (
-        <button type="button" className="btn btn-solid" disabled={busy} onClick={() => void run(() => tx.sweepBounty())}>
+        <button
+          type="button"
+          className="btn btn-solid"
+          disabled={busy}
+          onClick={() => void run(() => tx.sweepBounty())}
+        >
           {busy ? 'Sweeping…' : `Sweep ${formatTokenAmount(remainder, bounty)}`}
         </button>
       )}

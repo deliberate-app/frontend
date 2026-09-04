@@ -192,15 +192,7 @@ interface RingArc {
 }
 
 /** The ring itself: a hairline track and the arcs on it. Every ring on the page is drawn here. */
-const Ring = ({
-  arcs,
-  label,
-  presentational,
-}: {
-  arcs: RingArc[];
-  label: () => string;
-  presentational?: boolean;
-}) => (
+const Ring = ({ arcs, label, presentational }: { arcs: RingArc[]; label: () => string; presentational?: boolean }) => (
   <svg className="ring" viewBox="0 0 18 18" {...figureRole(presentational, label)}>
     <circle className="ring-track" cx="9" cy="9" r={RING_RADIUS} />
     {arcs.map(({ cls, length, offset, title }) => (
