@@ -26,6 +26,7 @@ import {
 
 import abi from '../abi/Deliberate.abi.json';
 import factoryAbi from '../abi/IdentityRegistryFactory.abi.json';
+import allowlistAbi from '../abi/AllowlistIdentityRegistry.abi.json';
 import { deploymentChain } from '../lib/chains';
 import type { DebateSchedule } from '../lib/debateTiming';
 import { contentError } from '../lib/content';
@@ -77,6 +78,8 @@ export interface DebateActions {
    * `requireHuman` whether an admitted account must also be a registered human.
    */
   createCirclesRegistry(anchor: Address, requireHuman: boolean): Promise<Address>;
+  /** Adds or removes accounts on an allowlist this account owns. */
+  setMembership(registry: Address, accounts: Address[], member: boolean): Promise<void>;
   /** Authors an argument beneath a parent; the text goes to the chain as it is, within its bounds. */
   createArgument(
     debateId: number,
@@ -333,6 +336,10 @@ export async function connectDebateActions(
     async createCirclesRegistry(anchor, requireHuman) {
       const receipt = await writeTo(factory(), 'createCirclesRegistry', [anchor, requireHuman]);
       return createdRegistry(receipt, 'CirclesRegistryCreated');
+    },
+
+    async setMembership(registry, accounts, member) {
+      await writeTo({ address: registry, abi: allowlistAbi as Abi }, 'setMembership', [accounts, member]);
     },
 
     async join(debateId) {

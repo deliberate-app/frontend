@@ -59,6 +59,11 @@ export interface DebateSource {
    * the factory has cloned.
    */
   registries(account?: string): Promise<IdentityRegistryInfo[]>;
+  /**
+   * The accounts on an allowlist, as the index has folded its membership events. Empty from a
+   * source that keeps no list.
+   */
+  memberships(registry: Address): Promise<Address[]>;
 }
 
 /** An identity registry the factory made, as the index records it. */
@@ -92,8 +97,9 @@ const sampleDebates = [climateDebate, confirmedDebate, objectedDebate, editingDe
 
 export const mockSource: DebateSource = {
   load: async (debateId) => sampleDebates.find((debate) => debate.id === debateId) ?? climateDebate,
-  // The sample knows no factory, so there is nothing to pick from.
+  // The sample knows no factory, so there is nothing to pick from and no list to read.
   registries: async () => [],
+  memberships: async () => [],
   list: async () =>
     sampleDebates.map((debate) => ({
       id: debate.id,
@@ -505,8 +511,11 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
       return [];
     },
 
-    // What the factory cloned is only known from its events, which the index has folded already.
+    // What the factory cloned, and who is on a list, is only known from events the index has folded.
     async registries(): Promise<IdentityRegistryInfo[]> {
+      return [];
+    },
+    async memberships(): Promise<Address[]> {
       return [];
     },
   };
@@ -716,6 +725,12 @@ const INDEXER_REGISTRIES_QUERY = `query Registries($chainId: Int!, $owner: Strin
     where: { chainId: { _eq: $chainId }, _or: [{ kind: { _eq: CIRCLES } }, { owner: { _eq: $owner } }] }
     order_by: { createdAt: desc }
   ) { address kind factory owner anchor requireHuman }
+}`;
+
+const INDEXER_MEMBERSHIPS_QUERY = `query Memberships($registryId: String!) {
+  Membership(where: { registry_id: { _eq: $registryId }, member: { _eq: true } }, order_by: { updatedAt: desc }) {
+    account
+  }
 }`;
 
 const INDEXER_ARGUMENT_FEES_QUERY = `query ArgumentFees($argumentId: String!) {
@@ -976,6 +991,13 @@ export function indexerSource(indexerUrl: string, rpcUrl: string): DebateSource 
         ...(row.requireHuman !== null ? { requireHuman: row.requireHuman } : {}),
       }));
     },
+
+    async memberships(registry: Address): Promise<Address[]> {
+      const data = await graphql<{ Membership: Array<{ account: string }> }>(INDEXER_MEMBERSHIPS_QUERY, {
+        registryId: `${await chainId()}_${registry.toLowerCase()}`,
+      });
+      return data.Membership.map((row) => getAddress(row.account));
+    },
   };
 }
 
@@ -1002,6 +1024,7 @@ export function withFallback(primary: DebateSource, fallback: DebateSource): Deb
     history: guarded((source) => source.history.bind(source)),
     participants: guarded((source) => source.participants.bind(source)),
     registries: guarded((source) => source.registries.bind(source)),
+    memberships: guarded((source) => source.memberships.bind(source)),
   };
 }
 

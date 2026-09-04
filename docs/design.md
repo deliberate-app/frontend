@@ -68,6 +68,14 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-05 — an owner keeps their allowlists from the wallet menu.** A list is the owner's, not
+  a debate's, so it is managed where the account is: the account menu gains "Your allowlists",
+  which opens the lists the index knows this account owns, the accounts on each, an address to add
+  and a Remove per row. Members are labelled with their Circles name where Circles knows one, from
+  the same profile lookup the registry picker uses. Every debate that names a list admits from it
+  at the moment of joining, so a change here reaches them all, and the hint says the one thing an
+  owner must know about that: removing an account bars it from joining afterwards, and leaves the
+  debates it already joined alone. (Principle 5: settings live on the value they edit.)
 - **2026-09-05 — a creator picks a registry, or makes one, in "Who may join".** The modal used to
   offer three shapes and a bare address field; a creator with a group of their own had to deploy a
   contract elsewhere and paste it. It now lists what exists - the allowlists the connected account

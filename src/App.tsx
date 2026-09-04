@@ -445,6 +445,17 @@ export default function App() {
   useEffect(() => {
     void reloadRegistries();
   }, [reloadRegistries]);
+  // Stable across renders, as the manager reloads a list whenever these change.
+  const loadMembers = useCallback((registry: Address) => source.memberships(registry), [source]);
+  const setMembership = useMemo(
+    () =>
+      actions
+        ? async (registry: Address, accounts: Address[], member: boolean) => {
+            await actions.setMembership(registry, accounts, member);
+          }
+        : undefined,
+    [actions],
+  );
   const createAllowlist = async () => {
     if (!actions) throw new Error('Connect a wallet first.');
     const address = await actions.createAllowlistRegistry();
@@ -554,6 +565,9 @@ export default function App() {
           wallet={wallet}
           deploymentChainId={deploymentChainId}
           onSwitchChain={switchToDeployment}
+          allowlists={deployment ? registries.filter((registry) => registry.kind === 'allowlist') : undefined}
+          loadMembers={loadMembers}
+          setMembership={setMembership}
         />
       </header>
 

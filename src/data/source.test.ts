@@ -192,6 +192,7 @@ describe('withFallback', () => {
   const userState = { joined: true, tokens: 90, bountyClaimed: false };
   const source = (result: Debate | Error): DebateSource => ({
     registries: async () => [],
+    memberships: async () => [],
     load: async () => {
       if (result instanceof Error) throw result;
       return result;
