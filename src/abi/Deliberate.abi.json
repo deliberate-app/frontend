@@ -1461,7 +1461,7 @@
  },
  {
   "type": "error",
-  "name": "IdentityProofInvalid",
+  "name": "IdentityUnregistered",
   "inputs": []
  },
  {

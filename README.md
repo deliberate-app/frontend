@@ -120,7 +120,7 @@ Project environment variables (Settings → Environment Variables):
 ```sh
 VITE_CHAINS=gnosis           # the networks offered, by slug (see *Several networks at once*)
 VITE_DELIBERATE_ADDRESS_GNOSIS=0x… # the live deployment (contracts/broadcast/DeployDeliberate.s.sol/100/run-latest.json)
-VITE_CIRCLES_REGISTRY_GNOSIS=0x…   # the any-Circles-human registry deployed beside it
+VITE_CIRCLES_REGISTRY_GNOSIS=0x…   # the any-Circles-human registry (contracts: `just deploy-circles-registry`)
 VITE_RPC_URL_GNOSIS=https://rpc.gnosischain.com
                              # indexer reads go through the same-origin query proxy, /api/graphql
 INDEXER_UPSTREAM_URL=https://… # server-side only; the hosted indexer endpoint the query
