@@ -1315,6 +1315,18 @@ button {
 .btn-solid:hover:enabled {
   background: #384a33;
 }
+/* An action that needs a wallet offers one where it stands, carrying the wallet's own mark so the
+   reader recognises it as the extension they have rather than as another of the app's buttons. */
+.connect-here {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.connect-here .wallet-icon {
+  width: 1rem;
+  height: 1rem;
+}
 
 .btn-pro {
   border-color: var(--pro);

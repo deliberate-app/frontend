@@ -6,6 +6,7 @@ import { DebateView, type DebateTx } from './components/DebateView';
 import { NetworkMenu } from './components/NetworkMenu';
 import { PhaseClock } from './components/PhaseClock';
 import { ViewerAccount } from './components/AddressBadge';
+import { Connect, type ConnectAccess } from './components/ConnectHere';
 import { Registries, type RegistryAccess } from './data/registries';
 import { WalletMenu } from './components/WalletMenu';
 import {
@@ -499,6 +500,12 @@ export default function App() {
   // latter never disables anything, it asks.
   const createUnavailableHint = deployment ? null : 'Configure a deployment to start debates.';
   const needsWallet = deployment !== null && actions === null;
+  // An action that needs a wallet offers one where it stands, so the way in travels as context
+  // rather than as a prop through views that only pass it on.
+  const connectAccess = useMemo<ConnectAccess>(
+    () => ({ wallets: wallet.wallets, connect: wallet.connect }),
+    [wallet.wallets, wallet.connect],
+  );
 
   const browsing = debateId === null;
 
@@ -506,117 +513,118 @@ export default function App() {
     // Every badge below can tell whether the account it names is the one connected, so none of the
     // views in between have to carry the answer down to it.
     <ViewerAccount.Provider value={wallet.account}>
-      <Registries.Provider value={registryAccess}>
-        <header className="topbar">
-          <a className="wordmark" href="#/">
-            <svg className="wordmark-mark" viewBox="0 0 96 96" aria-hidden="true">
-              <g transform="translate(-15.12 -15.12) scale(1.3151)" fill="none" strokeWidth="9" strokeLinecap="butt">
-                <path d="M49 16 H32 a16 16 0 0 0 -16 16 V64 a16 16 0 0 0 16 16 H49" stroke="#31703f" />
-                <path d="M48 80 H64 a16 16 0 0 0 16 -16 V32 a16 16 0 0 0 -16 -16 H48" stroke="#a5432c" />
-              </g>
-              <g transform="translate(-15.12 -15.12) scale(1.3151)" fill="#22301f">
-                <rect x="33" y="41" width="30" height="5" rx="2.5" />
-                <rect x="33" y="52" width="20" height="5" rx="2.5" />
-              </g>
-            </svg>
-            <span>
-              delibe<span className="wordmark-rate">rate</span>
-            </span>
-          </a>
-          {!browsing && (
-            <a className="back" href="#/">
-              ‹ All debates
+      <Connect.Provider value={connectAccess}>
+        <Registries.Provider value={registryAccess}>
+          <header className="topbar">
+            <a className="wordmark" href="#/">
+              <svg className="wordmark-mark" viewBox="0 0 96 96" aria-hidden="true">
+                <g transform="translate(-15.12 -15.12) scale(1.3151)" fill="none" strokeWidth="9" strokeLinecap="butt">
+                  <path d="M49 16 H32 a16 16 0 0 0 -16 16 V64 a16 16 0 0 0 16 16 H49" stroke="#31703f" />
+                  <path d="M48 80 H64 a16 16 0 0 0 16 -16 V32 a16 16 0 0 0 -16 -16 H48" stroke="#a5432c" />
+                </g>
+                <g transform="translate(-15.12 -15.12) scale(1.3151)" fill="#22301f">
+                  <rect x="33" y="41" width="30" height="5" rx="2.5" />
+                  <rect x="33" y="52" width="20" height="5" rx="2.5" />
+                </g>
+              </svg>
+              <span>
+                delibe<span className="wordmark-rate">rate</span>
+              </span>
             </a>
-          )}
-          {!browsing && debate && phase && <span className={`phase phase-${phase}`}>{PHASE_LABEL[phase]}</span>}
-          {!browsing && redeemable && redeemable.length > 0 && (
-            <button
-              type="button"
-              className="btn"
-              title={`${redeemable.length} argument${redeemable.length === 1 ? '' : 's'}, one transaction.`}
-              onClick={() => void redeemAll()}
-              disabled={redeeming}
-            >
-              {redeeming ? 'Redeeming…' : 'Redeem all shares'}
-            </button>
-          )}
-          {!browsing && debate && <PhaseClock debate={debate} now={now} />}
-          {!browsing && poke && (
-            <button type="button" className="btn" onClick={runPoke} disabled={poking}>
-              {poking ? 'Tallying…' : 'Tally the debate'}
-            </button>
-          )}
-          <span className="topbar-spacer" />
-          {!browsing && userState?.joined && (
-            <span className="tokens" title="Your vote token balance in this debate">
-              <strong className="mono">{formatVotes(userState.tokens)}</strong> ⬡
-            </span>
-          )}
-          {!browsing && joinable && (
-            <button type="button" className="btn btn-solid" onClick={join} disabled={joining}>
-              {joining ? 'Joining…' : 'Join debate'}
-            </button>
-          )}
-          <NetworkMenu networks={NETWORKS} selected={deployment} onSelect={openNetwork} />
-          <WalletMenu wallet={wallet} deploymentChainId={deploymentChainId} onSwitchChain={switchToDeployment} />
-        </header>
+            {!browsing && (
+              <a className="back" href="#/">
+                ‹ All debates
+              </a>
+            )}
+            {!browsing && debate && phase && <span className={`phase phase-${phase}`}>{PHASE_LABEL[phase]}</span>}
+            {!browsing && redeemable && redeemable.length > 0 && (
+              <button
+                type="button"
+                className="btn"
+                title={`${redeemable.length} argument${redeemable.length === 1 ? '' : 's'}, one transaction.`}
+                onClick={() => void redeemAll()}
+                disabled={redeeming}
+              >
+                {redeeming ? 'Redeeming…' : 'Redeem all shares'}
+              </button>
+            )}
+            {!browsing && debate && <PhaseClock debate={debate} now={now} />}
+            {!browsing && poke && (
+              <button type="button" className="btn" onClick={runPoke} disabled={poking}>
+                {poking ? 'Tallying…' : 'Tally the debate'}
+              </button>
+            )}
+            <span className="topbar-spacer" />
+            {!browsing && userState?.joined && (
+              <span className="tokens" title="Your vote token balance in this debate">
+                <strong className="mono">{formatVotes(userState.tokens)}</strong> ⬡
+              </span>
+            )}
+            {!browsing && joinable && (
+              <button type="button" className="btn btn-solid" onClick={join} disabled={joining}>
+                {joining ? 'Joining…' : 'Join debate'}
+              </button>
+            )}
+            <NetworkMenu networks={NETWORKS} selected={deployment} onSelect={openNetwork} />
+            <WalletMenu wallet={wallet} deploymentChainId={deploymentChainId} onSwitchChain={switchToDeployment} />
+          </header>
 
-        {joinError && <p className="load-error">Could not join: {joinError}</p>}
-        {pokeError && <p className="load-error">Could not tally the debate: {pokeError}</p>}
-        {redeemError && <p className="load-error">Could not redeem: {redeemError}</p>}
-        {error && (
-          <p className="load-error">
-            Could not load {browsing ? 'the debates' : 'the debate'}: {error}. Check VITE_DELIBERATE_ADDRESS and
-            VITE_RPC_URL, or unset them to browse the sample debate.
-          </p>
-        )}
-
-        {browsing ? (
-          debates === null ? (
-            !error && <p className="load-note">Loading debates…</p>
-          ) : (
-            <BrowseView
-              debates={debates}
-              account={actions?.account}
-              filter={filter}
-              onFilter={setFilter}
-              createUnavailableHint={createUnavailableHint}
-              needsWallet={needsWallet}
-              onNeedWallet={wallet.promptConnect}
-              onOpen={openDebate}
-              onCreate={createDebate}
-              resolveToken={resolveToken}
-              circlesRegistry={deployment?.circlesRegistry}
-            />
-          )
-        ) : debate ? (
-          <DebateView
-            key={debate.id}
-            debate={debate}
-            tx={tx}
-            feesEarnedOf={feesEarnedOf}
-            historyOfDebate={historyOfDebate}
-            participantsOf={participantsOf}
-            onRefreshMarkets={deployment ? refreshMarkets : undefined}
-          />
-        ) : (
-          !error && (
-            <p className="load-note">
-              <span className="spinner" aria-hidden />
-              {syncing ? 'Creating your debate — waiting for it to sync…' : 'Loading debate…'}
+          {joinError && <p className="load-error">Could not join: {joinError}</p>}
+          {pokeError && <p className="load-error">Could not tally the debate: {pokeError}</p>}
+          {redeemError && <p className="load-error">Could not redeem: {redeemError}</p>}
+          {error && (
+            <p className="load-error">
+              Could not load {browsing ? 'the debates' : 'the debate'}: {error}. Check VITE_DELIBERATE_ADDRESS and
+              VITE_RPC_URL, or unset them to browse the sample debate.
             </p>
-          )
-        )}
+          )}
 
-        <footer className="footer">
-          <a href="https://github.com/deliberate-app" target="_blank" rel="noopener noreferrer">
-            GitHub
-          </a>
-          <a href="https://deliberate-app.github.io/docs/" target="_blank" rel="noopener noreferrer">
-            Documentation
-          </a>
-        </footer>
-      </Registries.Provider>
+          {browsing ? (
+            debates === null ? (
+              !error && <p className="load-note">Loading debates…</p>
+            ) : (
+              <BrowseView
+                debates={debates}
+                account={actions?.account}
+                filter={filter}
+                onFilter={setFilter}
+                createUnavailableHint={createUnavailableHint}
+                needsWallet={needsWallet}
+                onOpen={openDebate}
+                onCreate={createDebate}
+                resolveToken={resolveToken}
+                circlesRegistry={deployment?.circlesRegistry}
+              />
+            )
+          ) : debate ? (
+            <DebateView
+              key={debate.id}
+              debate={debate}
+              tx={tx}
+              feesEarnedOf={feesEarnedOf}
+              historyOfDebate={historyOfDebate}
+              participantsOf={participantsOf}
+              onRefreshMarkets={deployment ? refreshMarkets : undefined}
+            />
+          ) : (
+            !error && (
+              <p className="load-note">
+                <span className="spinner" aria-hidden />
+                {syncing ? 'Creating your debate — waiting for it to sync…' : 'Loading debate…'}
+              </p>
+            )
+          )}
+
+          <footer className="footer">
+            <a href="https://github.com/deliberate-app" target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+            <a href="https://deliberate-app.github.io/docs/" target="_blank" rel="noopener noreferrer">
+              Documentation
+            </a>
+          </footer>
+        </Registries.Provider>
+      </Connect.Provider>
     </ViewerAccount.Provider>
   );
 }

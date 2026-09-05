@@ -8,6 +8,7 @@ import { formatDuration } from '../lib/time';
 import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
 import { BountyFields, type BountyDraft } from './BountySettings';
 import { Steps } from './Choice';
+import { ConnectHere } from './ConnectHere';
 import { ContentBudget } from './ContentBudget';
 import { FeeFields } from './FeeSettings';
 import { gateAddress, gateLabel, ParticipantFields, type GateDraft } from './GateSettings';
@@ -34,7 +35,6 @@ export function CreateWizard({
   onClose,
   onCreate,
   needsWallet,
-  onNeedWallet,
   resolveToken,
   circlesRegistry,
 }: {
@@ -48,7 +48,6 @@ export function CreateWizard({
   ) => Promise<void>;
   /** Whether the only thing still missing is a connected wallet. */
   needsWallet: boolean;
-  onNeedWallet: () => void;
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
   /** The deployment's Circles preset registry; absent only in sample mode, where creating is off. */
@@ -160,9 +159,7 @@ export function CreateWizard({
         </button>
         {last ? (
           needsWallet ? (
-            <button type="button" className="btn btn-solid" onClick={onNeedWallet}>
-              Connect wallet
-            </button>
+            <ConnectHere />
           ) : (
             <button
               type="button"

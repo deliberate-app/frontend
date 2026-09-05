@@ -21,7 +21,6 @@ const PHASE_SHORT: Record<Phase, string> = {
 function CreatePanel({
   unavailableHint,
   needsWallet,
-  onNeedWallet,
   onCreate,
   resolveToken,
   circlesRegistry,
@@ -30,8 +29,6 @@ function CreatePanel({
   unavailableHint: string | null;
   /** Whether the only thing still missing is a connected wallet. */
   needsWallet: boolean;
-  /** Opens the wallet picker. */
-  onNeedWallet: () => void;
   onCreate: (
     thesis: string,
     schedule: DebateSchedule,
@@ -50,15 +47,12 @@ function CreatePanel({
     <>
       {/* A missing wallet is not a reason to refuse the click. Disabling the button would leave the
           visitor with a dead control and a tooltip that a touch device never shows, so instead the
-          form opens - they can write the thesis while they decide - and the wallet picker opens
-          with it. Only a deployment that cannot create debates at all disables anything. */}
+          form opens - they can write the thesis while they decide - and the last step asks for the
+          wallet. Only a deployment that cannot create debates at all disables anything. */}
       <button
         type="button"
         className="composer-open create-open"
-        onClick={() => {
-          setOpen(true);
-          if (needsWallet) onNeedWallet();
-        }}
+        onClick={() => setOpen(true)}
         disabled={unavailableHint !== null}
         title={unavailableHint ?? undefined}
       >
@@ -69,7 +63,6 @@ function CreatePanel({
           onClose={() => setOpen(false)}
           onCreate={onCreate}
           needsWallet={needsWallet}
-          onNeedWallet={onNeedWallet}
           resolveToken={resolveToken}
           circlesRegistry={circlesRegistry}
         />
@@ -86,7 +79,6 @@ export function BrowseView({
   onFilter,
   createUnavailableHint,
   needsWallet,
-  onNeedWallet,
   onOpen,
   onCreate,
   resolveToken,
@@ -102,8 +94,6 @@ export function BrowseView({
   createUnavailableHint: string | null;
   /** Whether creating is possible but no wallet is connected yet. */
   needsWallet: boolean;
-  /** Opens the wallet picker. */
-  onNeedWallet: () => void;
   onOpen: (debateId: number) => void;
   onCreate: (
     thesis: string,
@@ -124,7 +114,6 @@ export function BrowseView({
       <CreatePanel
         unavailableHint={createUnavailableHint}
         needsWallet={needsWallet}
-        onNeedWallet={onNeedWallet}
         onCreate={onCreate}
         resolveToken={resolveToken}
         circlesRegistry={circlesRegistry}

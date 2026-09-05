@@ -78,6 +78,13 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-06 — a wallet is asked for where the action is.** An action that needed a wallet asked
+  for one by opening the picker in the header, which a modal covers, so "Connect a wallet to make
+  one." meant leaving what you were doing and starting it again. The wallets are offered in place
+  instead (`ConnectHere`), and the action they were holding up takes their place the moment one
+  answers. The picker's openness went back to the header control, since nothing outside it opens it
+  any more. (Principles 5, 6.)
+
 - **2026-09-06 — the current preset is filled, not dotted.** The dot sat inside the chip, so every
   chip changed width as the mark moved between them and the row shuffled while the reader was
   reading it. The chip is filled instead: no width, no movement. That leaves fill doing duty in two

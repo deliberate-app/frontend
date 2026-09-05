@@ -8,6 +8,7 @@ import { shortAddress } from '../lib/address';
 import { searchCirclesAvatars, useCirclesNames, type CirclesAvatar } from '../lib/circles';
 import { useRegistryNames } from '../lib/registryNames';
 import { PickRow, Segmented, Tabs } from './Choice';
+import { ConnectHere } from './ConnectHere';
 import { ModifyAllowlist } from './ModifyAllowlist';
 
 /** What Circles calls an avatar, in the words a reader uses, article and all. */
@@ -33,7 +34,7 @@ const ADMITS = {
 /** The two kinds of registry, which are also the manager's two tabs. */
 export type RegistryKind = 'allowlists' | 'circles';
 
-/** Why the manager is showing lists but offering no way to add to them. */
+/** Why the manager is showing lists but no way to add to them, said above the way to fix it. */
 const NEEDS_WALLET = 'Connect a wallet to make one.';
 
 /**
@@ -127,7 +128,7 @@ export function AllowlistPanel({ access }: { access: RegistryAccess }) {
           {busy ? 'Creating…' : 'New allowlist'}
         </button>
       ) : (
-        <p className="composer-hint">{NEEDS_WALLET}</p>
+        <ConnectHere why={NEEDS_WALLET} />
       )}
 
       {error && <p className="action-error">{error}</p>}
@@ -281,7 +282,7 @@ export function CirclesPanel({ access: { registries, factory, createCircles } }:
               {busy ? 'Creating…' : 'Create registry'}
             </button>
           ) : (
-            <p className="composer-hint">{NEEDS_WALLET}</p>
+            <ConnectHere why={NEEDS_WALLET} />
           )}
         </>
       )}
