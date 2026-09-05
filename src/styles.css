@@ -1919,6 +1919,10 @@ button {
   gap: 0.9rem;
 }
 
+.modal-wide {
+  width: min(34rem, calc(100vw - 2rem));
+}
+
 .modal-head {
   display: flex;
   justify-content: space-between;
@@ -2086,65 +2090,84 @@ button {
   color: var(--bark);
 }
 
-.registry-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
+/* A search answers with more rows than the dialog should grow by, so they scroll and what follows
+   them stays in reach. */
+.registry-list-scroll {
+  max-height: 14rem;
+  overflow-y: auto;
 }
 
-/* ── Registry picker ─────────────────────────────────────────────────── */
-/* Registries to pick from, and Circles avatars found by name: one row each, the kind first. */
-.registry-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin: 0.75rem 0;
-}
-
-.registry-item {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--hairline);
-  border-radius: 0.5rem;
-  background: none;
-  color: var(--ink);
-  text-align: left;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.registry-item:hover {
+/* The list a reader is looking at, as against the ink of .registry-item-active, which is the one a
+   debate will name. */
+.registry-item-current {
   border-color: var(--bark);
 }
 
-.registry-item-active {
-  border-color: var(--ink);
+/* A tab's panel carries the dialog's own rhythm, since it is one grid item holding many. Both
+   panels stay mounted so a half-typed paste survives a tab flip, and an author `display` beats the
+   browser's own rule for `hidden`, so the inactive one is hidden here. */
+.tab-panel {
+  display: grid;
+  gap: 0.9rem;
 }
 
-.registry-kind {
-  flex: none;
-  min-width: 5.5rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--bark);
+.tab-panel[hidden] {
+  display: none;
 }
 
-.registry-note {
-  margin-left: auto;
-  font-size: 0.78rem;
-  color: var(--bark);
+/* A row that only tells the reader something, with no action to promise. */
+.registry-item-static,
+.registry-item-static:hover {
+  cursor: default;
+  border-color: var(--hairline);
 }
 
-.registry-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+/* Two kinds of registry with nothing in common, so the tabs read as places rather than as more
+   preset chips: a hairline rail, and ink under the one you are in. */
+.tab-row {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tab {
+  font: inherit;
   font-size: 0.85rem;
+  padding: 0 0 0.4rem;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--bark);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab-active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* A field that takes a name or an address, as wide as the dialog. The boxes in .duration-inputs
+   are sized to two digits, which is why a search field could not live among them. */
+.text-input,
+.address-input {
+  width: 100%;
+  font: inherit;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--ink);
+}
+
+.address-input {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  resize: vertical;
 }
 
 /* ── Allowlist members ───────────────────────────────────────────────── */
@@ -2161,6 +2184,19 @@ button {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.member-head {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--bark);
+}
+
+.member-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
 }
 
 .member-name {

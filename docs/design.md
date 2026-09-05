@@ -68,6 +68,32 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-05 — registries are kept in one manager, on two tabs.** They were managed in two
+  places at once: the wallet menu kept allowlists, and "Who may join" made both kinds without
+  knowing about the other place, so the same list had two homes with different vocabularies. One
+  `RegistryManager` now serves both hosts - the wallet menu opens it to keep registries, and the
+  join settings embed it to choose one, where selecting a row is the choice (principle 6). The two
+  kinds sit on tabs rather than in one column, because a list you write yourself and a graph
+  somebody else keeps have nothing in common but the question they answer, and stacked they read as
+  one form where the Circles search field looks like part of the allowlist. Tabs are drawn as a
+  hairline rail with ink under the current one, so they read as places rather than as more preset
+  chips. The pattern follows what other web3 apps settled on: Uniswap separates token lists from
+  tokens with tabs in one dialog, Safe's address book takes many entries at once and previews what
+  it parsed, and both name the count on the button that applies it.
+- **2026-09-05 — accounts go on and off an allowlist as a list.** Adding thirty accounts through a
+  single address field is thirty transactions where `setMembership` takes an array. The field is a
+  paste box that reads new lines, commas, semicolons and spaces alike, since a list arrives from a
+  spreadsheet column as readily as from a message; a lowercase address is accepted, because
+  rejecting a valid account over its capitalisation is a puzzle rather than a safeguard. What is
+  not an address is named back to the reader instead of being dropped silently, the button says how
+  many it will add, and removal is a checkbox per row with one "Remove n". (Principle 9.)
+- **2026-09-05 — the Circles anchor is found by name, in a field that fits a name.** The search box
+  had been sitting in `.duration-inputs`, which sizes its boxes to two digits, so a name search was
+  six characters wide. It is now a full-width field, the results say what kind of avatar each is,
+  and the choice reads back as one sentence - "Admits Circles humans that Berlin Group trusts" -
+  before anything is signed, with the two ways to read trust offered as presets rather than a
+  checkbox (principle 7). Searching is a read, so it works without a wallet; only the button that
+  makes the registry needs one. (Principle 10.)
 - **2026-09-05 — an owner keeps their allowlists from the wallet menu.** A list is the owner's, not
   a debate's, so it is managed where the account is: the account menu gains "Your allowlists",
   which opens the lists the index knows this account owns, the accounts on each, an address to add

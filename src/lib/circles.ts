@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { getAddress, isAddress, type Address } from 'viem';
 
 /**
@@ -73,8 +74,61 @@ export async function searchCirclesAvatars(query: string, signal?: AbortSignal):
   return (await search({ name: trimmed }, signal)).sort((a, b) => rank[a.kind] - rank[b.kind]);
 }
 
-/** The avatar at an address, or null where Circles knows none. */
-export async function circlesAvatarOf(address: string, signal?: AbortSignal): Promise<CirclesAvatar | null> {
-  const [avatar] = await search({ address: address.toLowerCase() }, signal);
-  return avatar ?? null;
+/**
+ * The lookups already made, by lowercase address. What Circles calls an account is a fact about the
+ * account, not about the view asking, so the answer outlives the dialog: a list reopened, a tab
+ * flipped back, or one avatar appearing on twenty rows costs one request. The pending request is
+ * cached too, so twenty rows asking at once ask once.
+ *
+ * A request that fails leaves the map, so a network blip is not permanent.
+ */
+const avatarRequests = new Map<string, Promise<CirclesAvatar | null>>();
+
+/** The avatar at an address, or null where Circles knows none. Asked once per address per page. */
+export function circlesAvatarOf(address: string): Promise<CirclesAvatar | null> {
+  const key = address.toLowerCase();
+  const pending = avatarRequests.get(key);
+  if (pending) {
+    return pending;
+  }
+  const request = search({ address: key })
+    .then(([avatar]) => avatar ?? null)
+    .catch(() => {
+      avatarRequests.delete(key);
+      return null;
+    });
+  avatarRequests.set(key, request);
+  return request;
+}
+
+/**
+ * The Circles names for a set of accounts. An account Circles does not know is absent from the
+ * answer, so a caller reads `names[address]` and falls back to the address itself.
+ *
+ * The effect follows the addresses by their joined text rather than by the array, because a caller
+ * derives that array on each render and only its contents matter.
+ */
+export function useCirclesNames(addresses: readonly string[]): Record<string, string> {
+  const [names, setNames] = useState<Record<string, string>>({});
+  const wanted = addresses.join(',');
+
+  useEffect(() => {
+    if (wanted === '') return;
+    let stale = false;
+    void Promise.all(wanted.split(',').map(async (address) => [address, await circlesAvatarOf(address)] as const)).then(
+      (found) => {
+        if (stale) return;
+        const named = found.flatMap(([address, avatar]) => (avatar ? [[address, avatar.name] as const] : []));
+        setNames((known) => {
+          const fresh = named.filter(([address]) => known[address] === undefined);
+          return fresh.length === 0 ? known : { ...known, ...Object.fromEntries(fresh) };
+        });
+      },
+    );
+    return () => {
+      stale = true;
+    };
+  }, [wanted]);
+
+  return names;
 }
