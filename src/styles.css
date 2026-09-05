@@ -195,6 +195,12 @@ button {
   overflow: hidden;
 }
 
+/* The icon's place in a row where no account has been written yet: kept, so the field beside it
+   does not move when one is. */
+.identicon-blank {
+  visibility: hidden;
+}
+
 /* The viewer's own account, marked after the address rather than in place of it. Darker than the
    address it follows, because this is the row a reader is looking for. */
 .address-viewer {

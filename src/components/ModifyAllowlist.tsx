@@ -6,7 +6,7 @@ import type { RegistryAccess } from '../data/registries';
 import { looksLikeAddress, parseAddressList, writeAddressRow } from '../lib/address';
 import { useCirclesNames } from '../lib/circles';
 import { setRegistryName, useRegistryNames } from '../lib/registryNames';
-import { AddressBadge } from './AddressBadge';
+import { AddressBadge, IdenticonIcon } from './AddressBadge';
 import { Modal } from './Modal';
 
 /** A small trashcan, drawn in strokes like every other icon in the app (principle 1). */
@@ -175,13 +175,21 @@ export function ModifyAllowlist({
         {setMembership &&
           rows.map((row, index) => (
             <li key={`row-${index}`} className="member-row">
+              {/* The icon of the account being written, drawn as soon as the text is an address, so
+                  the reader recognises who they typed before they save. The slot is held open
+                  either way: the field would jump sideways as the icon came and went. */}
+              {looksLikeAddress(row.trim()) ? (
+                <IdenticonIcon address={row.trim()} />
+              ) : (
+                <span className="identicon identicon-blank" aria-hidden="true" />
+              )}
               <input
                 // Rows are addressed by position: a paste inserts several at once, and the value
                 // each input shows comes from the state rather than from the element.
                 type="text"
                 className={`text-input address-row${rowMark(row, onList)}`}
                 spellCheck={false}
-                placeholder="Insert member address"
+                placeholder="Insert address"
                 value={row}
                 disabled={busy}
                 onChange={(event) => setRows((current) => writeAddressRow(current, index, event.target.value))}
