@@ -31,12 +31,15 @@ export function ModifyAllowlist({
   access: RegistryAccess;
   onClose: () => void;
 }) {
+  const names = useRegistryNames();
   const [members, setMembers] = useState<Address[] | null>(null);
   const [checked, setChecked] = useState<Address[]>([]);
   const [rows, setRows] = useState<string[]>(['']);
+  // The field keeps what was typed; the store keeps it trimmed. Reading the stored form back into
+  // the field would eat a trailing space the moment it was typed, since a name is stored trimmed.
+  const [name, setName] = useState(() => names[registry.toLowerCase()] ?? '');
   const [busy, setBusy] = useState<'adding' | 'removing' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const names = useRegistryNames();
 
   useEffect(() => {
     let stale = false;
@@ -81,8 +84,11 @@ export function ModifyAllowlist({
           type="text"
           className="text-input"
           placeholder="Unnamed"
-          value={names[registry.toLowerCase()] ?? ''}
-          onChange={(event) => setRegistryName(registry, event.target.value)}
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+            setRegistryName(registry, event.target.value);
+          }}
         />
         <span className="duration-hint">Kept in this browser; only you see it.</span>
       </label>

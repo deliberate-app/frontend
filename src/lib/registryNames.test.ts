@@ -9,6 +9,12 @@ describe('nextNames', () => {
     expect(nextNames({}, ALICE, 'Reviewers')).toEqual({ [ALICE.toLowerCase()]: 'Reviewers' });
   });
 
+  // The stored name is trimmed, which is why a field must keep its own text while it is being
+  // typed: reading this value back would swallow a space the moment it was written.
+  test('stores a name without its trailing space', () => {
+    expect(nextNames({}, ALICE, 'Board ')[ALICE.toLowerCase()]).toBe('Board');
+  });
+
   test('trims the name, and a blank one clears the entry', () => {
     const named = nextNames({}, ALICE, '  Reviewers  ');
     expect(named[ALICE.toLowerCase()]).toBe('Reviewers');

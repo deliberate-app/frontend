@@ -109,7 +109,7 @@ export function AllowlistPanel({ access }: { access: RegistryAccess }) {
 
       {error && <p className="action-error">{error}</p>}
 
-      {editing && <ModifyAllowlist registry={editing} access={access} onClose={() => setEditing(null)} />}
+      {editing && <ModifyAllowlist key={editing} registry={editing} access={access} onClose={() => setEditing(null)} />}
     </>
   );
 }
