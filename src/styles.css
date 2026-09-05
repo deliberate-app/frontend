@@ -2357,17 +2357,59 @@ button {
   gap: 0.6rem;
 }
 
+/* The row being written is one of the list's rows, so its field spans the same column. */
+.member-row .address-row {
+  flex: 1;
+}
+
 .member-head {
   margin: 0.75rem 0 0;
   font-size: 0.85rem;
   color: var(--bark);
 }
 
-.member-pick {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+/* An account marked to go when the changes are saved, still readable but plainly on its way out. */
+.member-going {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.member-going .member-drop {
+  color: var(--con);
+}
+
+/* Removing one account, at the trailing edge of its row. Quiet until the row is under the cursor,
+   since a column of trashcans should not read as the list's subject. */
+.member-drop {
+  margin-left: auto;
+  padding: 0.1rem;
+  border: none;
+  background: none;
+  line-height: 0;
+  color: var(--hairline);
   cursor: pointer;
+}
+
+.member-row:hover .member-drop {
+  color: var(--bark);
+}
+
+.member-drop:hover {
+  color: var(--con);
+}
+
+.member-drop:disabled {
+  cursor: default;
+}
+
+.trash-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .member-name {

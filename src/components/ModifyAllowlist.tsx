@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Address } from 'viem';
 import { actionErrorMessage } from '../data/actions';
+import type { MembershipChange } from '../data/actions';
 import type { RegistryAccess } from '../data/registries';
 import { looksLikeAddress, parseAddressList, writeAddressRow } from '../lib/address';
 import { useCirclesNames } from '../lib/circles';
@@ -8,16 +9,36 @@ import { setRegistryName, useRegistryNames } from '../lib/registryNames';
 import { AddressBadge } from './AddressBadge';
 import { Modal } from './Modal';
 
-/**
- * How one row of the account list reads: an empty row is the dashed invitation to write the next
- * account (principle 4), and a row that is not an address says so on its own edge.
- */
-const rowMark = (row: string) =>
-  row.trim() === '' ? ' address-row-empty' : looksLikeAddress(row) ? '' : ' address-row-invalid';
+/** A small trashcan, drawn in strokes like every other icon in the app (principle 1). */
+function TrashIcon() {
+  return (
+    <svg className="trash-icon" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M3.2 4.6h9.6M6.4 4.6V3.2h3.2v1.4M4.6 4.6l.55 8.1a1 1 0 0 0 1 .9h3.7a1 1 0 0 0 1-.9l.55-8.1M6.8 7v4M9.2 7v4" />
+    </svg>
+  );
+}
+
+/** What is wrong with a written row, or null while there is nothing to say about it. */
+export function rowProblem(row: string, members: ReadonlySet<string>): string | null {
+  const written = row.trim();
+  if (written === '') return null;
+  if (!looksLikeAddress(written)) return 'Not an address.';
+  return members.has(written.toLowerCase()) ? 'Already on this list.' : null;
+}
 
 /**
- * One allowlist and who is on it. Adding and removing are the only reasons to open it, so they are
- * all it holds - the list of lists stays behind, where choosing which one to open belongs.
+ * How one row of the account list reads: an empty row is the dashed invitation to write the next
+ * account (principle 4), and a row that cannot be added says so on its own edge.
+ */
+const rowMark = (row: string, members: ReadonlySet<string>) =>
+  row.trim() === '' ? ' address-row-empty' : rowProblem(row, members) ? ' address-row-invalid' : '';
+
+/**
+ * One allowlist and who is on it.
+ *
+ * Changes are gathered rather than sent one at a time: the trashcan marks an account to go, the
+ * empty row at the foot of the list takes the ones to come, and saving writes them together, which
+ * the contract takes as one call and the owner signs once.
  *
  * Every debate naming this list admits from it at the moment someone joins, so a change here
  * reaches them all at once.
@@ -33,12 +54,12 @@ export function ModifyAllowlist({
 }) {
   const names = useRegistryNames();
   const [members, setMembers] = useState<Address[] | null>(null);
-  const [checked, setChecked] = useState<Address[]>([]);
+  const [dropping, setDropping] = useState<Address[]>([]);
   const [rows, setRows] = useState<string[]>(['']);
   // The field keeps what was typed; the store keeps it trimmed. Reading the stored form back into
   // the field would eat a trailing space the moment it was typed, since a name is stored trimmed.
   const [name, setName] = useState(() => names[registry.toLowerCase()] ?? '');
-  const [busy, setBusy] = useState<'adding' | 'removing' | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,21 +77,33 @@ export function ModifyAllowlist({
   }, [registry, loadMembers]);
 
   const circlesNames = useCirclesNames(members ?? []);
-  const pasted = useMemo(() => parseAddressList(rows.join(' ')), [rows]);
+  const onList = useMemo(() => new Set((members ?? []).map((member) => member.toLowerCase())), [members]);
+  // An address already on the list is not added again, so it is neither counted nor sent.
+  const adding = useMemo(
+    () => parseAddressList(rows.join(' ')).addresses.filter((address) => !onList.has(address.toLowerCase())),
+    [rows, onList],
+  );
+  const problems = [...new Set(rows.map((row) => rowProblem(row, onList)).filter((problem) => problem !== null))];
 
-  const change = async (accounts: Address[], member: boolean) => {
-    if (!setMembership) return;
-    setBusy(member ? 'adding' : 'removing');
+  // Removals first, so a list reworked in one go reads in the order it was written.
+  const changes: MembershipChange[] = [
+    ...dropping.map((account) => ({ account, member: false })),
+    ...adding.map((account) => ({ account, member: true })),
+  ];
+
+  const save = async () => {
+    if (!setMembership || changes.length === 0) return;
+    setBusy(true);
     setError(null);
     try {
-      await setMembership(registry, accounts, member);
+      await setMembership(registry, changes);
       setMembers(await loadMembers(registry));
-      setChecked([]);
-      if (member) setRows(['']);
+      setDropping([]);
+      setRows(['']);
     } catch (cause) {
       setError(actionErrorMessage(cause));
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -93,83 +126,74 @@ export function ModifyAllowlist({
         <span className="duration-hint">Kept in this browser; only you see it.</span>
       </label>
 
-      <p className="member-row member-head">
+      <p className="member-head">
         {members === null
           ? 'Loading the list…'
           : members.length === 0
             ? 'Nobody on this list yet.'
             : `${members.length} ${members.length === 1 ? 'account' : 'accounts'} on this list`}
-        {checked.length > 0 && (
-          <button
-            type="button"
-            className="btn btn-small member-remove"
-            disabled={busy !== null}
-            onClick={() => void change(checked, false)}
-          >
-            {busy === 'removing' ? 'Removing…' : `Remove ${checked.length}`}
-          </button>
-        )}
       </p>
 
-      {members !== null && members.length > 0 && (
-        <ul className="member-list">
-          {members.map((member) => (
-            <li key={member} className="member-row">
-              {setMembership ? (
-                <label className="member-pick">
-                  <input
-                    type="checkbox"
-                    checked={checked.includes(member)}
-                    onChange={(event) =>
-                      setChecked((chosen) =>
-                        event.target.checked ? [...chosen, member] : chosen.filter((one) => one !== member),
-                      )
-                    }
-                  />
-                  <AddressBadge address={member} full />
-                </label>
-              ) : (
-                <AddressBadge address={member} full />
-              )}
-              {circlesNames[member] && <span className="member-name">{circlesNames[member]}</span>}
+      {/* The accounts on the list and the ones being written run as one column, so an addition
+          arrives where the list ends rather than in a section of its own. */}
+      <ul className="member-list">
+        {(members ?? []).map((member) => (
+          <li key={member} className={`member-row ${dropping.includes(member) ? 'member-going' : ''}`}>
+            <AddressBadge address={member} full />
+            {circlesNames[member] && <span className="member-name">{circlesNames[member]}</span>}
+            {setMembership && (
+              <button
+                type="button"
+                className="member-drop"
+                aria-label={dropping.includes(member) ? `Keep ${member}` : `Remove ${member}`}
+                title={dropping.includes(member) ? 'Keep on this list' : 'Remove when saved'}
+                disabled={busy}
+                onClick={() =>
+                  setDropping((going) =>
+                    going.includes(member) ? going.filter((one) => one !== member) : [...going, member],
+                  )
+                }
+              >
+                <TrashIcon />
+              </button>
+            )}
+          </li>
+        ))}
+        {setMembership &&
+          rows.map((row, index) => (
+            <li key={`row-${index}`} className="member-row">
+              <input
+                // Rows are addressed by position: a paste inserts several at once, and the value
+                // each input shows comes from the state rather than from the element.
+                type="text"
+                className={`text-input address-row${rowMark(row, onList)}`}
+                spellCheck={false}
+                placeholder="Insert member address"
+                value={row}
+                disabled={busy}
+                onChange={(event) => setRows((current) => writeAddressRow(current, index, event.target.value))}
+              />
             </li>
           ))}
-        </ul>
-      )}
+      </ul>
 
-      {setMembership && (
-        <>
-          <div className="duration-field">
-            <span className="duration-label">Add accounts</span>
-            <div className="address-rows">
-              {rows.map((row, index) => (
-                <input
-                  // Rows are addressed by position: a paste inserts several at once, and the value
-                  // each input shows comes from the state rather than from the element.
-                  key={index}
-                  type="text"
-                  className={`text-input address-row${rowMark(row)}`}
-                  spellCheck={false}
-                  placeholder="0x…"
-                  value={row}
-                  onChange={(event) => setRows((current) => writeAddressRow(current, index, event.target.value))}
-                />
-              ))}
-            </div>
-            <span className="duration-hint">One per row; paste a list to fill several.</span>
-          </div>
+      {problems.map((problem) => (
+        <p key={problem} className="action-error">
+          {problem}
+        </p>
+      ))}
 
-          {pasted.addresses.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-small"
-              disabled={busy !== null}
-              onClick={() => void change(pasted.addresses, true)}
-            >
-              {busy === 'adding' ? 'Adding…' : `Add ${pasted.addresses.length}`}
-            </button>
-          )}
-        </>
+      {setMembership && changes.length > 0 && (
+        <div className="action-row">
+          <button type="button" className="btn btn-solid" disabled={busy} onClick={() => void save()}>
+            {busy ? 'Saving…' : `Save ${changes.length} ${changes.length === 1 ? 'change' : 'changes'}`}
+          </button>
+          <span className="duration-hint">
+            {[adding.length > 0 && `${adding.length} to add`, dropping.length > 0 && `${dropping.length} to remove`]
+              .filter(Boolean)
+              .join(', ')}
+          </span>
+        </div>
       )}
 
       {error && <p className="action-error">{error}</p>}

@@ -13,6 +13,7 @@ import {
   connectDebateActions,
   ensureWalletChain,
   type DebateActions,
+  type MembershipChange,
   type UserState,
 } from './data/actions';
 import { deploymentFor, deployments } from './data/config';
@@ -442,8 +443,8 @@ export default function App() {
   const setMembership = useMemo(
     () =>
       actions
-        ? async (registry: Address, accounts: Address[], member: boolean) => {
-            await actions.setMembership(registry, accounts, member);
+        ? async (registry: Address, changes: MembershipChange[]) => {
+            await actions.setMembership(registry, changes);
           }
         : undefined,
     [actions],

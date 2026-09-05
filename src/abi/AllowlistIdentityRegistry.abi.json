@@ -61,14 +61,21 @@
   "name": "setMembership",
   "inputs": [
    {
-    "name": "accounts",
-    "type": "address[]",
-    "internalType": "address[]"
-   },
-   {
-    "name": "member",
-    "type": "bool",
-    "internalType": "bool"
+    "name": "changes",
+    "type": "tuple[]",
+    "internalType": "struct IAllowlistIdentityRegistry.Membership[]",
+    "components": [
+     {
+      "name": "account",
+      "type": "address",
+      "internalType": "address"
+     },
+     {
+      "name": "member",
+      "type": "bool",
+      "internalType": "bool"
+     }
+    ]
    }
   ],
   "outputs": [],
