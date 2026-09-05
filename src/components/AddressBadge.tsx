@@ -10,9 +10,12 @@ export const ViewerAccount = createContext<string | null>(null);
 /**
  * The deterministic identicon of an account, sized in em so it rides with its text. Memoised
  * because it draws up to 64 rects from a seeded pattern, and a list of accounts re-renders on every
- * checkbox and every keystroke beside it.
+ * keystroke beside it.
+ *
+ * Exported for the one place that shows an account before it has a badge: the field an address is
+ * being written into, where the icon appears as soon as the text is an address.
  */
-const IdenticonIcon = memo(function IdenticonIcon({ address }: { address: string }) {
+export const IdenticonIcon = memo(function IdenticonIcon({ address }: { address: string }) {
   const { cells, color, bgColor, spotColor } = identiconOf(address);
   const palette = [bgColor, color, spotColor];
   return (
