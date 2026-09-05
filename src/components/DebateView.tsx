@@ -285,7 +285,7 @@ export function DebateView({
       <section className={`focus ${isThesis ? 'focus-thesis' : `focus-${focus.side}`}`}>
         <p className="focus-kicker">{isThesis ? 'Thesis' : focus.side === 'pro' ? 'Pro argument' : 'Con argument'}</p>
         <h1 className="focus-text">{focus.text}</h1>
-        {/* Three tracks by role (principle 11): who made the claim, what came of
+        {/* Three tracks by role (principle 12): who made the claim, what came of
             it - the arguments beneath, or the finished thesis' outcome - and, at the trailing edge
             where a figure belongs, what the market made of it. Within each group the order is
             causal: creator then lock, stake then the rating it moved. The figures are the way into

@@ -43,22 +43,30 @@ contouring are exactly right — treat them as the baseline to protect.)
    the only exits. Validity gates the downstream action (the create button, with an explanatory
    tooltip) instead of trapping the modal open. Transactional modals (draft + Accept/Cancel) are
    reserved for destructive or hard-to-undo edits, which pre-creation settings are not.
-7. **Presets first, freedom behind them.** Common configurations are named preset chips, and the
+7. **Presets first, freedom behind them.** Common configurations are named presets, and the
    default preset is literally named "Default" — one concept, no separate reset affordance. Free
    fields sit in the same editor for full control; where the contract allows a value we advise
    against, the UI warns softly rather than forbidding.
-8. **Neutral looks neutral.** Ratings and impacts are signed percentages around ±0 with diverging,
+8. **One element per kind of choice.** Four controls, four jobs, kept visually apart because the
+   difference is what the reader is reading (`Choice.tsx`). **Tabs** are places: a hairline rail
+   with ink under the one you are in, and switching never changes a value. **Segmented** is one
+   value with a few named states, drawn as a single enclosed track whose filled cell is the state.
+   **Presets** are verbs that write values you may then edit, drawn as separate quiet outlined
+   chips, never filled — a preset is something you did, not somewhere you are. **PickRow** is one
+   candidate in a list too long or too wordy for segments. The dot is the one mark across all of
+   them: your current state is here.
+9. **Neutral looks neutral.** Ratings and impacts are signed percentages around ±0 with diverging,
    center-anchored gauges — a 50% market reads as ±0%, not as "half full".
-9. **Hard rules block, guidance warns, hints stay short.** Constraints the contract enforces are
+10. **Hard rules block, guidance warns, hints stay short.** Constraints the contract enforces are
    mirrored as errors that disable the action (locking > 0, editing > locking, rating ≥ locking);
    sensible-configuration nudges are soft warnings with a one-line why (editing ≥ 5 locking windows
    so arguments can be nested and moved into place; rating ≥ a quarter of editing so there is time
    to read). Hover and helper copy is one sentence —
    never state unenforced numbers as if they were rules.
-10. **Mechanism-honest copy.** Labels say what the mechanism does ("Underrated ↑ / Overrated ↓",
+11. **Mechanism-honest copy.** Labels say what the mechanism does ("Underrated ↑ / Overrated ↓",
    "locking · editing · rating", "You profit if the rating corrects your way"); tooltips explain the
    consequence. No moralized or gamified wording that misstates the incentives.
-11. **Order by cause, then by time.** Within a group, elements run in the order the things
+12. **Order by cause, then by time.** Within a group, elements run in the order the things
    happened, left to right: the creator writes an argument and its lock runs down; stake lands on
    it and the rating follows from that stake. So a byline reads identicon, address, lock, and the
    figures read ring then gauge - a causal sentence rather than an arbitrary sweep, and any new
@@ -68,6 +76,22 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-05 — one element per kind of choice.** The same chip was doing four jobs: a schedule
+  preset (a verb that fills three fields, whose highlight was a coincidence check that silently
+  lied after any edit), a bounty token (a real state), the join gate's mode (a real state) and the
+  Circles trust rule (a binary toggle). They are now three elements — tabs for places, a segmented
+  track for one value with named states, quiet outlined chips for presets — plus one shared mark, a
+  dot meaning "your current state is here", which sits on the tab holding the choice and on the
+  preset the fields still match, and goes out on the first edit. A preset is never filled, because
+  filling is what a state looks like. `Choice.tsx` holds all four so they cannot drift apart.
+- **2026-09-05 — "Who may join" is four tabs, and a tab is a place.** The modal used to open with
+  two preset chips above a list, so "Everyone" and "Circles humans" were choices while everything
+  else was a list, and the Circles registry the deployment owns could not be picked from the list
+  at all. It is now Everyone | Allowlists | Circles | Custom registry, and switching tabs changes
+  nothing — a creator can read all four and still hold the choice they arrived with. Every tab is
+  picked the same way, from a row; Everyone simply has one row. The rail's dot says which tab the
+  choice lives in, so looking around never loses it. The gate's draft lost its third mode with
+  this: the Circles preset is a registry like any other, offered as the first row of its tab.
 - **2026-09-05 — registries are kept in one manager, on two tabs.** They were managed in two
   places at once: the wallet menu kept allowlists, and "Who may join" made both kinds without
   knowing about the other place, so the same list had two homes with different vocabularies. One
@@ -80,20 +104,24 @@ contouring are exactly right — treat them as the baseline to protect.)
   chips. The pattern follows what other web3 apps settled on: Uniswap separates token lists from
   tokens with tabs in one dialog, Safe's address book takes many entries at once and previews what
   it parsed, and both name the count on the button that applies it.
-- **2026-09-05 — accounts go on and off an allowlist as a list.** Adding thirty accounts through a
-  single address field is thirty transactions where `setMembership` takes an array. The field is a
-  paste box that reads new lines, commas, semicolons and spaces alike, since a list arrives from a
-  spreadsheet column as readily as from a message; a lowercase address is accepted, because
-  rejecting a valid account over its capitalisation is a puzzle rather than a safeguard. What is
-  not an address is named back to the reader instead of being dropped silently, the button says how
-  many it will add, and removal is a checkbox per row with one "Remove n". (Principle 9.)
+- **2026-09-05 — accounts go on and off an allowlist as a list, one address per row.** Adding
+  thirty accounts through a single address field is thirty transactions where `setMembership` takes
+  an array. It began as one paste box, which put thirty accounts and their mistakes in a single
+  field; it is now a row per account, and finishing an address opens an empty row below it, so the
+  list grows as it is written. Pasting a list into any row still spreads it over a row each — new
+  lines, commas, semicolons and spaces all separate — because a list arrives from a spreadsheet
+  column as readily as from a message. A lowercase address is accepted, since rejecting a valid
+  account over its capitalisation is a puzzle rather than a safeguard, and what is not an address
+  is marked on its own row rather than named in a line underneath. The empty row is dashed, like
+  every other invitation to add something. The button says how many it will add, and removal is a
+  checkbox per row with one "Remove n". (Principles 4, 10.)
 - **2026-09-05 — the Circles anchor is found by name, in a field that fits a name.** The search box
   had been sitting in `.duration-inputs`, which sizes its boxes to two digits, so a name search was
   six characters wide. It is now a full-width field, the results say what kind of avatar each is,
   and the choice reads back as one sentence - "Admits Circles humans that Berlin Group trusts" -
   before anything is signed, with the two ways to read trust offered as presets rather than a
   checkbox (principle 7). Searching is a read, so it works without a wallet; only the button that
-  makes the registry needs one. (Principle 10.)
+  makes the registry needs one. (Principle 11.)
 - **2026-09-05 — an owner keeps their allowlists from the wallet menu.** A list is the owner's, not
   a debate's, so it is managed where the account is: the account menu gains "Your allowlists",
   which opens the lists the index knows this account owns, the accounts on each, an address to add
@@ -113,7 +141,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   needed a proxy, and indexing the Hub's registrations ourselves would only duplicate the service.
   A registry picked or made here carries the name it was picked by, so the chip says "Circles humans
   Berlin Group trusts" rather than an address. Where the network has no factory the modal still
-  offers what exists and simply has no "new" section. (Principles 5, 10.)
+  offers what exists and simply has no "new" section. (Principles 5, 11.)
 - **2026-09-04 — facts are separated by the space between them, not by a mark.** The interpunct
   had spread everywhere two small facts sat on one line - reply counts, the schedule chip, browse
   rows, the bounty line, the stake and compose buttons, the fee note beside the stake hint - and a
@@ -153,7 +181,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   what gate, then what came of it - the arguments beneath, or the finished thesis' outcome - then
   the figures at the trailing edge. The middle track is sized to its content between two equal
   sides, so the consequence holds the centre whether or not the sides are full, and the verdict
-  left its own paragraph above the row to sit in it. Principle 11 was narrowed to match: cause
+  left its own paragraph above the row to sit in it. Principle 12 was narrowed to match: cause
   orders elements *within* a group (creator then lock, stake then rating), roles order the groups.
 - **2026-09-03 — the gauge answers as one object, and the rating always leads.** Its two runs each
   carried their own hover, so the saturated run - the bar's own body, and the obvious thing to
@@ -165,7 +193,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   answer to "why does this one show a single figure": nothing has been argued beneath it yet. The
   thesis owns no market, so its label stays the rating alone. This narrows today's rule that a
   drawing's hover is its figure: the *drawing's*, not each piece's - pieces that are two ends of
-  one reading share one. (Principles 9, 10.)
+  one reading share one. (Principles 9, 11.)
 - **2026-09-03 — the thesis gets the whole ring, and each arc names its own end.** The thesis used
   to read its stake as text ("Staked 148.60 ⬡") on the grounds that a share of itself is always the
   full circle. That was the argument for drawing it: the full circle is exactly what the debate's
@@ -205,7 +233,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   bounty claim is proportional to, *bounty* never "prize" or "pool", *sub-arguments* with a plain
   hyphen, phases lowercase in prose, a debate *finishes*. Hovers that restated their own label
   ("Anyone may join" on "open to everyone", "Debate details" on a button whose aria-label already
-  ends in it, "Copied!" beside "copied ✓") were removed rather than shortened. (Principles 9, 10.)
+  ends in it, "Copied!" beside "copied ✓") were removed rather than shortened. (Principles 9, 11.)
 - **2026-09-03 — the thesis opens the debate's detail, and the lock sits where it sits on every
   card.** The thesis' figures now open a view of their own. Its chart is the argument chart in
   thesis form — one line over one wash — because the thesis owns no market and no stake of its own:
@@ -227,7 +255,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   stake sits beneath the argument; without it the bar is simply the rating, ending where it stops.
   One consequence worth stating: on a leaf the card now shows the rating rather than the market,
   and the two figures are only ever drawn together where the difference is something a reader can
-  act on. (Principles 1, 8.)
+  act on. (Principles 1, 9.)
 
 - **2026-09-03 — the argument detail view became a history, and the figures moved to where they
   are read.** Three changes, one thread: each figure belongs where it is answered.
@@ -280,7 +308,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   Nothing on the chart is stored. A stake is exactly invertible, so the series are rebuilt by
   walking the indexed stakes backwards from the state we can see — no new field, on-chain or in the
   schema. Every point is the tally's projection at that instant, never the settled figure spliced
-  onto the end, which would put a step in the line that no stake caused. (Principles 1, 8.)
+  onto the end, which would put a step in the line that no stake caused. (Principles 1, 9.)
 
 - **2026-09-03 — the card figures are drawn, not written; the drawing is the affordance.** Market
   and Rating became one centre-anchored gauge and the stake became a ring, both on the cards and on
@@ -314,7 +342,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   Two accountings had to be kept apart. The rings divide by the stake **the tally counts** (the
   thesis' subtree weight), because that is where their arcs come from and a denominator including
   drafts would give arcs that cannot fill their own circle. The thesis' figure counts every stake,
-  drafts included, because engagement is not the tally's question. (Principles 1, 2, 8.)
+  drafts included, because engagement is not the tally's question. (Principles 1, 2, 9.)
 
 - **2026-08-18 — three figures, defined once: Market, Rating, Parent impact.** The headline number
   had three different names for two different quantities — the thesis said "net impact", an argument
@@ -338,20 +366,20 @@ contouring are exactly right — treat them as the baseline to protect.)
   figure), and the ⬡ sits tight against its amount — it is a unit, not a following word; and the rating's is drawn only once a sub-debate has actually added
   to the market's, since until then it would just repeat the number before it. The approval gauge was
   retired with its CSS: a labelled signed percentage says what the bar said, and the bar could not
-  show two figures. (Principles 8, 10; the north star's "every addition must pay for itself" —
+  show two figures. (Principles 8, 11; the north star's "every addition must pay for itself" —
   this one replaced a bar and a label with two facts.)
-- **2026-08-18 — every hover is one sentence, and copy says a thing once.** Principle 9 asks for
+- **2026-08-18 — every hover is one sentence, and copy says a thing once.** Principle 10 asks for
   one-sentence hover copy and the market vocabulary had drifted past it: `IMPACT_HINT` ran four
   clauses, the info chip's tooltip listed the modal's whole contents (a tooltip is a label, not a
   table of contents - the dialog it opens says the rest), and the market detail's closing
   paragraph re-printed the two reserve figures already listed a row above. All trimmed to one
   sentence each; the detail's paragraph now states the rule ("correcting can gain at most the
-  reserve on that side") and lets the Reserves row carry the numbers. (Principles 9, 10.)
+  reserve on that side") and lets the Reserves row carry the numbers. (Principles 9, 11.)
 - **2026-08-18 — staking is a modal with one signed slider that shows what the stake would do
   before it is sent.** The inline panel (amount + two firing buttons) asked for a number blind:
   nothing said what 5 ⬡ or 40 ⬡ would move. One `Stake ⬡` button on the focus meta opens a
   dialog whose one control is a slider on a signed axis - the same diverging, centre-anchored
-  scale as the approval gauge (principle 8): left of centre calls the argument overrated (bad-
+  scale as the approval gauge (principle 9): left of centre calls the argument overrated (bad-
   argument shares), right underrated (good-argument shares), the distance is the amount, and the
   track fills from the centre to the thumb in that direction's stance colour, a signed number
   field beside it for precision. Under it, three rows read as before → after - market approval,
@@ -365,7 +393,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   controls for one decision, and the radios pre-selected a direction). Rejected: two direction
   buttons that each open the modal pre-committed (no comparing the directions inside), and
   keeping the panel inline with the preview under it (the debate view grows for everyone, staker
-  or not). (Principles 1, 6, 8, 10; north star: detail on demand.)
+  or not). (Principles 1, 6, 8, 11; north star: detail on demand.)
 - **2026-08-18 — the stake modal's figures stay live: the markets are refetched every 5 s while
   it is open.** A stake decided on a five-minute-old price is a stake against a market that may
   no longer exist. The app-wide poll stays at 30 s (it resolves every text and reads the bounty
@@ -386,7 +414,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   row: it *is* the reserve on that side (the most a correction can free), so listing both showed
   the same two numbers twice, and Michael found "reserves" - the shares sitting in the market -
   the more intuitive name; the hint gives the upside reading in words. "Pool" became "staked" to
-  match the meta line. (Principles 5, 10.)
+  match the meta line. (Principles 5, 11.)
 - **2026-08-18 — the upside moved into the market detail, which opens from a round info chip on
   the approval figure.** The per-direction upside (`upside ↑6 ↓14 ⬡`) is mechanism-exact but asks
   the reader to already know what a reserve is - too much for the card and the meta line, where
@@ -398,7 +426,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   market →` text link - a whole row for one affordance, and a text link reads as navigation, not
   as "more about this number". Rejected earlier: keeping a smaller upside on the cards as the
   rater-attention beacon (2026-07-22) - the beacon was not read as one, and the detail is one click
-  away from every focused argument. (Principles 1, 5, 10; north star: detail on demand.)
+  away from every focused argument. (Principles 1, 5, 11; north star: detail on demand.)
 - **2026-08-18 — the metric labels say what a newcomer would say: staked, impact on parent, net
   impact.** "Weight" named the tally's own concept (a subtree's share of its siblings' stake), which
   a reader meets nowhere else on the screen; the figure it labels is the vote tokens staked on the
@@ -406,7 +434,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   on hover. "Sways parent" was the protocol's verb (ADR-0012's rating/sway) and read as jargon;
   the same figure is now `impact on parent`, the thesis figure `net impact`, and the tooltips
   explain in the same words. The protocol vocabulary stays in the code and the ADRs — the label
-  is a translation, not a rename. (Principle 10.)
+  is a translation, not a rename. (Principle 11.)
 - **2026-07-30 — the ancestry rail expands to the full parent claims.** Kialo's "show the parents up
   to the thesis" affordance, spoken in the rail's own vocabulary: a quiet `Expand path` chevron sits
   on the connector that meets the focused claim, and opening it unclips every ancestor — the whole
@@ -430,11 +458,11 @@ contouring are exactly right — treat them as the baseline to protect.)
   vocabulary accident. A good-argument share pays the argument's final rating, a bad-argument
   share its complement; the staking buttons keep their stance-free underrated/overrated verbs and
   teach the share names in their tooltips. Glossary entry in the contracts repo's CONTEXT.md.
-  (Principle 10.)
+  (Principle 11.)
 - **2026-07-23 — "pot" became "upside".** "Pot" said poker — a posted prize someone must win.
   The figure is the mechanism-exact *bound on the gain* available per correction direction (the
   reserve the bought side can free), which "upside" states honestly; it also reads naturally with
-  the directional split (`upside ↑1 ↓104 ⬡`). (Principle 10.)
+  the directional split (`upside ↑1 ↓104 ⬡`). (Principle 11.)
 - **2026-07-22 — the winnable pot is the rater-attention beacon; the curve lives in a detail
   modal.** Every argument card carries a quiet `pot n ⬡` (the larger correction prize; both
   directions on hover), and the focus meta shows the split (`pot ↑1 ↓104 ⬡`) as a chip opening the
@@ -444,7 +472,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   correcting the market can free — surfacing the attention signal the design already pays
   (deposit + mispricing) instead of adding a purchasable one (per-argument bounties were analyzed
   and rejected: contracts incentives.md §9). Stance colors mark the two directions; the plot stays
-  ink. (Principles 1, 2, 5, 10; north star: detail on demand, cards stay scannable.)
+  ink. (Principles 1, 2, 5, 11; north star: detail on demand, cards stay scannable.)
 
 - **2026-07-21 — the market fee is a third settings chip, defaulting to 1%.** The contract made the
   fee a per-debate creator parameter (contracts ADR-0010); the create form exposes it as `fee 1% ⚙`
@@ -452,7 +480,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   the contract's own bound (integer 0–99). The default is 1%, not the old flat 5%: the debate-4
   forensics showed 5% eating the whole thin-market upside, and 1% is where the replayed trade turns
   profitable. The stake panel's fee hint now quotes the debate's actual fee ("no market fee" at
-  zero) instead of a hardcoded 5%. (Principles 5, 6, 9, 10.)
+  zero) instead of a hardcoded 5%. (Principles 5, 6, 9, 11.)
 
 - **2026-07-15 — the author signs the card header, not the meta line.** The focus card's kicker row
   is now `THESIS / PRO ARGUMENT … ← → author badge`: identity sits with the claim's label (as posts
@@ -469,7 +497,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   transactional (explicit confirm button): a top-up is an irreversible donation, which is
   principle 6's stated bar for Accept-style modals. Without a wallet, and once finished, the
   figure renders as plain meta text (the claim panel owns the bounty from there).
-  (Principles 5, 6, 10.)
+  (Principles 5, 6, 11.)
 - **2026-07-15 — one address badge everywhere: identicon + `0x1234…abcd`.** Accounts render through
   a single `AddressBadge` (blockies-style deterministic identicon plus the canonical truncation),
   composed by the copy chip and the wallet button — two competing truncations collapsed into the
@@ -482,14 +510,14 @@ contouring are exactly right — treat them as the baseline to protect.)
 - **2026-07-15 — "Highest bounty" ranks in whole tokens, not value.** The sort normalizes each pool
   by its token's decimals and orders bounty-less debates last. Without a price oracle this is
   unit-honest, not value-honest — 50 USDC ranks above 0.5 WETH — which is stated here rather than
-  faked with hardcoded prices. (Principle 10.)
+  faked with hardcoded prices. (Principle 11.)
 - **2026-07-15 — the bounty is a second chip with the same live modal.** The create form's bounty
   affordance mirrors the schedule chip exactly: the chip is the value ("no bounty" / "bounty 50
   USDC"), the modal edits live (preset token chips WETH · USDC · EURC, any ERC-20 by address, the
   amount in human units). Elsewhere the bounty stays in the meta lines - browse rows and the thesis
   meta show the pool in quiet mono; the only bold affordance is the finished-debate
   "Redeem & claim bounty share" button, one transaction for settle-and-claim, mirroring the
-  contract's one-shot claim. (Principles 5-7, 10.)
+  contract's one-shot claim. (Principles 5-7, 11.)
 - **2026-07-15 — the mine shortcut is an in-field adornment.** First a separate "Mine" button
   (displaced), then a native `datalist` suggestion (too hidden — only visible on focus); now a
   small uppercase "mine" sits inside the Author field's right edge, filling it with the connected
@@ -504,10 +532,10 @@ contouring are exactly right — treat them as the baseline to protect.)
   at a glance; kin to the row-paired cards.)
 - **2026-07-15 — finished debates carry their verdict into the browse list.** A green ✓ / red ✗
   next to the Finished chip — the focus view's "Thesis confirmed ✓ / objected ✗" reduced to one
-  glyph, same characters, same stance colors (tooltip spells it out). (Principles 2, 10.)
+  glyph, same characters, same stance colors (tooltip spells it out). (Principles 2, 11.)
 - **2026-07-15 — unresolved content links to its `ipfs://` URI.** The digest fallback used to copy
   the CID; it now opens `ipfs://<cid>` in a new tab so an IPFS-enabled browser or extension can try
-  providers beyond the app's gateway. The full digest stays on the tooltip. (Principle 10.)
+  providers beyond the app's gateway. The full digest stays on the tooltip. (Principle 11.)
   *Superseded 2026-09-02:* the chain carries the text itself, so there is no digest to fall back to
   and the fallback is gone. What replaced it is the byte budget beside each composer — the same
   concern (say what the chain will accept) moved to where the text is written.
@@ -516,7 +544,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   One shared `LockChip`; the thesis (born final, no draft lifecycle) shows none. (Principles 1, 3.)
 - **2026-07-15 — a draft's reply slot stays empty.** "Undebated" is reserved for *final* childless
   arguments: a draft cannot be replied to yet (nesting needs a locked-in parent), so claiming it
-  is undebated misled — its countdown padlock owns that story until it locks in. (Principle 10.)
+  is undebated misled — its countdown padlock owns that story until it locks in. (Principle 11.)
 - **2026-07-15 — pro/con cards are row-paired.** The two columns are subgrids of one shared grid:
   the i-th pro and con cards sit in the same row and get the same height, the meta row is pinned
   to the card's bottom edge, and the composers meet on the last row — so gauges, locks, and reply
@@ -525,14 +553,14 @@ contouring are exactly right — treat them as the baseline to protect.)
   the overview stays legible at a glance.)
 - **2026-07-15 — a card without children reads "Undebated".** "No replies yet" was forum language;
   the tree speaks of arguments beneath a claim. One quiet, domain-true word that doubles as an
-  invitation to argue; cards with children keep "n pro · n con →". (Principle 10, north star.)
+  invitation to argue; cards with children keep "n pro · n con →". (Principle 11, north star.)
 - **2026-07-15 — authored texts are capped at 250 characters, budget always visible.** Theses and
   arguments share one hard cap (`MAX_CONTENT_CHARS`): one sharp claim per box — depth belongs in
   the tree, not in paragraphs, and short cards keep the overview scannable (north star). The input
   simply stops at the limit, and the mono `n/250` counter at the end of the action row is always
   shown, so the medium's size is clear from the first character. (Started as 140 with a counter
   appearing only near the limit; 250 gives claims room to breathe and the permanent budget is more
-  predictable than one that pops in.) (Principles 3, 9.)
+  predictable than one that pops in.) (Principles 3, 10.)
 - **2026-07-14 — the 30-minute locking rule was dropped.** First flat, then scaled to
   max(30 min, editing/48) when Long's 1 h locking tripped it — and then removed: every variant
   either warned on a stock preset or restated proportionality the nesting rule (editing ≥ 5
@@ -543,7 +571,7 @@ contouring are exactly right — treat them as the baseline to protect.)
 - **2026-07-14 — `timeUnit` became `lockingDuration`, with a constraint ladder.** The contract
   renamed the parameter (nothing is a multiple of it anymore), made the editing bound strict
   (editing must exceed locking), and the frontend mirrors those as blocking errors while adding the
-  soft guidance ratios of principle 9. The rating ≥ editing/4 nudge is a heuristic — what really
+  soft guidance ratios of principle 10. The rating ≥ editing/4 nudge is a heuristic — what really
   bounds a sensible rating duration is an open question (tracked in the project TODO). Hints were
   cut to one sentence; the old locking hint was verbose and presented the unenforced 30-minute
   figure as if it were a rule.
@@ -573,6 +601,6 @@ contouring are exactly right — treat them as the baseline to protect.)
   can change, a muted closed padlock once final. (Principles 1, 3.)
 - **2026-07-13 — approval displayed as a signed rating centered on neutral.** 0..100% market
   approval reads as −100%..+100% around ±0, matching the impact figures; the gauge diverges from the
-  center. Display-only — the contract keeps its 0..1 price. (Principle 8.)
+  center. Display-only — the contract keeps its 0..1 price. (Principle 9.)
 - **2026-07-11 — rating controls relabeled "Stake n ⬡ · Underrated ↑ / Overrated ↓".**
-  "Invest pro/con" implied agreement; staking on a correction is stance-free. (Principle 9.)
+  "Invest pro/con" implied agreement; staking on a correction is stance-free. (Principle 10.)

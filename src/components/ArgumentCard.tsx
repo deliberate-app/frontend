@@ -34,7 +34,7 @@ export function ArgumentCard({
 
   return (
     <button type="button" className={`card card-${node.side}`} onClick={() => onFocus(node.id)}>
-      {/* The head reads left to right in the order it happened (principle 11): someone wrote the
+      {/* The head reads left to right in the order it happened (principle 12): someone wrote the
           argument, its lock ran down, stake landed on it, and the rating followed. Above the claim
           rather than below it, so the eye meets who and how-much on the way in, and the row under
           the text is left as the way deeper. */}

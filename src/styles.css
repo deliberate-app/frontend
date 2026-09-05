@@ -1163,7 +1163,7 @@ button {
   gap: var(--figure-gap);
 }
 
-/* The rating gauge: one signed axis, neutral at its centre (principle 8). The track is a hairline
+/* The rating gauge: one signed axis, neutral at its centre (principle 9). The track is a hairline
    the fill sits inside rather than on, so an argument nobody has moved still reads as a scale
    rather than as nothing. */
 .gauge {
@@ -1948,14 +1948,93 @@ button {
   color: var(--ink);
 }
 
+/* A class that sets `display` outranks the browser's own rule for `hidden`, so an element marked
+   hidden stays on screen unless this says otherwise. One rule, rather than one per component. */
+[hidden] {
+  display: none !important;
+}
+
+/* ── Choosing: presets, segments, tabs, rows ─────────────────────────── */
+/* Three controls with three jobs, kept apart on purpose. A preset is a verb that writes values you
+   may then edit. A segmented track is one value with a few named states. A tab is a place. */
+
+/* Presets: separate outlined chips, quiet, because applying one is an action and not a state. */
 .preset-row {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
 }
 
-.preset-active {
-  border-color: var(--ink);
+.preset {
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--bark);
+  cursor: pointer;
+}
+
+.preset:hover {
+  border-color: var(--bark);
+  color: var(--ink);
+}
+
+/* The fields still hold exactly this preset. It carries the dot and nothing else, so the first
+   edit below simply puts the dot out. */
+.preset-current {
+  color: var(--ink);
+}
+
+/* One mark, one meaning, wherever it appears: your current state is here. */
+.current-dot {
+  /* Inline-block, so the mark keeps its size inside a tab's text as well as in a flex row. */
+  display: inline-block;
+  width: 0.32rem;
+  height: 0.32rem;
+  margin-left: 0.35rem;
+  flex: none;
+  vertical-align: 0.1em;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* A segmented track: one enclosed control whose filled cell is the value. Enclosure and fill are
+   what separate it from the tabs above and the preset chips beside it. */
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  /* A grid item stretches by default, which would leave dead space inside the track's border. */
+  justify-self: start;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.segment {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  border: none;
+  border-left: 1px solid var(--hairline);
+  background: none;
+  color: var(--bark);
+  cursor: pointer;
+}
+
+.segment:first-child {
+  border-left: none;
+}
+
+.segment:hover {
+  color: var(--ink);
+}
+
+.segment-active {
   background: var(--ink);
   color: var(--canvas);
 }
@@ -2043,16 +2122,15 @@ button {
   }
 }
 
-/* ── Registry picker ─────────────────────────────────────────────────── */
-/* Registries to pick from, and Circles avatars found by name: one row each, the kind first. */
-.registry-list {
+/* Candidates to pick from - registries, Circles avatars, the open gate - one row each, kind first. */
+.pick-list {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   margin: 0.75rem 0;
 }
 
-.registry-item {
+.pick-row {
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
@@ -2066,15 +2144,21 @@ button {
   cursor: pointer;
 }
 
-.registry-item:hover {
+.pick-row:hover {
   border-color: var(--bark);
 }
 
-.registry-item-active {
+.pick-row-chosen {
   border-color: var(--ink);
+  color: var(--ink);
 }
 
-.registry-kind {
+/* The row a reader is looking at, which for an allowlist is not the same as the one they chose. */
+.pick-row-current {
+  border-color: var(--bark);
+}
+
+.pick-row-kind {
   flex: none;
   min-width: 5.5rem;
   font-size: 0.72rem;
@@ -2084,7 +2168,7 @@ button {
   color: var(--bark);
 }
 
-.registry-note {
+.pick-row-note {
   margin-left: auto;
   font-size: 0.78rem;
   color: var(--bark);
@@ -2092,32 +2176,27 @@ button {
 
 /* A search answers with more rows than the dialog should grow by, so they scroll and what follows
    them stays in reach. */
-.registry-list-scroll {
+.pick-list-scroll {
   max-height: 14rem;
   overflow-y: auto;
 }
 
-/* The list a reader is looking at, as against the ink of .registry-item-active, which is the one a
+/* The list a reader is looking at, as against the ink of .pick-row-chosen, which is the one a
    debate will name. */
-.registry-item-current {
+.pick-row-current {
   border-color: var(--bark);
 }
 
 /* A tab's panel carries the dialog's own rhythm, since it is one grid item holding many. Both
-   panels stay mounted so a half-typed paste survives a tab flip, and an author `display` beats the
-   browser's own rule for `hidden`, so the inactive one is hidden here. */
+   panels stay mounted, so a half-typed paste survives a tab flip. */
 .tab-panel {
   display: grid;
   gap: 0.9rem;
 }
 
-.tab-panel[hidden] {
-  display: none;
-}
-
 /* A row that only tells the reader something, with no action to promise. */
-.registry-item-static,
-.registry-item-static:hover {
+.pick-row-static,
+.pick-row-static:hover {
   cursor: default;
   border-color: var(--hairline);
 }

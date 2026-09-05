@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { zeroAddress, type Address } from 'viem';
 import { actionErrorMessage } from '../data/actions';
 import type { RegistryAccess } from '../data/registries';
@@ -7,6 +7,7 @@ import type { IdentityRegistryInfo } from '../data/source';
 import { looksLikeAddress, parseAddressList, shortAddress, writeAddressRow } from '../lib/address';
 import { searchCirclesAvatars, useCirclesNames, type CirclesAvatar } from '../lib/circles';
 import { AddressBadge } from './AddressBadge';
+import { PickRow, Segmented, Tabs } from './Choice';
 
 /** Why the manager is showing lists but offering no way to add to them. */
 const NEEDS_WALLET = 'Making a registry needs a connected wallet on a network that has a registry factory.';
@@ -44,53 +45,13 @@ const addressRowMark = (row: string) =>
 const mono = (address: Address) => <span className="mono">{shortAddress(address)}</span>;
 
 /**
- * One registry or avatar on a list: what kind it is, what it admits, and where to find it.
- *
- * Two marks, because a row can be two things at once. `chosen` is the registry the debate will
- * name. `current` is the list whose members are shown below it, which is where a reader is looking
- * rather than what they have decided.
- */
-function Row({
-  kind,
-  label,
-  note,
-  chosen,
-  current,
-  onChoose,
-}: {
-  kind: string;
-  label: ReactNode;
-  note?: ReactNode;
-  chosen?: boolean;
-  current?: boolean;
-  /** Absent where the row is only telling the reader something. */
-  onChoose?: () => void;
-}) {
-  const marks = `${chosen ? ' registry-item-active' : ''}${current ? ' registry-item-current' : ''}`;
-  const body = (
-    <>
-      <span className="registry-kind">{kind}</span>
-      <span>{label}</span>
-      {note && <span className="registry-note">{note}</span>}
-    </>
-  );
-  return onChoose ? (
-    <button type="button" className={`registry-item${marks}`} onClick={onChoose}>
-      {body}
-    </button>
-  ) : (
-    <div className={`registry-item registry-item-static${marks}`}>{body}</div>
-  );
-}
-
-/**
  * The allowlists this account keeps, and who is on the one it is looking at.
  *
  * Accounts arrive as a list rather than one at a time. A list is how they exist elsewhere - a
  * spreadsheet column, a message, another app's export - and adding thirty of them through a single
  * field is thirty transactions where the contract takes one.
  */
-function AllowlistPanel({
+export function AllowlistPanel({
   access: { registries, factory, loadMembers, setMembership, createAllowlist },
   picked,
   onPick,
@@ -179,9 +140,9 @@ function AllowlistPanel({
           it at any time.
         </p>
       ) : (
-        <div className="registry-list">
+        <div className="pick-list">
           {allowlists.map((registry) => (
-            <Row
+            <PickRow
               key={registry.address}
               kind="Allowlist"
               label={mono(registry.address)}
@@ -304,7 +265,7 @@ function AllowlistPanel({
  * a list of accounts. The reader searches for that avatar by name, then reads back in one sentence
  * exactly who the registry will admit before making it.
  */
-function CirclesPanel({
+export function CirclesPanel({
   access: { registries, factory, createCircles },
   preset,
   picked,
@@ -379,12 +340,21 @@ function CirclesPanel({
 
   return (
     <>
-      {anchored.length > 0 && (
-        <div className="registry-list">
+      {(preset || anchored.length > 0) && (
+        <div className="pick-list">
+          {preset && (
+            <PickRow
+              kind="Circles"
+              label="every Circles human"
+              note={mono(preset)}
+              chosen={preset === picked}
+              onChoose={onPick ? () => onPick(preset, 'Circles humans') : undefined}
+            />
+          )}
           {anchored.map((registry) => {
             const label = circlesRegistryLabel(registry, registry.anchor && anchorNames[registry.anchor]);
             return (
-              <Row
+              <PickRow
                 key={registry.address}
                 kind="Circles"
                 label={label}
@@ -423,12 +393,12 @@ function CirclesPanel({
       </label>
 
       {anchor === null && found !== null && (
-        <div className="registry-list registry-list-scroll">
+        <div className="pick-list pick-list-scroll">
           {found.length === 0 ? (
             <p className="composer-hint">No Circles avatar goes by that name.</p>
           ) : (
             found.map((avatar) => (
-              <Row
+              <PickRow
                 key={avatar.address}
                 kind={avatar.kind}
                 label={avatar.name}
@@ -442,22 +412,15 @@ function CirclesPanel({
 
       {anchor && (
         <>
-          <div className="preset-row">
-            <button
-              type="button"
-              className={`btn btn-small ${requireHuman ? 'preset-active' : ''}`}
-              onClick={() => setRequireHuman(true)}
-            >
-              Humans it trusts
-            </button>
-            <button
-              type="button"
-              className={`btn btn-small ${requireHuman ? '' : 'preset-active'}`}
-              onClick={() => setRequireHuman(false)}
-            >
-              Anyone it trusts
-            </button>
-          </div>
+          <Segmented
+            label="Who the anchor's trust admits"
+            value={requireHuman ? 'humans' : 'anyone'}
+            onChange={(who) => setRequireHuman(who === 'humans')}
+            options={[
+              { id: 'humans', label: 'Humans it trusts' },
+              { id: 'anyone', label: 'Anyone it trusts' },
+            ]}
+          />
           <p className="composer-hint">Admits {admits(requireHuman, anchor.name)}.</p>
           {createCircles ? (
             <button type="button" className="btn btn-small" disabled={busy} onClick={() => void create()}>
@@ -504,26 +467,14 @@ export function RegistryManager({
 
   return (
     <>
-      <div className="tab-row" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'allowlists'}
-          className={`tab ${tab === 'allowlists' ? 'tab-active' : ''}`}
-          onClick={() => setTab('allowlists')}
-        >
-          Allowlists
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'circles'}
-          className={`tab ${tab === 'circles' ? 'tab-active' : ''}`}
-          onClick={() => setTab('circles')}
-        >
-          Circles
-        </button>
-      </div>
+      <Tabs
+        active={tab}
+        onSelect={setTab}
+        tabs={[
+          { id: 'allowlists', label: 'Allowlists' },
+          { id: 'circles', label: 'Circles' },
+        ]}
+      />
 
       <div className="tab-panel" role="tabpanel" hidden={tab !== 'allowlists'}>
         <AllowlistPanel access={access} picked={picked} onPick={onPick} />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Segmented } from './Choice';
 import { Modal } from './Modal';
 import { isAddress } from 'viem';
 import { BOUNTY_TOKEN_PRESETS, formatTokenAmount, parseTokenAmount, type TokenInfo } from '../lib/tokens';
@@ -10,9 +11,10 @@ export interface BountyDraft {
 }
 
 /**
- * The bounty modal of the create form, mirroring the schedule settings' live-editing model:
- * preset token chips for the common cases, any ERC-20 by address, the amount in human units.
- * Changes apply live to the summary chip behind the modal; the cross and the backdrop close.
+ * The bounty modal of the create form, mirroring the schedule settings' live-editing model: one
+ * track holding every state a bounty can be in - none, a known token, or any ERC-20 by address -
+ * and the amount in human units. Changes apply live to the summary chip behind the modal; the
+ * cross and the backdrop close.
  */
 export function BountySettings({
   bounty,
@@ -29,7 +31,11 @@ export function BountySettings({
   const [amountText, setAmountText] = useState(() =>
     bounty && bounty.amount > 0n ? formatTokenAmount(bounty.amount, bounty.token).split(' ')[0] : '',
   );
-  const [customAddress, setCustomAddress] = useState('');
+  // The reader can be on Custom before a token resolves, when there is no bounty to read it from.
+  const [customChosen, setCustomChosen] = useState(
+    bounty !== null && !BOUNTY_TOKEN_PRESETS.some((token) => token.address === bounty.token.address),
+  );
+  const [customAddress, setCustomAddress] = useState(customChosen && bounty ? bounty.token.address : '');
   const [customBusy, setCustomBusy] = useState(false);
   const [customError, setCustomError] = useState<string | null>(null);
   const [amountError, setAmountError] = useState<string | null>(null);
@@ -78,28 +84,24 @@ export function BountySettings({
         runs.
       </p>
 
-      <div className="preset-row">
-        <button
-          type="button"
-          className={`btn btn-small ${bounty === null ? 'preset-active' : ''}`}
-          onClick={() => apply(null, amountText)}
-        >
-          None
-        </button>
-        {BOUNTY_TOKEN_PRESETS.map((token) => (
-          <button
-            key={token.address}
-            type="button"
-            className={`btn btn-small ${bounty?.token.address === token.address ? 'preset-active' : ''}`}
-            onClick={() => apply(token, amountText)}
-          >
-            {token.symbol}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Bounty token"
+        value={customChosen ? 'custom' : (bounty?.token.address ?? 'none')}
+        onChange={(id) => {
+          setCustomChosen(id === 'custom');
+          if (id === 'none') apply(null, amountText);
+          const token = BOUNTY_TOKEN_PRESETS.find((preset) => preset.address === id);
+          if (token) apply(token, amountText);
+        }}
+        options={[
+          { id: 'none', label: 'None' },
+          ...BOUNTY_TOKEN_PRESETS.map((token) => ({ id: token.address, label: token.symbol })),
+          { id: 'custom', label: 'Custom' },
+        ]}
+      />
 
-      <label className="duration-field">
-        <span className="duration-label">Custom token</span>
+      <label className="duration-field" hidden={!customChosen}>
+        <span className="duration-label">Token address</span>
         <span className="duration-inputs">
           <input
             type="text"

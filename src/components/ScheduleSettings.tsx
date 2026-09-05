@@ -1,3 +1,4 @@
+import { Presets } from './Choice';
 import { Modal } from './Modal';
 import {
   SCHEDULE_PRESETS,
@@ -76,18 +77,13 @@ export function ScheduleSettings({
 
   return (
     <Modal title="Debate schedule" onClose={onClose}>
-      <div className="preset-row">
-        {SCHEDULE_PRESETS.map(({ name, schedule: preset }) => (
-          <button
-            key={name}
-            type="button"
-            className={`btn btn-small ${sameSchedule(preset, schedule) ? 'preset-active' : ''}`}
-            onClick={() => onChange({ ...preset })}
-          >
-            {name}
-          </button>
-        ))}
-      </div>
+      <Presets
+        presets={SCHEDULE_PRESETS.map(({ name, schedule: preset }) => ({
+          name,
+          current: sameSchedule(preset, schedule),
+          onApply: () => onChange({ ...preset }),
+        }))}
+      />
 
       <DurationField
         label="Locking"
