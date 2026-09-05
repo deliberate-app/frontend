@@ -146,7 +146,8 @@ describe('summaryFromIndex', () => {
       phase: 'rating',
       approved: undefined,
       stake: 291,
-      argumentsCount: 25,
+      // The row's 25 counts the thesis as argument 0; the list shows the 24 answering it.
+      argumentsCount: 24,
       creator: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     });
   });
