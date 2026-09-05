@@ -18,6 +18,19 @@ function TrashIcon() {
   );
 }
 
+/** Names a count with its own noun, singular where there is one of it. */
+const counted = (many: number, noun: string) => `${many} ${noun}${many === 1 ? '' : 's'}`;
+
+/**
+ * What the pending changes come to, in words. Only what applies is named: a list that is only
+ * being added to says nothing about removals.
+ */
+export function changeSummary(adding: number, removing: number): string {
+  return [adding > 0 && counted(adding, 'addition'), removing > 0 && counted(removing, 'removal')]
+    .filter((part) => part !== false)
+    .join(', ');
+}
+
 /** What is wrong with a written row, or null while there is nothing to say about it. */
 export function rowProblem(row: string, members: ReadonlySet<string>): string | null {
   const written = row.trim();
@@ -186,13 +199,9 @@ export function ModifyAllowlist({
       {setMembership && changes.length > 0 && (
         <div className="action-row">
           <button type="button" className="btn btn-solid" disabled={busy} onClick={() => void save()}>
-            {busy ? 'Saving…' : `Save ${changes.length} ${changes.length === 1 ? 'change' : 'changes'}`}
+            {busy ? 'Saving…' : 'Update'}
           </button>
-          <span className="duration-hint">
-            {[adding.length > 0 && `${adding.length} to add`, dropping.length > 0 && `${dropping.length} to remove`]
-              .filter(Boolean)
-              .join(', ')}
-          </span>
+          <span className="duration-hint">{changeSummary(adding.length, dropping.length)}</span>
         </div>
       )}
 
