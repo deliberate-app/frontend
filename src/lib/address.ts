@@ -61,6 +61,28 @@ export function identiconOf(address: string): Identicon {
   return { cells, color: mainColor, bgColor, spotColor };
 }
 
+/**
+ * Whether a written account is an address. Capitalisation is not checked: wallets and explorers
+ * print the checksummed form, plenty of tools do not, and rejecting a valid account over its
+ * capitalisation would be a puzzle rather than a safeguard.
+ */
+export const looksLikeAddress = (text: string) => isAddress(text.trim(), { strict: false });
+
+/**
+ * The rows after writing `value` into the row at `index`.
+ *
+ * A row holds one account. Writing several words into one row - a paste from a spreadsheet or a
+ * message - spreads them over a row each, so the reader sees which one is wrong instead of hunting
+ * through a single field. A last row that reads as an address opens an empty one after it, so the
+ * list grows as it is written and there is always somewhere to write the next account.
+ */
+export function writeAddressRow(rows: readonly string[], index: number, value: string): string[] {
+  const words = value.split(/[\s,;]+/).filter((word) => word !== '');
+  const written = words.length > 1 ? words : [value];
+  const next = [...rows.slice(0, index), ...written, ...rows.slice(index + 1)];
+  return looksLikeAddress(next[next.length - 1] ?? '') ? [...next, ''] : next;
+}
+
 /** What a pasted list of addresses came to. */
 export interface AddressList {
   /** The addresses, checksummed, in the order they were written, with repeats dropped. */
@@ -74,16 +96,13 @@ export interface AddressList {
  * address from the next, because a list arrives from a spreadsheet column as readily as from a
  * chat message, and a reader should not have to reformat it first.
  *
- * A lowercase address is accepted. Wallets and explorers print the checksummed form, but plenty
- * of tools do not, and rejecting a valid account over its capitalisation would be a puzzle rather
- * than a safeguard.
  */
 export function parseAddressList(text: string): AddressList {
   const seen = new Set<string>();
   const addresses: Address[] = [];
   const rejected: string[] = [];
   for (const word of text.split(/[\s,;]+/).filter((word) => word !== '')) {
-    if (!isAddress(word, { strict: false })) {
+    if (!looksLikeAddress(word)) {
       rejected.push(word);
     } else if (!seen.has(word.toLowerCase())) {
       seen.add(word.toLowerCase());

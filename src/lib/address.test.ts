@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { getAddress } from 'viem';
-import { IDENTICON_SIZE, identiconOf, parseAddressList, shortAddress } from './address';
+import {
+  IDENTICON_SIZE,
+  identiconOf,
+  looksLikeAddress,
+  parseAddressList,
+  shortAddress,
+  writeAddressRow,
+} from './address';
 
 const ADDRESS = '0x41612A36e1eB8f74e041c4fEa382a26bd17b55a9';
 
@@ -55,5 +62,48 @@ describe('parseAddressList', () => {
 
   test('an empty paste is an empty list', () => {
     expect(parseAddressList('   \n ')).toEqual({ addresses: [], rejected: [] });
+  });
+});
+
+describe('looksLikeAddress', () => {
+  test('accepts an address whatever its capitalisation, and trims what surrounds it', () => {
+    expect(looksLikeAddress('0x41612A36e1eB8f74e041c4fEa382a26bd17b55a9')).toBe(true);
+    expect(looksLikeAddress('  0x41612a36e1eb8f74e041c4fea382a26bd17b55a9 ')).toBe(true);
+  });
+
+  test('rejects what is not one', () => {
+    expect(looksLikeAddress('')).toBe(false);
+    expect(looksLikeAddress('0xnope')).toBe(false);
+    expect(looksLikeAddress('alice.eth')).toBe(false);
+  });
+});
+
+describe('writeAddressRow', () => {
+  const ALICE = getAddress('0x41612a36e1eb8f74e041c4fea382a26bd17b55a9');
+  const BOB = getAddress('0x0db7c1b1d6db1d1b1c1b1d1b1d1b1d1b1d1b7413');
+
+  test('a half-written address stays in its row, with no row opened after it', () => {
+    expect(writeAddressRow([''], 0, '0x416')).toEqual(['0x416']);
+  });
+
+  test('a finished address opens an empty row after it', () => {
+    expect(writeAddressRow([''], 0, ALICE)).toEqual([ALICE, '']);
+  });
+
+  test('a pasted list spreads over a row each, and opens one more', () => {
+    expect(writeAddressRow([''], 0, `${ALICE}, ${BOB}`)).toEqual([ALICE, BOB, '']);
+  });
+
+  test('a paste into a row in the middle leaves the rows around it alone', () => {
+    // The trailing empty row is restored too: the last row reads as an address, so one opens after it.
+    expect(writeAddressRow([ALICE, '', BOB], 1, `${BOB} ${ALICE}`)).toEqual([ALICE, BOB, ALICE, BOB, '']);
+  });
+
+  test('what is not an address still gets its own row, so the reader sees which one is wrong', () => {
+    expect(writeAddressRow([''], 0, `${ALICE} 0xnope`)).toEqual([ALICE, '0xnope']);
+  });
+
+  test('clearing a row leaves it in place rather than shifting the rows under the cursor', () => {
+    expect(writeAddressRow([ALICE, BOB, ''], 0, '')).toEqual(['', BOB, '']);
   });
 });

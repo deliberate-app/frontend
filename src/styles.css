@@ -2153,8 +2153,7 @@ button {
 
 /* A field that takes a name or an address, as wide as the dialog. The boxes in .duration-inputs
    are sized to two digits, which is why a search field could not live among them. */
-.text-input,
-.address-input {
+.text-input {
   width: 100%;
   font: inherit;
   padding: 0.3rem 0.5rem;
@@ -2164,10 +2163,29 @@ button {
   color: var(--ink);
 }
 
-.address-input {
+/* One account per row, so a list is read down a column the way it was written. */
+.address-rows {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.address-row {
   font-family: var(--font-mono);
   font-size: 0.8rem;
-  resize: vertical;
+}
+
+/* An empty row is the invitation to write the next account, dashed like every other "add
+   something" affordance in the app (principle 4). */
+.address-row-empty {
+  border-style: dashed;
+  background: none;
+  color: var(--bark);
+}
+
+/* What is written is not an address. The edge says so where the mistake is, rather than a line
+   under the list naming it again. */
+.address-row-invalid {
+  border-color: var(--con);
 }
 
 /* ── Allowlist members ───────────────────────────────────────────────── */

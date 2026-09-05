@@ -4,7 +4,7 @@ import { actionErrorMessage } from '../data/actions';
 import type { RegistryAccess } from '../data/registries';
 import { useRegistries } from '../data/registries';
 import type { IdentityRegistryInfo } from '../data/source';
-import { parseAddressList, shortAddress } from '../lib/address';
+import { looksLikeAddress, parseAddressList, shortAddress, writeAddressRow } from '../lib/address';
 import { searchCirclesAvatars, useCirclesNames, type CirclesAvatar } from '../lib/circles';
 import { AddressBadge } from './AddressBadge';
 
@@ -32,6 +32,13 @@ const fromOlderFactory = (registry: IdentityRegistryInfo, factory?: Address) =>
 
 const currentFactoryFirst = (registries: IdentityRegistryInfo[], factory?: Address) =>
   [...registries].sort((a, b) => Number(fromOlderFactory(a, factory)) - Number(fromOlderFactory(b, factory)));
+
+/**
+ * How one row of the account list reads: empty rows are the dashed invitation to write the next
+ * account (principle 4), and a row that is not an address says so on its own edge.
+ */
+const addressRowMark = (row: string) =>
+  row.trim() === '' ? ' address-row-empty' : looksLikeAddress(row) ? '' : ' address-row-invalid';
 
 /** An address as it reads on a row: the app's one truncation, in the app's one address face. */
 const mono = (address: Address) => <span className="mono">{shortAddress(address)}</span>;
@@ -109,7 +116,7 @@ function AllowlistPanel({
 
   const [members, setMembers] = useState<Address[] | null>(null);
   const [checked, setChecked] = useState<Address[]>([]);
-  const [draft, setDraft] = useState('');
+  const [rows, setRows] = useState<string[]>(['']);
   const [busy, setBusy] = useState<'creating' | 'adding' | 'removing' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,7 +138,7 @@ function AllowlistPanel({
   }, [current, loadMembers]);
 
   const names = useCirclesNames(members ?? []);
-  const pasted = useMemo(() => parseAddressList(draft), [draft]);
+  const pasted = useMemo(() => parseAddressList(rows.join(' ')), [rows]);
 
   const change = async (accounts: Address[], member: boolean) => {
     if (current === null || !setMembership) return;
@@ -141,7 +148,7 @@ function AllowlistPanel({
       await setMembership(current, accounts, member);
       setMembers(await loadMembers(current));
       setChecked([]);
-      if (member) setDraft('');
+      if (member) setRows(['']);
     } catch (cause) {
       setError(actionErrorMessage(cause));
     } finally {
@@ -246,26 +253,29 @@ function AllowlistPanel({
 
           {setMembership && (
             <>
-              <label className="duration-field">
+              <div className="duration-field">
                 <span className="duration-label">Add accounts</span>
-                <textarea
-                  className="address-input"
-                  rows={3}
-                  spellCheck={false}
-                  placeholder="0x… one per line"
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                />
+                <div className="address-rows">
+                  {rows.map((row, index) => (
+                    <input
+                      // Rows are addressed by position: a paste inserts several at once, and the
+                      // value each input shows comes from the state rather than from the element.
+                      key={index}
+                      type="text"
+                      className={`text-input address-row${addressRowMark(row)}`}
+                      spellCheck={false}
+                      placeholder="0x…"
+                      value={row}
+                      onChange={(event) => setRows((current) => writeAddressRow(current, index, event.target.value))}
+                    />
+                  ))}
+                </div>
                 <span className="duration-hint">
-                  Paste as many as you like. New lines, commas and spaces all separate one from the next. An account on
-                  the list may join every debate that names it. Removing one bars it from joining afterwards, and leaves
-                  the debates it already joined alone.
+                  One account per row. Paste a list into any row and it spreads over a row each. An account on the list
+                  may join every debate that names it. Removing one bars it from joining afterwards, and leaves the
+                  debates it already joined alone.
                 </span>
-              </label>
-
-              {pasted.rejected.length > 0 && (
-                <p className="action-error">Not an address: {pasted.rejected.slice(0, 3).join(', ')}</p>
-              )}
+              </div>
 
               {pasted.addresses.length > 0 && (
                 <button
