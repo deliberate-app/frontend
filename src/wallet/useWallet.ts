@@ -30,14 +30,6 @@ export interface WalletState {
    * and changes underneath the app whenever the user switches network in the wallet itself.
    */
   chainId: number | null;
-  /** Whether the wallet picker is showing. */
-  picking: boolean;
-  /**
-   * Opens the wallet picker. For action sites that need a wallet the visitor has not connected
-   * yet: they ask for a connection rather than presenting a dead disabled control.
-   */
-  promptConnect(): void;
-  dismissPrompt(): void;
   connect(wallet: AnnouncedWallet): Promise<void>;
   disconnect(): void;
 }
@@ -47,7 +39,6 @@ export function useWallet(): WalletState {
   const [account, setAccount] = useState<Address | null>(null);
   const [connected, setConnected] = useState<AnnouncedWallet | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
-  const [picking, setPicking] = useState(false);
 
   useEffect(() => {
     const onAnnounce = (event: Event) => {
@@ -111,9 +102,6 @@ export function useWallet(): WalletState {
     const [address] = await client.requestAddresses();
     setAccount(address ?? null);
     setConnected(address ? wallet : null);
-    // Whatever opened the picker has been answered; leaving it up over a connected app would
-    // cover the very view the visitor asked to reach.
-    if (address) setPicking(false);
   }, []);
 
   const disconnect = useCallback(() => {
@@ -121,18 +109,12 @@ export function useWallet(): WalletState {
     setConnected(null);
   }, []);
 
-  const promptConnect = useCallback(() => setPicking(true), []);
-  const dismissPrompt = useCallback(() => setPicking(false), []);
-
   return {
     wallets,
     account,
     provider: connected?.provider ?? null,
     walletName: connected?.info.name ?? null,
     chainId,
-    picking,
-    promptConnect,
-    dismissPrompt,
     connect,
     disconnect,
   };

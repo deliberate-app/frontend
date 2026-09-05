@@ -1,4 +1,4 @@
-import { Modal } from './Modal';
+import { Presets } from './Choice';
 import {
   SCHEDULE_PRESETS,
   sameSchedule,
@@ -56,38 +56,28 @@ function DurationField({
 }
 
 /**
- * The cogwheel modal tuning a debate's schedule before creation: presets for the common cases, free
- * durations for everything else, with the contract's rules enforced and softer guidance surfaced.
- * Edits apply live - the summary chip behind the modal updates as you change values - so there is
- * nothing to accept: closing (the cross or the backdrop) is the only exit, and an invalid schedule
- * keeps the create button disabled rather than trapping the modal open.
+ * The schedule step: presets for the common cases, free durations for everything else, with the
+ * contract's rules enforced and softer guidance surfaced.
  */
-export function ScheduleSettings({
+export function ScheduleFields({
   schedule,
   onChange,
-  onClose,
 }: {
   schedule: DebateSchedule;
   onChange: (schedule: DebateSchedule) => void;
-  onClose: () => void;
 }) {
   const error = scheduleError(schedule);
   const warning = error === null ? scheduleWarning(schedule) : null;
 
   return (
-    <Modal title="Debate schedule" onClose={onClose}>
-      <div className="preset-row">
-        {SCHEDULE_PRESETS.map(({ name, schedule: preset }) => (
-          <button
-            key={name}
-            type="button"
-            className={`btn btn-small ${sameSchedule(preset, schedule) ? 'preset-active' : ''}`}
-            onClick={() => onChange({ ...preset })}
-          >
-            {name}
-          </button>
-        ))}
-      </div>
+    <>
+      <Presets
+        presets={SCHEDULE_PRESETS.map(({ name, schedule: preset }) => ({
+          name,
+          current: sameSchedule(preset, schedule),
+          onApply: () => onChange({ ...preset }),
+        }))}
+      />
 
       <DurationField
         label="Locking"
@@ -110,6 +100,6 @@ export function ScheduleSettings({
 
       {error && <p className="action-error">{error}</p>}
       {warning && <p className="schedule-warning">{warning}</p>}
-    </Modal>
+    </>
   );
 }

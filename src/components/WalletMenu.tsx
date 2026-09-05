@@ -3,8 +3,11 @@ import { useRegistries } from '../data/registries';
 import { chainName, isTestnet } from '../lib/chains';
 import { type WalletState } from '../wallet/useWallet';
 import { AddressBadge } from './AddressBadge';
+import { NO_WALLET_FOUND } from './ConnectHere';
 import { Modal } from './Modal';
 import { RegistryManager } from './RegistryManager';
+
+const noop = () => undefined;
 
 export function WalletMenu({
   wallet,
@@ -18,18 +21,19 @@ export function WalletMenu({
   onSwitchChain?: () => Promise<void>;
 }) {
   const registries = useRegistries();
-  // Two different menus hang off this control - the account menu once connected, and the picker
-  // before that. Only the account menu's openness is local: the picker is opened from elsewhere
-  // in the app too (an action that needs a wallet asks for one), so it lives in the wallet state.
+  // Two menus hang off this control - the account menu once connected, and the wallet list before
+  // that. Both are this control's own: an action elsewhere that needs a wallet asks for one where
+  // it stands (`ConnectHere`) rather than sending the reader up here.
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [managing, setManaging] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const connected = wallet.account !== null;
-  const open = connected ? accountMenuOpen : wallet.picking;
-  const close = connected ? () => setAccountMenuOpen(false) : wallet.dismissPrompt;
+  const open = connected ? accountMenuOpen : picking;
+  const close = connected ? () => setAccountMenuOpen(false) : () => setPicking(false);
 
   useEffect(() => {
     if (!open) return;
@@ -144,19 +148,13 @@ export function WalletMenu({
 
   return (
     <div className="wallet" ref={menuRef}>
-      <button
-        type="button"
-        className="wallet-button"
-        onClick={() => (wallet.picking ? wallet.dismissPrompt() : wallet.promptConnect())}
-      >
+      <button type="button" className="wallet-button" onClick={() => setPicking((showing) => !showing)}>
         Connect wallet
       </button>
-      {wallet.picking && (
+      {picking && (
         <div className="wallet-menu" role="menu">
           {wallet.wallets.length === 0 ? (
-            <p className="wallet-menu-note">
-              No wallet extensions found. Install MetaMask or another browser wallet, then reload.
-            </p>
+            <p className="wallet-menu-note">{NO_WALLET_FOUND}</p>
           ) : (
             wallet.wallets.map((w) => (
               <button
@@ -164,7 +162,8 @@ export function WalletMenu({
                 type="button"
                 role="menuitem"
                 className="wallet-menu-item"
-                onClick={() => void wallet.connect(w)}
+                // A refused request leaves the list up, so the visitor can try again or take another.
+                onClick={() => void wallet.connect(w).then(() => setPicking(false), noop)}
               >
                 <img src={w.info.icon} alt="" className="wallet-icon" />
                 {w.info.name}

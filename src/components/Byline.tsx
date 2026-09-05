@@ -5,7 +5,7 @@ import { LockChip } from './LockChip';
 /**
  * Who made a claim and whether it can still change: the creator, then the lock. In that order
  * because that is the order it happened - someone wrote the argument, and the clock they started
- * runs out on it (principle 11) - and in the same place on a card and on the focused argument.
+ * runs out on it (principle 12) - and in the same place on a card and on the focused argument.
  * The two belong together because they answer one question between them: whose claim this is, and
  * whether it is still theirs to move.
  *

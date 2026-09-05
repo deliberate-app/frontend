@@ -131,6 +131,7 @@ export interface DebateSummary {
   approved?: boolean;
   /** Vote tokens committed to the debate's markets (deposits plus net stakes). */
   stake: number;
+  /** The arguments made, not counting the thesis they answer. */
   argumentsCount: number;
   /** The debate's bounty; absent when none is attached. */
   bounty?: DebateBounty;

@@ -93,6 +93,13 @@ export function marketOf(node: ArgumentNode): ArgumentMarket {
   return { id, approval, proReserve, conReserve, weight, rating };
 }
 
+/**
+ * The arguments made in a debate. Every count the app can read - the contract's, the index's and
+ * the sample's - counts the thesis as argument 0, but the thesis is the claim being argued about
+ * and not an argument for it, so a debate nobody has answered has no arguments.
+ */
+const argumentsUnderThesis = (counted: number) => Math.max(0, counted - 1);
+
 const sampleDebates = [climateDebate, confirmedDebate, objectedDebate, editingDebate];
 
 export const mockSource: DebateSource = {
@@ -107,7 +114,7 @@ export const mockSource: DebateSource = {
       phase: debate.phase,
       approved: debate.approved,
       stake: debate.nodes.reduce((sum, node) => sum + node.weight, 0),
-      argumentsCount: debate.nodes.length,
+      argumentsCount: argumentsUnderThesis(debate.nodes.length),
       bounty: debate.bounty,
     })),
   userState: async () => ({ joined: false, tokens: 0, bountyClaimed: false }),
@@ -396,7 +403,7 @@ export function contractSource(address: Address, rpcUrl: string): DebateSource {
             phase: phaseOf(Number(editingEndTime), Number(ratingEndTime), currentPhase === PHASE_FINISHED, chainTime),
             approved,
             stake: totalStake,
-            argumentsCount,
+            argumentsCount: argumentsUnderThesis(argumentsCount),
             bounty,
             creator: thesis.creator,
           };
@@ -677,7 +684,7 @@ export function summaryFromIndex(
     // The outcome exists only once the tally has run (null in the index before that).
     approved: row.approved ?? undefined,
     stake: Number(row.totalStake),
-    argumentsCount: Number(row.argumentsCount),
+    argumentsCount: argumentsUnderThesis(Number(row.argumentsCount)),
     // The index stores addresses lowercased; checksum to match the chain reads.
     creator: getAddress(row.creator),
   };

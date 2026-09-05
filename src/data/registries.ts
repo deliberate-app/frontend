@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { Address } from 'viem';
+import type { MembershipChange } from './actions';
 import type { IdentityRegistryInfo } from './source';
 
 /**
@@ -25,8 +26,8 @@ export interface RegistryAccess {
   createAllowlist?: () => Promise<Address>;
   /** Clones a new Circles registry anchored on an avatar, and answers with its address. */
   createCircles?: (anchor: Address, requireHuman: boolean) => Promise<Address>;
-  /** Adds or removes accounts on an allowlist; resolves once the index has folded the change. */
-  setMembership?: (registry: Address, accounts: Address[], member: boolean) => Promise<void>;
+  /** Applies membership changes to an allowlist; resolves once the index has folded them. */
+  setMembership?: (registry: Address, changes: MembershipChange[]) => Promise<void>;
 }
 
 /** Null where there is no deployment to read registries from, as in sample mode. */

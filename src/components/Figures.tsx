@@ -5,7 +5,7 @@ import type { ArgumentNode } from '../types';
 
 /**
  * The debate's figures, defined once and used wherever they appear - cards and the focused claim.
- * Everything here lives on the same signed scale whose zero is an undecided market (principle 8),
+ * Everything here lives on the same signed scale whose zero is an undecided market (principle 9),
  * so the shapes can be compared at a glance across a column without reading a single number:
  *
  * - **Rating gauge** - one axis carrying both halves of the story. The saturated fill is the

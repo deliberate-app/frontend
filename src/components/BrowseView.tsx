@@ -1,21 +1,14 @@
-import { useState, type FormEvent } from 'react';
-import { actionErrorMessage } from '../data/actions';
-import { DEFAULT_SCHEDULE, scheduleError, type DebateSchedule } from '../lib/debateTiming';
-import { formatVotes } from '../lib/votes';
-import { DEFAULT_FEE_PERCENT, feeError } from '../lib/fees';
-import { contentError, MAX_CONTENT_BYTES } from '../lib/content';
-import { formatDuration } from '../lib/time';
-import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
+import { useState } from 'react';
 import type { Address } from 'viem';
+import type { DebateSchedule } from '../lib/debateTiming';
+import { formatVotes } from '../lib/votes';
+import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
 import type { DebateFilter, DebateSummary, Phase } from '../types';
 import { filterDebates } from '../types';
 import { AddressChip } from './AddressChip';
 import { VerdictMark, verdictLabel } from './VerdictMark';
-import { BountySettings, type BountyDraft } from './BountySettings';
-import { ContentBudget } from './ContentBudget';
-import { FeeSettings } from './FeeSettings';
-import { gateAddress, gateLabel, GateSettings, type GateDraft } from './GateSettings';
-import { ScheduleSettings } from './ScheduleSettings';
+import type { BountyDraft } from './BountySettings';
+import { CreateWizard } from './CreateWizard';
 
 const PHASE_SHORT: Record<Phase, string> = {
   editing: 'Editing',
@@ -24,45 +17,10 @@ const PHASE_SHORT: Record<Phase, string> = {
   finished: 'Finished',
 };
 
-/** A small cogwheel in the classic silhouette, inline SVG so it sizes and centers exactly. */
-function GearIcon() {
-  const toothHalf = (10 * Math.PI) / 180;
-  const step = Math.PI / 4;
-  const point = (radius: number, angle: number) =>
-    `${(8 + radius * Math.cos(angle)).toFixed(2)},${(8 + radius * Math.sin(angle)).toFixed(2)}`;
-  const outline = Array.from({ length: 8 }, (_, i) => {
-    const center = i * step;
-    return [
-      point(5.2, center - toothHalf),
-      point(7.2, center - toothHalf),
-      point(7.2, center + toothHalf),
-      point(5.2, center + toothHalf),
-    ].join(' L');
-  }).join(' L');
-  // The hub hole is a second, opposite-wound subpath cut out by the even-odd fill rule.
-  const hole = 'M10.2,8 A2.2,2.2 0 1 0 5.8,8 A2.2,2.2 0 1 0 10.2,8 Z';
-  return (
-    <svg className="gear-icon" viewBox="0 0 16 16" aria-hidden="true">
-      <path
-        d={`M${outline} Z ${hole}`}
-        fill="currentColor"
-        fillRule="evenodd"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-/**
- * The form starting a new debate: thesis plus a sensible default schedule, with deviations tucked
- * behind the cogwheel so the happy path stays one field and one button.
- */
+/** The dashed opener, and the five-step form it opens. */
 function CreatePanel({
   unavailableHint,
   needsWallet,
-  onNeedWallet,
   onCreate,
   resolveToken,
   circlesRegistry,
@@ -71,8 +29,6 @@ function CreatePanel({
   unavailableHint: string | null;
   /** Whether the only thing still missing is a connected wallet. */
   needsWallet: boolean;
-  /** Opens the wallet picker. */
-  onNeedWallet: () => void;
   onCreate: (
     thesis: string,
     schedule: DebateSchedule,
@@ -86,159 +42,32 @@ function CreatePanel({
   circlesRegistry?: Address;
 }) {
   const [open, setOpen] = useState(false);
-  const [thesis, setThesis] = useState('');
-  const [schedule, setSchedule] = useState<DebateSchedule>(DEFAULT_SCHEDULE);
-  const [fee, setFee] = useState(DEFAULT_FEE_PERCENT);
-  const [bounty, setBounty] = useState<BountyDraft | null>(null);
-  const [gate, setGate] = useState<GateDraft>({ mode: 'open' });
-  const [gateOpen, setGateOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [feeOpen, setFeeOpen] = useState(false);
-  const [bountyOpen, setBountyOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  if (!open) {
-    // A missing wallet is not a reason to refuse the click. Disabling the button would leave the
-    // visitor with a dead control and a tooltip that a touch device never shows, so instead the
-    // form opens - they can write the thesis while they decide - and the wallet picker opens with
-    // it. Only a deployment that cannot create debates at all disables anything.
-    return (
+  return (
+    <>
+      {/* A missing wallet is not a reason to refuse the click. Disabling the button would leave the
+          visitor with a dead control and a tooltip that a touch device never shows, so instead the
+          form opens - they can write the thesis while they decide - and the last step asks for the
+          wallet. Only a deployment that cannot create debates at all disables anything. */}
       <button
         type="button"
         className="composer-open create-open"
-        onClick={() => {
-          setOpen(true);
-          if (needsWallet) onNeedWallet();
-        }}
+        onClick={() => setOpen(true)}
         disabled={unavailableHint !== null}
         title={unavailableHint ?? undefined}
       >
         + Start a debate
       </button>
-    );
-  }
-
-  const invalidSchedule = scheduleError(schedule);
-  const invalidFee = feeError(fee);
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await onCreate(thesis.trim(), schedule, fee, gateAddress(gate), bounty);
-      // Success navigates away to the new debate; no local state to reset.
-    } catch (cause) {
-      setError(actionErrorMessage(cause));
-      setBusy(false);
-    }
-  };
-
-  return (
-    <form className="composer" onSubmit={submit}>
-      <textarea
-        className="composer-text"
-        value={thesis}
-        onChange={(event) => setThesis(event.target.value)}
-        placeholder="The thesis to debate…"
-        rows={3}
-        maxLength={MAX_CONTENT_BYTES}
-        required
-      />
-      {/* Schedule and bounty are the two pre-creation settings; they sit side by side. */}
-      <div className="composer-config">
-        <button
-          type="button"
-          className="schedule-chip"
-          title="The locking window and the lengths of the editing and rating phases."
-          onClick={() => setSettingsOpen(true)}
-        >
-          <span className="facts">
-            <span>locking {formatDuration(schedule.lockingDuration)}</span>
-            <span>editing {formatDuration(schedule.editingDuration)}</span>
-            <span>rating {formatDuration(schedule.ratingDuration)}</span>
-          </span>
-          <GearIcon />
-        </button>
-        <button
-          type="button"
-          className="schedule-chip"
-          title="The market fee, paid to the argument's creator on every stake."
-          onClick={() => setFeeOpen(true)}
-        >
-          fee {fee}%
-          <GearIcon />
-        </button>
-        <button
-          type="button"
-          className="schedule-chip"
-          title="Who may join the debate."
-          onClick={() => setGateOpen(true)}
-        >
-          {gateLabel(gate)}
-          <GearIcon />
-        </button>
-        <button
-          type="button"
-          className="schedule-chip"
-          title="An ERC-20 bounty for participants who end with more vote tokens than they were granted."
-          onClick={() => setBountyOpen(true)}
-        >
-          {bounty ? `bounty ${formatTokenAmount(bounty.amount, bounty.token)}` : 'no bounty'}
-          <GearIcon />
-        </button>
-      </div>
-      {settingsOpen && (
-        <ScheduleSettings schedule={schedule} onChange={setSchedule} onClose={() => setSettingsOpen(false)} />
-      )}
-      {feeOpen && <FeeSettings feePercentage={fee} onChange={setFee} onClose={() => setFeeOpen(false)} />}
-      {gateOpen && circlesRegistry && (
-        <GateSettings
-          gate={gate}
-          onChange={setGate}
-          onClose={() => setGateOpen(false)}
+      {open && (
+        <CreateWizard
+          onClose={() => setOpen(false)}
+          onCreate={onCreate}
+          needsWallet={needsWallet}
+          resolveToken={resolveToken}
           circlesRegistry={circlesRegistry}
         />
       )}
-      {bountyOpen && (
-        <BountySettings
-          bounty={bounty}
-          onChange={setBounty}
-          onClose={() => setBountyOpen(false)}
-          resolveToken={resolveToken}
-        />
-      )}
-      <div className="action-row">
-        {/* One button in two roles rather than a disabled submit beside a connect prompt: until a
-            wallet is connected there is exactly one thing to do here, and it says so. */}
-        {needsWallet ? (
-          <button type="button" className="btn btn-solid" onClick={onNeedWallet}>
-            Connect wallet
-          </button>
-        ) : (
-          <button
-            type="submit"
-            className="btn btn-solid"
-            disabled={busy || contentError(thesis.trim()) !== null || invalidSchedule !== null || invalidFee !== null}
-            title={
-              invalidSchedule ??
-              invalidFee ??
-              (bounty && bounty.amount > 0n
-                ? 'Up to two wallet confirmations: the token approval, then the creation.'
-                : undefined)
-            }
-          >
-            {busy ? 'Starting…' : 'Start debate'}
-          </button>
-        )}
-        <button type="button" className="btn" onClick={() => setOpen(false)} disabled={busy}>
-          Cancel
-        </button>
-        <ContentBudget text={thesis.trim()} />
-      </div>
-      {error && <p className="action-error">{error}</p>}
-    </form>
+    </>
   );
 }
 
@@ -250,7 +79,6 @@ export function BrowseView({
   onFilter,
   createUnavailableHint,
   needsWallet,
-  onNeedWallet,
   onOpen,
   onCreate,
   resolveToken,
@@ -266,8 +94,6 @@ export function BrowseView({
   createUnavailableHint: string | null;
   /** Whether creating is possible but no wallet is connected yet. */
   needsWallet: boolean;
-  /** Opens the wallet picker. */
-  onNeedWallet: () => void;
   onOpen: (debateId: number) => void;
   onCreate: (
     thesis: string,
@@ -288,7 +114,6 @@ export function BrowseView({
       <CreatePanel
         unavailableHint={createUnavailableHint}
         needsWallet={needsWallet}
-        onNeedWallet={onNeedWallet}
         onCreate={onCreate}
         resolveToken={resolveToken}
         circlesRegistry={circlesRegistry}

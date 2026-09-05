@@ -5,7 +5,7 @@ import { childrenOf, type ArgumentNode, type Debate } from '../types';
  * where nothing has been.
  *
  * The consequence of an argument, which is why it sits where the thesis' outcome sits - at the end
- * of the row, after the figures (principle 11) - and reads the same on a card as on the focused
+ * of the row, after the figures (principle 12) - and reads the same on a card as on the focused
  * claim. A draft shows nothing at all: nesting needs a locked-in parent, so there is no invitation
  * to make yet, and the countdown padlock beside it already says why.
  */

@@ -48,6 +48,12 @@ export interface ArgumentPosition {
   claimableFees: number;
 }
 
+/** One account's standing on an allowlist, as `setMembership` writes it. */
+export interface MembershipChange {
+  account: Address;
+  member: boolean;
+}
+
 export interface DebateActions {
   account: Address;
   /**
@@ -78,8 +84,8 @@ export interface DebateActions {
    * `requireHuman` whether an admitted account must also be a registered human.
    */
   createCirclesRegistry(anchor: Address, requireHuman: boolean): Promise<Address>;
-  /** Adds or removes accounts on an allowlist this account owns. */
-  setMembership(registry: Address, accounts: Address[], member: boolean): Promise<void>;
+  /** Sets the standing of several accounts on an allowlist this account owns, in one transaction. */
+  setMembership(registry: Address, changes: MembershipChange[]): Promise<void>;
   /** Authors an argument beneath a parent; the text goes to the chain as it is, within its bounds. */
   createArgument(
     debateId: number,
@@ -335,8 +341,8 @@ export async function connectDebateActions(
       return createdRegistry(receipt, 'CirclesRegistryCreated');
     },
 
-    async setMembership(registry, accounts, member) {
-      await writeTo({ address: registry, abi: allowlistAbi as Abi }, 'setMembership', [accounts, member]);
+    async setMembership(registry, changes) {
+      await writeTo({ address: registry, abi: allowlistAbi as Abi }, 'setMembership', [changes]);
     },
 
     async join(debateId) {
