@@ -10,6 +10,26 @@ import { useRegistryNames } from '../lib/registryNames';
 import { PickRow, Segmented, Tabs } from './Choice';
 import { ModifyAllowlist } from './ModifyAllowlist';
 
+/** What Circles calls an avatar, in the words a reader uses, article and all. */
+const KIND_WORD: Record<CirclesAvatar['kind'], string> = {
+  human: 'a person',
+  group: 'a group',
+  organization: 'an organization',
+};
+
+/**
+ * What a choice of trust rule actually admits, which is the whole decision.
+ *
+ * Circles trust runs between avatars of every kind, so an avatar that trusts other groups passes
+ * that trust on to accounts no person holds. Whether those may join is what this asks, and the
+ * answer is easier to see stated as who ends up in the debate.
+ */
+const ADMITS = {
+  people:
+    'Only accounts Circles registered as a person. Circles registers people by invitation rather than by an identity check, and a group or organization this avatar trusts cannot join.',
+  any: 'Everyone this avatar trusts, groups and organizations included. Each account joins as one participant, however many people stand behind it.',
+} as const;
+
 /** The two kinds of registry, which are also the manager's two tabs. */
 export type RegistryKind = 'allowlists' | 'circles';
 
@@ -218,7 +238,11 @@ export function CirclesPanel({ access: { registries, factory, createCircles } }:
             setQuery(event.target.value);
           }}
         />
-        <span className="duration-hint">A Circles account: a person, a group or an organization.</span>
+        <span className="duration-hint">
+          {anchor
+            ? `${anchor.name} is ${KIND_WORD[anchor.kind]} on Circles.`
+            : 'A Circles account: a person, a group or an organization.'}
+        </span>
       </label>
 
       {anchor === null && found !== null && (
@@ -246,11 +270,12 @@ export function CirclesPanel({ access: { registries, factory, createCircles } }:
             value={requireHuman ? 'people' : 'any'}
             onChange={(who) => setRequireHuman(who === 'people')}
             options={[
-              { id: 'people', label: 'People', title: 'Accounts Circles registered as a person.' },
-              { id: 'any', label: 'Any avatar', title: 'People, groups and organizations alike.' },
+              { id: 'people', label: 'People' },
+              { id: 'any', label: 'Any avatar' },
             ]}
           />
-          <p className="composer-hint">Admits {admits(requireHuman, anchor.name)}.</p>
+          <p className="composer-hint">{requireHuman ? ADMITS.people : ADMITS.any}</p>
+          <p className="composer-hint">This registry will admit {admits(requireHuman, anchor.name)}.</p>
           {createCircles ? (
             <button type="button" className="btn btn-small" disabled={busy} onClick={() => void create()}>
               {busy ? 'Creating…' : 'Create registry'}

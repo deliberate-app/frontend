@@ -1996,7 +1996,7 @@ button {
   border-left: none;
 }
 
-.segment:hover {
+.segment:hover:not(.segment-active) {
   color: var(--ink);
 }
 
@@ -2111,7 +2111,7 @@ button {
   cursor: pointer;
 }
 
-.pick-row:hover {
+.pick-row:hover:not(.pick-row-chosen) {
   border-color: var(--bark);
 }
 
