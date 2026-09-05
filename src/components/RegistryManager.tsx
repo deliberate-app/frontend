@@ -10,14 +10,14 @@ import { AddressBadge } from './AddressBadge';
 import { PickRow, Segmented, Tabs } from './Choice';
 
 /** Why the manager is showing lists but offering no way to add to them. */
-const NEEDS_WALLET = 'Making a registry needs a connected wallet on a network that has a registry factory.';
+const NEEDS_WALLET = 'Connect a wallet to make one.';
 
 /** Who a Circles registry admits, in the words the app uses for it everywhere. */
-const admits = (requireHuman: boolean, who: string) =>
+export const admits = (requireHuman: boolean, who: string) =>
   requireHuman ? `Circles humans that ${who} trusts` : `accounts that ${who} trusts`;
 
 /** How a Circles registry reads, given what Circles calls its anchor. */
-function circlesRegistryLabel(registry: IdentityRegistryInfo, anchorName?: string): string {
+export function circlesRegistryLabel(registry: IdentityRegistryInfo, anchorName?: string): string {
   const anchor = registry.anchor ?? zeroAddress;
   return anchor === zeroAddress
     ? 'every Circles human'
@@ -53,12 +53,8 @@ const mono = (address: Address) => <span className="mono">{shortAddress(address)
  */
 export function AllowlistPanel({
   access: { registries, factory, loadMembers, setMembership, createAllowlist },
-  picked,
-  onPick,
 }: {
   access: RegistryAccess;
-  picked?: Address;
-  onPick?: (registry: Address, label: string) => void;
 }) {
   const allowlists = useMemo(
     () =>
@@ -70,10 +66,9 @@ export function AllowlistPanel({
   );
 
   const [selected, setSelected] = useState<Address | null>(null);
-  // The list whose members are shown: the one the reader opened while it still exists, else the one
-  // the debate names, else the first. Derived, so a reload cannot leave it pointing at nothing.
+  // The list whose members are shown, derived so a reload cannot leave it pointing at nothing.
   const holds = (address?: Address | null) => allowlists.some((registry) => registry.address === address);
-  const current = (holds(selected) ? selected : holds(picked) ? picked : allowlists[0]?.address) ?? null;
+  const current = (holds(selected) ? selected : allowlists[0]?.address) ?? null;
 
   const [members, setMembers] = useState<Address[] | null>(null);
   const [checked, setChecked] = useState<Address[]>([]);
@@ -122,9 +117,7 @@ export function AllowlistPanel({
     setBusy('creating');
     setError(null);
     try {
-      const address = await createAllowlist();
-      setSelected(address);
-      onPick?.(address, 'your allowlist');
+      setSelected(await createAllowlist());
     } catch (cause) {
       setError(actionErrorMessage(cause));
     } finally {
@@ -135,10 +128,7 @@ export function AllowlistPanel({
   return (
     <>
       {allowlists.length === 0 ? (
-        <p className="composer-hint">
-          You keep no allowlist yet. One list can admit accounts to any number of debates, and you can change who is on
-          it at any time.
-        </p>
+        <p className="composer-hint">No allowlists yet.</p>
       ) : (
         <div className="pick-list">
           {allowlists.map((registry) => (
@@ -147,12 +137,8 @@ export function AllowlistPanel({
               kind="Allowlist"
               label={mono(registry.address)}
               note={fromOlderFactory(registry, factory) ? 'older factory' : undefined}
-              chosen={registry.address === picked}
               current={registry.address === current}
-              onChoose={() => {
-                setSelected(registry.address);
-                onPick?.(registry.address, 'your allowlist');
-              }}
+              onChoose={() => setSelected(registry.address)}
             />
           ))}
         </div>
@@ -231,11 +217,7 @@ export function AllowlistPanel({
                     />
                   ))}
                 </div>
-                <span className="duration-hint">
-                  One account per row. Paste a list into any row and it spreads over a row each. An account on the list
-                  may join every debate that names it. Removing one bars it from joining afterwards, and leaves the
-                  debates it already joined alone.
-                </span>
+                <span className="duration-hint">One per row; paste a list to fill several.</span>
               </div>
 
               {pasted.addresses.length > 0 && (
@@ -265,27 +247,14 @@ export function AllowlistPanel({
  * a list of accounts. The reader searches for that avatar by name, then reads back in one sentence
  * exactly who the registry will admit before making it.
  */
-export function CirclesPanel({
-  access: { registries, factory, createCircles },
-  preset,
-  picked,
-  onPick,
-}: {
-  access: RegistryAccess;
-  /** The deployment's own any-Circles-human registry, which the gate already offers as a preset. */
-  preset?: Address;
-  picked?: Address;
-  onPick?: (registry: Address, label: string) => void;
-}) {
+export function CirclesPanel({ access: { registries, factory, createCircles } }: { access: RegistryAccess }) {
   const anchored = useMemo(
     () =>
       currentFactoryFirst(
-        registries.filter(
-          (registry) => registry.kind === 'circles' && registry.address.toLowerCase() !== preset?.toLowerCase(),
-        ),
+        registries.filter((registry) => registry.kind === 'circles'),
         factory,
       ),
-    [registries, factory, preset],
+    [registries, factory],
   );
 
   const anchors = useMemo(
@@ -328,7 +297,7 @@ export function CirclesPanel({
     setBusy(true);
     setError(null);
     try {
-      onPick?.(await createCircles(anchor.address, requireHuman), admits(requireHuman, anchor.name));
+      await createCircles(anchor.address, requireHuman);
       setAnchor(null);
       setQuery('');
     } catch (cause) {
@@ -340,17 +309,8 @@ export function CirclesPanel({
 
   return (
     <>
-      {(preset || anchored.length > 0) && (
+      {anchored.length > 0 && (
         <div className="pick-list">
-          {preset && (
-            <PickRow
-              kind="Circles"
-              label="every Circles human"
-              note={mono(preset)}
-              chosen={preset === picked}
-              onChoose={onPick ? () => onPick(preset, 'Circles humans') : undefined}
-            />
-          )}
           {anchored.map((registry) => {
             const label = circlesRegistryLabel(registry, registry.anchor && anchorNames[registry.anchor]);
             return (
@@ -364,18 +324,13 @@ export function CirclesPanel({
                     {fromOlderFactory(registry, factory) && ', older factory'}
                   </>
                 }
-                chosen={registry.address === picked}
-                onChoose={onPick ? () => onPick(registry.address, label) : undefined}
               />
             );
           })}
         </div>
       )}
 
-      <p className="composer-hint">
-        A Circles registry admits accounts by what Circles already knows about them. Anchor one on an avatar to admit
-        the accounts that avatar trusts.
-      </p>
+      <p className="composer-hint">A Circles registry admits the accounts an avatar trusts.</p>
 
       <label className="duration-field">
         <span className="duration-label">Anchor</span>
@@ -438,31 +393,21 @@ export function CirclesPanel({
 }
 
 /**
- * The one place identity registries are read and kept: the allowlists this account owns, and the
+ * The one place identity registries are made and kept: the allowlists this account owns, and the
  * Circles registries anyone can use. Two kinds with nothing in common but the question they answer
  * - a list you write yourself, and a graph somebody else already keeps - so they sit on separate
  * tabs rather than in one column where the search field for one reads as part of the other.
  *
- * The wallet menu opens it to keep registries. The join settings embed it to choose one, and there
- * choosing is what selecting a row does, the way every other setting in this app applies live
- * (principle 6). Both panels stay mounted, so flipping tabs does not throw away a half-typed paste.
+ * Choosing one for a debate is a different question, answered in the join settings, which lists
+ * what exists and links here. Both panels stay mounted, so flipping tabs does not throw away a
+ * half-typed address.
  */
-export function RegistryManager({
-  circlesPreset,
-  picked,
-  onPick,
-}: {
-  circlesPreset?: Address;
-  /** The registry a debate names, where this manager is choosing one. */
-  picked?: Address;
-  /** Choosing a registry. Absent where the manager is only for keeping them. */
-  onPick?: (registry: Address, label: string) => void;
-}) {
+export function RegistryManager() {
   const access = useRegistries();
   const [tab, setTab] = useState<'allowlists' | 'circles'>('allowlists');
 
   if (!access) {
-    return <p className="composer-hint">Registries need a deployment to read them from.</p>;
+    return <p className="composer-hint">No deployment to read registries from.</p>;
   }
 
   return (
@@ -477,10 +422,10 @@ export function RegistryManager({
       />
 
       <div className="tab-panel" role="tabpanel" hidden={tab !== 'allowlists'}>
-        <AllowlistPanel access={access} picked={picked} onPick={onPick} />
+        <AllowlistPanel access={access} />
       </div>
       <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
-        <CirclesPanel access={access} preset={circlesPreset} picked={picked} onPick={onPick} />
+        <CirclesPanel access={access} />
       </div>
     </>
   );

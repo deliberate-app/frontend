@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { zeroAddress, type Address } from 'viem';
 import { useRegistries } from '../data/registries';
 import { looksLikeAddress, parseAddressList, shortAddress } from '../lib/address';
+import { useCirclesNames } from '../lib/circles';
 import { PickRow, Tabs } from './Choice';
 import { Modal } from './Modal';
-import { AllowlistPanel, CirclesPanel } from './RegistryManager';
+import { circlesRegistryLabel, RegistryManager } from './RegistryManager';
 
 /**
  * Who may join a debate, as chosen before creation. Two shapes, both expressed to the contract as
  * one registry address: the zero address for an open debate, and any `IIdentityRegistry` by
- * address. A registry picked or made here carries the name it was picked by, so the chip can say
- * it.
+ * address. A registry picked here carries the name it was picked by, so the chip can say it.
  */
 export type GateDraft = { mode: 'open' } | { mode: 'registry'; address: Address; label?: string };
 
@@ -31,10 +31,10 @@ type GateTab = 'everyone' | 'allowlists' | 'circles' | 'custom';
  * other settings modals: the chip behind it updates as the choice changes, and closing is the only
  * exit.
  *
- * One tab per kind of answer, and a tab is a place rather than a choice - a reader can look through
- * all four and change nothing. The dot on the rail says which tab the current choice lives in, so
- * looking around never loses track of it. Every tab is picked the same way, from a row; "Everyone"
- * simply has one row to pick.
+ * One tab per kind of answer. "Everyone" needs nothing further, so opening it is the answer; the
+ * other three list what exists and are answered by picking a row or writing an address. Making and
+ * keeping registries is a different question, so each list links to the manager rather than
+ * carrying its controls.
  */
 export function GateSettings({
   gate,
@@ -49,96 +49,133 @@ export function GateSettings({
   circlesRegistry: Address;
 }) {
   const access = useRegistries();
+  const registries = access?.registries ?? [];
 
-  // Which tab the current choice lives in. A registry the index does not know is a custom one,
-  // which is also where an address typed by hand lands.
-  const held = access?.registries.find(
+  const allowlists = registries.filter((registry) => registry.kind === 'allowlist');
+  const circles = registries.filter((registry) => registry.kind === 'circles');
+  const anchorNames = useCirclesNames(
+    useMemo(
+      () =>
+        circles
+          .map((registry) => registry.anchor)
+          .filter((anchor): anchor is Address => anchor !== undefined && anchor !== zeroAddress),
+      // The addresses matter, not the array the filter above builds on every render.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [registries],
+    ),
+  );
+
+  // The tab the debate's current choice lives in, which is where the modal opens.
+  const held = registries.find(
     (registry) => gate.mode === 'registry' && registry.address.toLowerCase() === gate.address.toLowerCase(),
   );
-  const currentTab: GateTab =
-    gate.mode === 'open'
-      ? 'everyone'
-      : gate.address.toLowerCase() === circlesRegistry.toLowerCase()
-        ? 'circles'
-        : held
-          ? held.kind === 'allowlist'
-            ? 'allowlists'
-            : 'circles'
-          : 'custom';
-
-  const [tab, setTab] = useState<GateTab>(currentTab);
-  const [customAddress, setCustomAddress] = useState(
-    currentTab === 'custom' && gate.mode === 'registry' ? gate.address : '',
+  const [tab, setTab] = useState<GateTab>(
+    gate.mode === 'open' ? 'everyone' : held ? (held.kind === 'allowlist' ? 'allowlists' : 'circles') : 'custom',
   );
+  const [managing, setManaging] = useState(false);
+  const [customAddress, setCustomAddress] = useState(gate.mode === 'registry' && !held ? gate.address : '');
+
   const picked = gate.mode === 'registry' ? gate.address : undefined;
   const pick = (address: Address, label: string) => onChange({ mode: 'registry', address, label });
 
+  const manage = (
+    <button type="button" className="btn btn-small" onClick={() => setManaging(true)}>
+      Manage registries
+    </button>
+  );
+
   return (
-    <Modal title="Who may join" onClose={onClose} wide>
-      <Tabs
-        active={tab}
-        onSelect={setTab}
-        tabs={[
-          { id: 'everyone', label: 'Everyone', current: currentTab === 'everyone' },
-          { id: 'allowlists', label: 'Allowlists', current: currentTab === 'allowlists' },
-          { id: 'circles', label: 'Circles', current: currentTab === 'circles' },
-          { id: 'custom', label: 'Custom registry', current: currentTab === 'custom' },
-        ]}
-      />
+    <>
+      <Modal title="Who may join" onClose={onClose} wide>
+        <Tabs
+          active={tab}
+          onSelect={(next) => {
+            setTab(next);
+            // Everyone is the whole answer, so opening it settles the question.
+            if (next === 'everyone') onChange({ mode: 'open' });
+          }}
+          tabs={[
+            { id: 'everyone', label: 'Everyone' },
+            { id: 'allowlists', label: 'Allowlists' },
+            { id: 'circles', label: 'Circles' },
+            { id: 'custom', label: 'Custom' },
+          ]}
+        />
 
-      <div className="tab-panel" role="tabpanel" hidden={tab !== 'everyone'}>
-        <div className="pick-list">
-          <PickRow
-            kind="Open"
-            label="anyone may join"
-            chosen={gate.mode === 'open'}
-            onChoose={() => onChange({ mode: 'open' })}
-          />
+        <div className="tab-panel" role="tabpanel" hidden={tab !== 'everyone'}>
+          <p className="composer-hint">Anyone may join.</p>
         </div>
-        <p className="composer-hint">No registry is asked on joining, so anyone holding the deposit can take part.</p>
-      </div>
 
-      <div className="tab-panel" role="tabpanel" hidden={tab !== 'allowlists'}>
-        {access ? (
-          <AllowlistPanel access={access} picked={picked} onPick={pick} />
-        ) : (
-          <p className="composer-hint">Registries need a deployment to read them from.</p>
-        )}
-      </div>
+        <div className="tab-panel" role="tabpanel" hidden={tab !== 'allowlists'}>
+          {allowlists.length === 0 ? (
+            <p className="composer-hint">No allowlists yet.</p>
+          ) : (
+            <div className="pick-list">
+              {allowlists.map((registry) => (
+                <PickRow
+                  key={registry.address}
+                  kind="Allowlist"
+                  label={<span className="mono">{shortAddress(registry.address)}</span>}
+                  chosen={registry.address === picked}
+                  onChoose={() => pick(registry.address, 'your allowlist')}
+                />
+              ))}
+            </div>
+          )}
+          {manage}
+        </div>
 
-      <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
-        {access ? (
-          <CirclesPanel access={access} preset={circlesRegistry} picked={picked} onPick={pick} />
-        ) : (
-          <p className="composer-hint">Registries need a deployment to read them from.</p>
-        )}
-      </div>
+        <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
+          {circles.length === 0 ? (
+            <p className="composer-hint">No Circles registries yet.</p>
+          ) : (
+            <div className="pick-list">
+              {circles.map((registry) => {
+                const label = circlesRegistryLabel(registry, registry.anchor && anchorNames[registry.anchor]);
+                return (
+                  <PickRow
+                    key={registry.address}
+                    kind="Circles"
+                    label={label}
+                    note={registry.address.toLowerCase() === circlesRegistry.toLowerCase() ? 'this network' : undefined}
+                    chosen={registry.address === picked}
+                    onChoose={() => pick(registry.address, label)}
+                  />
+                );
+              })}
+            </div>
+          )}
+          {manage}
+        </div>
 
-      <div className="tab-panel" role="tabpanel" hidden={tab !== 'custom'}>
-        <label className="duration-field">
-          <span className="duration-label">Registry address</span>
-          <input
-            type="text"
-            className="text-input"
-            inputMode="text"
-            spellCheck={false}
-            placeholder="0x…"
-            value={customAddress}
-            onChange={(event) => {
-              const next = event.target.value.trim();
-              setCustomAddress(next);
-              const [address] = parseAddressList(next).addresses;
-              if (address) pick(address, `members of ${shortAddress(address)}`);
-            }}
-          />
-          <span className="duration-hint">
-            Any identity registry by address, including one this app did not make. The same registry can serve any
-            number of debates, and it is asked on each join - so an account removed later cannot join, while debates it
-            already joined are unaffected.
-          </span>
-        </label>
-        {customAddress !== '' && !looksLikeAddress(customAddress) && <p className="action-error">Not an address.</p>}
-      </div>
-    </Modal>
+        <div className="tab-panel" role="tabpanel" hidden={tab !== 'custom'}>
+          <label className="duration-field">
+            <span className="duration-label">Registry address</span>
+            <input
+              type="text"
+              className="text-input mono"
+              inputMode="text"
+              spellCheck={false}
+              placeholder="0x…"
+              value={customAddress}
+              onChange={(event) => {
+                const next = event.target.value.trim();
+                setCustomAddress(next);
+                const [address] = parseAddressList(next).addresses;
+                if (address) pick(address, `members of ${shortAddress(address)}`);
+              }}
+            />
+            <span className="duration-hint">Any identity registry, by address.</span>
+          </label>
+          {customAddress !== '' && !looksLikeAddress(customAddress) && <p className="action-error">Not an address.</p>}
+        </div>
+      </Modal>
+
+      {managing && (
+        <Modal title="Manage registries" onClose={() => setManaging(false)} wide>
+          <RegistryManager />
+        </Modal>
+      )}
+    </>
   );
 }

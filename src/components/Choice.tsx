@@ -11,34 +11,26 @@ import type { ReactNode } from 'react';
  *   so a preset is never a state you are in.
  * - `PickRow` is one candidate in a list too long or too wordy for segments.
  *
- * `CurrentDot` is the one mark shared across them: your current state is here. It sits on the tab
- * holding the choice and on the preset the values still match, and it goes out the moment that
- * stops being true - which is why a preset needs no other highlight.
+ * `CurrentDot` marks a preset the values still match, and goes out the moment they stop matching -
+ * which is why a preset needs no other highlight.
  */
 export function CurrentDot() {
   return <span className="current-dot" aria-hidden="true" />;
 }
 
-/**
- * A rail of places. Selecting a tab shows its panel and nothing else - a reader can look through
- * every tab and change nothing - so a host that keeps a choice marks the tab holding it.
- */
+/** A rail of places. Selecting a tab shows its panel; what a panel then does is its own. */
 export function Tabs<Id extends string>({
   tabs,
   active,
   onSelect,
 }: {
-  tabs: ReadonlyArray<{
-    id: Id;
-    label: string;
-    /** The reader's current choice lives in this tab. */ current?: boolean;
-  }>;
+  tabs: ReadonlyArray<{ id: Id; label: string }>;
   active: Id;
   onSelect: (id: Id) => void;
 }) {
   return (
     <div className="tab-row" role="tablist">
-      {tabs.map(({ id, label, current }) => (
+      {tabs.map(({ id, label }) => (
         <button
           key={id}
           type="button"
@@ -48,7 +40,6 @@ export function Tabs<Id extends string>({
           onClick={() => onSelect(id)}
         >
           {label}
-          {current && <CurrentDot />}
         </button>
       ))}
     </div>
@@ -142,7 +133,6 @@ export function PickRow({
       <span className="pick-row-kind">{kind}</span>
       <span>{label}</span>
       {note && <span className="pick-row-note">{note}</span>}
-      {chosen && <CurrentDot />}
     </>
   );
   return onChoose ? (

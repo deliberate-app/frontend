@@ -49,12 +49,13 @@ contouring are exactly right — treat them as the baseline to protect.)
    against, the UI warns softly rather than forbidding.
 8. **One element per kind of choice.** Four controls, four jobs, kept visually apart because the
    difference is what the reader is reading (`Choice.tsx`). **Tabs** are places: a hairline rail
-   with ink under the one you are in, and switching never changes a value. **Segmented** is one
-   value with a few named states, drawn as a single enclosed track whose filled cell is the state.
-   **Presets** are verbs that write values you may then edit, drawn as separate quiet outlined
-   chips, never filled — a preset is something you did, not somewhere you are. **PickRow** is one
-   candidate in a list too long or too wordy for segments. The dot is the one mark across all of
-   them: your current state is here.
+   with ink under the one you are in. A panel answers its own question, except where a tab is
+   itself the whole answer ("Everyone"), which opening it settles. **Segmented** is one value with
+   a few named states, drawn as a single enclosed track whose filled cell is the state. **Presets**
+   are verbs that write values you may then edit, drawn as separate quiet outlined chips, never
+   filled — a preset is something you did, not somewhere you are, and the dot marks the one the
+   fields still match. **PickRow** is one candidate in a list too long or too wordy for segments;
+   the chosen one is marked by its border.
 9. **Neutral looks neutral.** Ratings and impacts are signed percentages around ±0 with diverging,
    center-anchored gauges — a 50% market reads as ±0%, not as "half full".
 10. **Hard rules block, guidance warns, hints stay short.** Constraints the contract enforces are
@@ -84,14 +85,15 @@ contouring are exactly right — treat them as the baseline to protect.)
   dot meaning "your current state is here", which sits on the tab holding the choice and on the
   preset the fields still match, and goes out on the first edit. A preset is never filled, because
   filling is what a state looks like. `Choice.tsx` holds all four so they cannot drift apart.
-- **2026-09-05 — "Who may join" is four tabs, and a tab is a place.** The modal used to open with
-  two preset chips above a list, so "Everyone" and "Circles humans" were choices while everything
-  else was a list, and the Circles registry the deployment owns could not be picked from the list
-  at all. It is now Everyone | Allowlists | Circles | Custom registry, and switching tabs changes
-  nothing — a creator can read all four and still hold the choice they arrived with. Every tab is
-  picked the same way, from a row; Everyone simply has one row. The rail's dot says which tab the
-  choice lives in, so looking around never loses it. The gate's draft lost its third mode with
-  this: the Circles preset is a registry like any other, offered as the first row of its tab.
+- **2026-09-05 — "Who may join" asks one question, and sends the others away.** The modal used to
+  open with two preset chips above a list, so "Everyone" and "Circles humans" were choices while
+  everything else was a list. It is now Everyone | Allowlists | Circles | Custom. Everyone needs
+  nothing further, so opening that tab is the answer; the other three list what exists and are
+  answered by picking a row or writing an address. Making a registry, keeping its members and
+  searching Circles are a different question, so the lists link to **Manage registries** rather
+  than carrying those controls — the modal that chooses is not the modal that keeps. The gate's
+  draft lost its third mode with this: the deployment's Circles registry is a row like any other,
+  marked "this network".
 - **2026-09-05 — registries are kept in one manager, on two tabs.** They were managed in two
   places at once: the wallet menu kept allowlists, and "Who may join" made both kinds without
   knowing about the other place, so the same list had two homes with different vocabularies. One
