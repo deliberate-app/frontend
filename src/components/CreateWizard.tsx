@@ -14,7 +14,10 @@ import { gateAddress, gateLabel, ParticipantFields, type GateDraft } from './Gat
 import { Modal } from './Modal';
 import { ScheduleFields } from './ScheduleSettings';
 
-const STEPS = ['Thesis', 'Schedule', 'Participants', 'Fee', 'Bounty'] as const;
+const STEPS = ['Thesis', 'Schedule', 'Participants', 'Fee', 'Bounty', 'Summary'] as const;
+
+/** What still stands between the summary and a signature, wherever in the form it was left. */
+const unfinishedOf = (...problems: (string | null)[]) => problems.find((problem) => problem !== null) ?? null;
 
 /**
  * Starting a debate, in five steps.
@@ -64,10 +67,10 @@ export function CreateWizard({
   const badSchedule = scheduleError(schedule);
   const badFee = feeError(fee);
   // What keeps this step from being left, and on the last step from being signed.
-  const blocking = [badThesis, badSchedule, null, badFee, null][step] ?? null;
+  const blocking =
+    [badThesis, badSchedule, null, badFee, null, unfinishedOf(badThesis, badSchedule, badFee)][step] ?? null;
   // An untouched thesis is not a mistake yet, so the disabled Next says it rather than a red line.
   const shown = step === 0 && thesis === '' ? null : blocking;
-  const unfinished = badThesis ?? badSchedule ?? badFee;
   const last = step === STEPS.length - 1;
 
   const create = async () => {
@@ -120,14 +123,35 @@ export function CreateWizard({
 
       <div className="tab-panel" hidden={step !== 4}>
         <BountyFields bounty={bounty} onChange={setBounty} resolveToken={resolveToken} />
-        <p className="facts wizard-summary">
-          <span>locking {formatDuration(schedule.lockingDuration)}</span>
-          <span>editing {formatDuration(schedule.editingDuration)}</span>
-          <span>rating {formatDuration(schedule.ratingDuration)}</span>
-          <span>fee {fee}%</span>
-          <span>{gateLabel(gate)}</span>
-          <span>{bounty ? `bounty ${formatTokenAmount(bounty.amount, bounty.token)}` : 'no bounty'}</span>
-        </p>
+      </div>
+
+      <div className="tab-panel" hidden={step !== 5}>
+        <dl className="summary-list">
+          <div className="summary-row">
+            <dt>Thesis</dt>
+            <dd>{thesis.trim() === '' ? 'Not written yet' : thesis.trim()}</dd>
+          </div>
+          <div className="summary-row">
+            <dt>Schedule</dt>
+            <dd className="facts">
+              <span>locking {formatDuration(schedule.lockingDuration)}</span>
+              <span>editing {formatDuration(schedule.editingDuration)}</span>
+              <span>rating {formatDuration(schedule.ratingDuration)}</span>
+            </dd>
+          </div>
+          <div className="summary-row">
+            <dt>Participants</dt>
+            <dd>{gateLabel(gate)}</dd>
+          </div>
+          <div className="summary-row">
+            <dt>Fee</dt>
+            <dd>{fee}%</dd>
+          </div>
+          <div className="summary-row">
+            <dt>Bounty</dt>
+            <dd>{bounty ? formatTokenAmount(bounty.amount, bounty.token) : 'None'}</dd>
+          </div>
+        </dl>
       </div>
 
       <div className="action-row">
@@ -143,8 +167,8 @@ export function CreateWizard({
             <button
               type="button"
               className="btn btn-solid"
-              disabled={busy || unfinished !== null}
-              title={unfinished ?? undefined}
+              disabled={busy || blocking !== null}
+              title={blocking ?? undefined}
               onClick={() => void create()}
             >
               {busy ? 'Starting…' : 'Start debate'}

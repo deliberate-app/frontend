@@ -2280,13 +2280,28 @@ button {
   color: var(--canvas);
 }
 
-/* What the last step is about to create, so nothing is signed unseen. */
-.wizard-summary {
+/* What is about to be created, so nothing is signed unseen. */
+.summary-list {
+  display: grid;
+  gap: 0.6rem;
   margin: 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--hairline);
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.summary-row dt {
   font-size: 0.78rem;
   color: var(--bark);
+}
+
+.summary-row dd {
+  margin: 0;
+  font-size: 0.85rem;
 }
 
 /* A field that takes a name or an address, as wide as the dialog. The boxes in .duration-inputs
