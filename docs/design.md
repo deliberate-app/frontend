@@ -34,10 +34,12 @@ contouring are exactly right — treat them as the baseline to protect.)
 4. **Dashed means "compose".** A dashed border marks the affordance for adding something (reply
    composers, "+ Start a debate"). The landing page's primary action is the assertive variant — ink
    dashes on card white that solidify on hover — and an enabled control must never look disabled.
-5. **Settings live on the value they edit.** A configuration affordance is the summary of the
-   current values itself (the schedule chip with the trailing cog), not a detached button; clicking
-   it opens the editor. Corner-gear and "Advanced options" disclosures were considered and rejected:
-   the first needs a card header we don't have, the second hides information worth glancing at.
+5. **Settings live on the value they edit — once the value exists.** A configuration affordance is
+   the summary of the current values itself, not a detached button; clicking it opens the editor.
+   Corner-gear and "Advanced options" disclosures were considered and rejected: the first needs a
+   card header we don't have, the second hides information worth glancing at. Creating a debate is
+   the exception, and not really an exception: there is no value yet to hang a setting on, so the
+   five questions are asked as a form (`CreateWizard`), in order, each arriving already answered.
 6. **Config modals edit live.** Changes apply the moment they are made — the summary behind the
    modal visibly updates — so there is no Accept/Done/Reset footer; the cross and the backdrop are
    the only exits. Validity gates the downstream action (the create button, with an explanatory
@@ -77,6 +79,15 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-05 — a debate is started in five steps, not five kinds of control.** The create panel
+  was a textarea plus a row of chips, and each chip opened a modal built differently from the
+  others: presets in one, a bare number in another, a list in a third. Five decisions that make one
+  debate looked like five unrelated features, and the reader had to discover each control before
+  they could judge it. It is one form now — Thesis, Schedule, Participants, Fee, Bounty — walked
+  with Back and Next, where every step but the thesis arrives already answered, so clicking through
+  is a complete answer. The steps stay clickable in any order, since none can be left unanswered,
+  and the last one carries a one-line summary of what is about to be signed. The four settings
+  modals became the step bodies, keeping the timing presets. (Principles 5, 8.)
 - **2026-09-05 — one element per kind of choice.** The same chip was doing four jobs: a schedule
   preset (a verb that fills three fields, whose highlight was a coincidence check that silently
   lied after any edit), a bounty token (a real state), the join gate's mode (a real state) and the

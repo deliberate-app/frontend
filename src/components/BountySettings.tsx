@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Segmented } from './Choice';
-import { Modal } from './Modal';
 import { isAddress } from 'viem';
 import { BOUNTY_TOKEN_PRESETS, formatTokenAmount, parseTokenAmount, type TokenInfo } from '../lib/tokens';
 
@@ -11,20 +10,16 @@ export interface BountyDraft {
 }
 
 /**
- * The bounty modal of the create form, mirroring the schedule settings' live-editing model: one
- * track holding every state a bounty can be in - none, a known token, or any ERC-20 by address -
- * and the amount in human units. Changes apply live to the summary chip behind the modal; the
- * cross and the backdrop close.
+ * The bounty step: one track holding every state a bounty can be in - none, a known token, or any
+ * ERC-20 by address - and the amount in human units.
  */
-export function BountySettings({
+export function BountyFields({
   bounty,
   onChange,
-  onClose,
   resolveToken,
 }: {
   bounty: BountyDraft | null;
   onChange: (bounty: BountyDraft | null) => void;
-  onClose: () => void;
   /** Resolves a custom address to its token identity (chain read); absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
 }) {
@@ -77,12 +72,8 @@ export function BountySettings({
   };
 
   return (
-    <Modal title="Bounty" onClose={onClose}>
-      <p className="composer-hint">
-        An ERC-20 bounty for participants who end with an excess - more vote tokens than they were granted on joining.
-        Unclaimed remainder returns to you after the 7-day claim window; anyone can top the bounty up while the debate
-        runs.
-      </p>
+    <>
+      <p className="composer-hint">Paid to participants who end with more vote tokens than they were granted.</p>
 
       <Segmented
         label="Bounty token"
@@ -116,9 +107,7 @@ export function BountySettings({
           onChange={(event) => setCustomAddress(event.target.value)}
           onBlur={() => void (customAddress.trim() !== '' && pickCustom())}
         />
-        <span className="duration-hint">
-          {customBusy ? 'Reading the token…' : 'Any ERC-20 address; symbol and decimals are read from the chain.'}
-        </span>
+        <span className="duration-hint">{customBusy ? 'Reading the token…' : 'Any ERC-20 address.'}</span>
         {customError && <span className="action-error">{customError}</span>}
       </label>
 
@@ -138,13 +127,10 @@ export function BountySettings({
             />
             <span className="duration-unit-label">{bounty.token.symbol}</span>
           </span>
-          <span className="duration-hint">
-            Pulled from your wallet at creation (an approval is asked first); zero names the token and leaves the
-            funding to top-ups.
-          </span>
+          <span className="duration-hint">Pulled from your wallet at creation; zero leaves it to top-ups.</span>
           {amountError && <span className="action-error">{amountError}</span>}
         </label>
       )}
-    </Modal>
+    </>
   );
 }

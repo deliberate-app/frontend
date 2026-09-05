@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
  * - `Presets` are verbs. They write values into the fields below, which you are then free to edit,
  *   so a preset is never a state you are in.
  * - `PickRow` is one candidate in a list too long or too wordy for segments.
+ * - `Steps` is an ordered walk through a form, numbered because the order carries meaning.
  *
  * `CurrentDot` marks a preset the values still match, and goes out the moment they stop matching -
  * which is why a preset needs no other highlight.
@@ -141,5 +142,42 @@ export function PickRow({
     </button>
   ) : (
     <div className={`pick-row pick-row-static${marks}`}>{body}</div>
+  );
+}
+
+/**
+ * The steps of a form taken in order. Numbered, because unlike tabs the order is part of what the
+ * reader is being told, and marked rather than underlined so a step rail never reads as a tab rail
+ * - the two can sit in one dialog, as the participants step does.
+ *
+ * Every step stays reachable. Each one carries a default, so none of them can be left unanswered,
+ * and a reader who wants to change something three steps back should not have to walk forward
+ * again to get there.
+ */
+export function Steps({
+  steps,
+  active,
+  onSelect,
+}: {
+  steps: readonly string[];
+  active: number;
+  onSelect: (index: number) => void;
+}) {
+  return (
+    <ol className="step-row">
+      {steps.map((label, index) => (
+        <li key={label}>
+          <button
+            type="button"
+            className={`step ${index === active ? 'step-current' : index < active ? 'step-done' : ''}`}
+            aria-current={index === active ? 'step' : undefined}
+            onClick={() => onSelect(index)}
+          >
+            <span className="step-mark">{index + 1}</span>
+            {label}
+          </button>
+        </li>
+      ))}
+    </ol>
   );
 }

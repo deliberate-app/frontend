@@ -1845,40 +1845,6 @@ button {
   white-space: nowrap;
 }
 
-/* The schedule and bounty chips share one row, wrapping when the width runs out. */
-.composer-config {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.schedule-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  align-self: flex-start;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--hairline);
-  border-radius: 999px;
-  background: none;
-  color: var(--bark);
-  font-size: 0.8rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.schedule-chip:hover {
-  border-color: var(--bark);
-  color: var(--ink);
-}
-
-.gear-icon {
-  width: 1.2em;
-  height: 1.2em;
-  display: block;
-}
-
 /* The landing page's primary action: dashed like every composer, but assertive. */
 .create-open {
   border: 1.5px dashed var(--ink);
@@ -2205,6 +2171,7 @@ button {
    preset chips: a hairline rail, and ink under the one you are in. */
 .tab-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   border-bottom: 1px solid var(--hairline);
 }
@@ -2228,6 +2195,74 @@ button {
 .tab-active {
   color: var(--ink);
   border-bottom-color: var(--ink);
+}
+
+/* The steps of a form, numbered because the order is part of what they say. Marked rather than
+   underlined, so a step rail never reads as a tab rail even when both sit in one dialog. */
+.step-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--bark);
+  cursor: pointer;
+}
+
+.step:hover {
+  color: var(--ink);
+}
+
+.step-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  flex: none;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.step-done {
+  color: var(--ink);
+}
+
+.step-done .step-mark {
+  border-color: var(--bark);
+}
+
+.step-current {
+  color: var(--ink);
+}
+
+.step-current .step-mark {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+/* What the last step is about to create, so nothing is signed unseen. */
+.wizard-summary {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hairline);
+  font-size: 0.78rem;
+  color: var(--bark);
 }
 
 /* A field that takes a name or an address, as wide as the dialog. The boxes in .duration-inputs

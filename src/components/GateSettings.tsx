@@ -27,24 +27,20 @@ export function gateLabel(gate: GateDraft): string {
 type GateTab = 'everyone' | 'allowlists' | 'circles' | 'custom';
 
 /**
- * The cogwheel modal choosing a debate's join gate before creation. Edits apply live, like the
- * other settings modals: the chip behind it updates as the choice changes, and closing is the only
- * exit.
+ * The participants step: who the registry will admit when someone tries to join.
  *
  * One tab per kind of answer. "Everyone" needs nothing further, so opening it is the answer; the
  * other three list what exists and are answered by picking a row or writing an address. Making and
  * keeping registries is a different question, so each list links to the manager rather than
  * carrying its controls.
  */
-export function GateSettings({
+export function ParticipantFields({
   gate,
   onChange,
-  onClose,
   circlesRegistry,
 }: {
   gate: GateDraft;
   onChange: (gate: GateDraft) => void;
-  onClose: () => void;
   /** The deployment's Circles preset registry. */
   circlesRegistry: Address;
 }) {
@@ -86,90 +82,88 @@ export function GateSettings({
 
   return (
     <>
-      <Modal title="Who may join" onClose={onClose} wide>
-        <Tabs
-          active={tab}
-          onSelect={(next) => {
-            setTab(next);
-            // Everyone is the whole answer, so opening it settles the question.
-            if (next === 'everyone') onChange({ mode: 'open' });
-          }}
-          tabs={[
-            { id: 'everyone', label: 'Everyone' },
-            { id: 'allowlists', label: 'Allowlists' },
-            { id: 'circles', label: 'Circles' },
-            { id: 'custom', label: 'Custom' },
-          ]}
-        />
+      <Tabs
+        active={tab}
+        onSelect={(next) => {
+          setTab(next);
+          // Everyone is the whole answer, so opening it settles the question.
+          if (next === 'everyone') onChange({ mode: 'open' });
+        }}
+        tabs={[
+          { id: 'everyone', label: 'Everyone' },
+          { id: 'allowlists', label: 'Allowlists' },
+          { id: 'circles', label: 'Circles' },
+          { id: 'custom', label: 'Custom' },
+        ]}
+      />
 
-        <div className="tab-panel" role="tabpanel" hidden={tab !== 'everyone'}>
-          <p className="composer-hint">Anyone may join.</p>
-        </div>
+      <div className="tab-panel" role="tabpanel" hidden={tab !== 'everyone'}>
+        <p className="composer-hint">Anyone may join.</p>
+      </div>
 
-        <div className="tab-panel" role="tabpanel" hidden={tab !== 'allowlists'}>
-          {allowlists.length === 0 ? (
-            <p className="composer-hint">No allowlists yet.</p>
-          ) : (
-            <div className="pick-list">
-              {allowlists.map((registry) => (
+      <div className="tab-panel" role="tabpanel" hidden={tab !== 'allowlists'}>
+        {allowlists.length === 0 ? (
+          <p className="composer-hint">No allowlists yet.</p>
+        ) : (
+          <div className="pick-list">
+            {allowlists.map((registry) => (
+              <PickRow
+                key={registry.address}
+                kind="Allowlist"
+                label={<span className="mono">{shortAddress(registry.address)}</span>}
+                chosen={registry.address === picked}
+                onChoose={() => pick(registry.address, 'your allowlist')}
+              />
+            ))}
+          </div>
+        )}
+        {manage}
+      </div>
+
+      <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
+        {circles.length === 0 ? (
+          <p className="composer-hint">No Circles registries yet.</p>
+        ) : (
+          <div className="pick-list">
+            {circles.map((registry) => {
+              const label = circlesRegistryLabel(registry, registry.anchor && anchorNames[registry.anchor]);
+              return (
                 <PickRow
                   key={registry.address}
-                  kind="Allowlist"
-                  label={<span className="mono">{shortAddress(registry.address)}</span>}
+                  kind="Circles"
+                  label={label}
+                  note={registry.address.toLowerCase() === circlesRegistry.toLowerCase() ? 'this network' : undefined}
                   chosen={registry.address === picked}
-                  onChoose={() => pick(registry.address, 'your allowlist')}
+                  onChoose={() => pick(registry.address, label)}
                 />
-              ))}
-            </div>
-          )}
-          {manage}
-        </div>
+              );
+            })}
+          </div>
+        )}
+        {manage}
+      </div>
 
-        <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
-          {circles.length === 0 ? (
-            <p className="composer-hint">No Circles registries yet.</p>
-          ) : (
-            <div className="pick-list">
-              {circles.map((registry) => {
-                const label = circlesRegistryLabel(registry, registry.anchor && anchorNames[registry.anchor]);
-                return (
-                  <PickRow
-                    key={registry.address}
-                    kind="Circles"
-                    label={label}
-                    note={registry.address.toLowerCase() === circlesRegistry.toLowerCase() ? 'this network' : undefined}
-                    chosen={registry.address === picked}
-                    onChoose={() => pick(registry.address, label)}
-                  />
-                );
-              })}
-            </div>
-          )}
-          {manage}
-        </div>
-
-        <div className="tab-panel" role="tabpanel" hidden={tab !== 'custom'}>
-          <label className="duration-field">
-            <span className="duration-label">Registry address</span>
-            <input
-              type="text"
-              className="text-input mono"
-              inputMode="text"
-              spellCheck={false}
-              placeholder="0x…"
-              value={customAddress}
-              onChange={(event) => {
-                const next = event.target.value.trim();
-                setCustomAddress(next);
-                const [address] = parseAddressList(next).addresses;
-                if (address) pick(address, `members of ${shortAddress(address)}`);
-              }}
-            />
-            <span className="duration-hint">Any identity registry, by address.</span>
-          </label>
-          {customAddress !== '' && !looksLikeAddress(customAddress) && <p className="action-error">Not an address.</p>}
-        </div>
-      </Modal>
+      <div className="tab-panel" role="tabpanel" hidden={tab !== 'custom'}>
+        <label className="duration-field">
+          <span className="duration-label">Registry address</span>
+          <input
+            type="text"
+            className="text-input mono"
+            inputMode="text"
+            spellCheck={false}
+            placeholder="0x…"
+            value={customAddress}
+            onChange={(event) => {
+              const next = event.target.value.trim();
+              setCustomAddress(next);
+              const [address] = parseAddressList(next).addresses;
+              if (address) pick(address, `members of ${shortAddress(address)}`);
+            }}
+          />
+          <span className="duration-hint">Any identity registry, by address.</span>
+        </label>
+        {customAddress !== '' && !looksLikeAddress(customAddress) && <p className="action-error">Not an address.</p>}
+      </div>
 
       {managing && (
         <Modal title="Manage registries" onClose={() => setManaging(false)} wide>
