@@ -4,23 +4,29 @@ import { actionErrorMessage } from '../data/actions';
 import type { RegistryAccess } from '../data/registries';
 import { useRegistries } from '../data/registries';
 import type { IdentityRegistryInfo } from '../data/source';
-import { looksLikeAddress, parseAddressList, shortAddress, writeAddressRow } from '../lib/address';
+import { shortAddress } from '../lib/address';
 import { searchCirclesAvatars, useCirclesNames, type CirclesAvatar } from '../lib/circles';
-import { AddressBadge } from './AddressBadge';
+import { useRegistryNames } from '../lib/registryNames';
 import { PickRow, Segmented, Tabs } from './Choice';
+import { ModifyAllowlist } from './ModifyAllowlist';
 
 /** Why the manager is showing lists but offering no way to add to them. */
 const NEEDS_WALLET = 'Connect a wallet to make one.';
 
-/** Who a Circles registry admits, in the words the app uses for it everywhere. */
+/**
+ * Who a Circles registry admits, in the words the app uses for it everywhere.
+ *
+ * "People" is what Circles registers an avatar as, which is a social graph rather than a proof of
+ * personhood, so the option that says so carries the caveat and the label stays plain.
+ */
 export const admits = (requireHuman: boolean, who: string) =>
-  requireHuman ? `Circles humans that ${who} trusts` : `accounts that ${who} trusts`;
+  requireHuman ? `the people ${who} trusts` : `anyone ${who} trusts`;
 
 /** How a Circles registry reads, given what Circles calls its anchor. */
 export function circlesRegistryLabel(registry: IdentityRegistryInfo, anchorName?: string): string {
   const anchor = registry.anchor ?? zeroAddress;
   return anchor === zeroAddress
-    ? 'every Circles human'
+    ? 'every person on Circles'
     : admits(registry.requireHuman ?? false, anchorName ?? shortAddress(anchor));
 }
 
@@ -35,27 +41,12 @@ const currentFactoryFirst = (registries: IdentityRegistryInfo[], factory?: Addre
   [...registries].sort((a, b) => Number(fromOlderFactory(a, factory)) - Number(fromOlderFactory(b, factory)));
 
 /**
- * How one row of the account list reads: empty rows are the dashed invitation to write the next
- * account (principle 4), and a row that is not an address says so on its own edge.
+ * The allowlists this account keeps. One row each, and one way to make another - who is on a list
+ * is a question for that list, answered in `ModifyAllowlist`, so it does not sit between the rows
+ * and the button that adds to them.
  */
-const addressRowMark = (row: string) =>
-  row.trim() === '' ? ' address-row-empty' : looksLikeAddress(row) ? '' : ' address-row-invalid';
-
-/** An address as it reads on a row: the app's one truncation, in the app's one address face. */
-const mono = (address: Address) => <span className="mono">{shortAddress(address)}</span>;
-
-/**
- * The allowlists this account keeps, and who is on the one it is looking at.
- *
- * Accounts arrive as a list rather than one at a time. A list is how they exist elsewhere - a
- * spreadsheet column, a message, another app's export - and adding thirty of them through a single
- * field is thirty transactions where the contract takes one.
- */
-export function AllowlistPanel({
-  access: { registries, factory, loadMembers, setMembership, createAllowlist },
-}: {
-  access: RegistryAccess;
-}) {
+export function AllowlistPanel({ access }: { access: RegistryAccess }) {
+  const { registries, factory, createAllowlist } = access;
   const allowlists = useMemo(
     () =>
       currentFactoryFirst(
@@ -65,63 +56,22 @@ export function AllowlistPanel({
     [registries, factory],
   );
 
-  const [selected, setSelected] = useState<Address | null>(null);
-  // The list whose members are shown, derived so a reload cannot leave it pointing at nothing.
-  const holds = (address?: Address | null) => allowlists.some((registry) => registry.address === address);
-  const current = (holds(selected) ? selected : allowlists[0]?.address) ?? null;
-
-  const [members, setMembers] = useState<Address[] | null>(null);
-  const [checked, setChecked] = useState<Address[]>([]);
-  const [rows, setRows] = useState<string[]>(['']);
-  const [busy, setBusy] = useState<'creating' | 'adding' | 'removing' | null>(null);
+  const [editing, setEditing] = useState<Address | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (current === null) return;
-    let stale = false;
-    setMembers(null);
-    setChecked([]);
-    loadMembers(current)
-      .then((loaded) => {
-        if (!stale) setMembers(loaded);
-      })
-      .catch((cause) => {
-        if (!stale) setError(actionErrorMessage(cause));
-      });
-    return () => {
-      stale = true;
-    };
-  }, [current, loadMembers]);
-
-  const names = useCirclesNames(members ?? []);
-  const pasted = useMemo(() => parseAddressList(rows.join(' ')), [rows]);
-
-  const change = async (accounts: Address[], member: boolean) => {
-    if (current === null || !setMembership) return;
-    setBusy(member ? 'adding' : 'removing');
-    setError(null);
-    try {
-      await setMembership(current, accounts, member);
-      setMembers(await loadMembers(current));
-      setChecked([]);
-      if (member) setRows(['']);
-    } catch (cause) {
-      setError(actionErrorMessage(cause));
-    } finally {
-      setBusy(null);
-    }
-  };
+  const names = useRegistryNames();
 
   const create = async () => {
     if (!createAllowlist) return;
-    setBusy('creating');
+    setBusy(true);
     setError(null);
     try {
-      setSelected(await createAllowlist());
+      // Straight into the new list, which is where naming it and filling it happen.
+      setEditing(await createAllowlist());
     } catch (cause) {
       setError(actionErrorMessage(cause));
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -135,107 +85,31 @@ export function AllowlistPanel({
             <PickRow
               key={registry.address}
               kind="Allowlist"
-              label={mono(registry.address)}
-              note={fromOlderFactory(registry, factory) ? 'older factory' : undefined}
-              current={registry.address === current}
-              onChoose={() => setSelected(registry.address)}
+              label={names[registry.address.toLowerCase()] ?? 'Unnamed'}
+              note={
+                <>
+                  {fromOlderFactory(registry, factory) && <span className="pick-row-aside">older factory</span>}
+                  <span className="btn btn-small">Edit</span>
+                </>
+              }
+              sub={<span className="mono address-full">{registry.address}</span>}
+              onChoose={() => setEditing(registry.address)}
             />
           ))}
         </div>
       )}
 
       {createAllowlist ? (
-        <button type="button" className="btn btn-small" disabled={busy !== null} onClick={() => void create()}>
-          {busy === 'creating' ? 'Creating…' : 'New allowlist'}
+        <button type="button" className="btn btn-small" disabled={busy} onClick={() => void create()}>
+          {busy ? 'Creating…' : 'New allowlist'}
         </button>
       ) : (
         <p className="composer-hint">{NEEDS_WALLET}</p>
       )}
 
-      {current !== null && (
-        <>
-          <p className="member-row member-head">
-            {members === null
-              ? 'Loading the list…'
-              : members.length === 0
-                ? 'Nobody on this list yet.'
-                : `${members.length} ${members.length === 1 ? 'account' : 'accounts'} on this list`}
-            {checked.length > 0 && (
-              <button
-                type="button"
-                className="btn btn-small member-remove"
-                disabled={busy !== null}
-                onClick={() => void change(checked, false)}
-              >
-                {busy === 'removing' ? 'Removing…' : `Remove ${checked.length}`}
-              </button>
-            )}
-          </p>
-
-          {members !== null && members.length > 0 && (
-            <ul className="member-list">
-              {members.map((member) => (
-                <li key={member} className="member-row">
-                  {setMembership ? (
-                    <label className="member-pick">
-                      <input
-                        type="checkbox"
-                        checked={checked.includes(member)}
-                        onChange={(event) =>
-                          setChecked((chosen) =>
-                            event.target.checked ? [...chosen, member] : chosen.filter((one) => one !== member),
-                          )
-                        }
-                      />
-                      <AddressBadge address={member} />
-                    </label>
-                  ) : (
-                    <AddressBadge address={member} />
-                  )}
-                  {names[member] && <span className="member-name">{names[member]}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {setMembership && (
-            <>
-              <div className="duration-field">
-                <span className="duration-label">Add accounts</span>
-                <div className="address-rows">
-                  {rows.map((row, index) => (
-                    <input
-                      // Rows are addressed by position: a paste inserts several at once, and the
-                      // value each input shows comes from the state rather than from the element.
-                      key={index}
-                      type="text"
-                      className={`text-input address-row${addressRowMark(row)}`}
-                      spellCheck={false}
-                      placeholder="0x…"
-                      value={row}
-                      onChange={(event) => setRows((current) => writeAddressRow(current, index, event.target.value))}
-                    />
-                  ))}
-                </div>
-                <span className="duration-hint">One per row; paste a list to fill several.</span>
-              </div>
-
-              {pasted.addresses.length > 0 && (
-                <button
-                  type="button"
-                  className="btn btn-small"
-                  disabled={busy !== null}
-                  onClick={() => void change(pasted.addresses, true)}
-                >
-                  {busy === 'adding' ? 'Adding…' : `Add ${pasted.addresses.length}`}
-                </button>
-              )}
-            </>
-          )}
-        </>
-      )}
-
       {error && <p className="action-error">{error}</p>}
+
+      {editing && <ModifyAllowlist registry={editing} access={access} onClose={() => setEditing(null)} />}
     </>
   );
 }
@@ -318,22 +192,18 @@ export function CirclesPanel({ access: { registries, factory, createCircles } }:
                 key={registry.address}
                 kind="Circles"
                 label={label}
-                note={
-                  <>
-                    {mono(registry.address)}
-                    {fromOlderFactory(registry, factory) && ', older factory'}
-                  </>
-                }
+                note={fromOlderFactory(registry, factory) ? 'older factory' : undefined}
+                sub={<span className="mono address-full">{registry.address}</span>}
               />
             );
           })}
         </div>
       )}
 
-      <p className="composer-hint">A Circles registry admits the accounts an avatar trusts.</p>
+      <p className="composer-hint">Admits the accounts a Circles avatar trusts.</p>
 
       <label className="duration-field">
-        <span className="duration-label">Anchor</span>
+        <span className="duration-label">Avatar</span>
         <input
           type="search"
           className="text-input"
@@ -345,19 +215,20 @@ export function CirclesPanel({ access: { registries, factory, createCircles } }:
             setQuery(event.target.value);
           }}
         />
+        <span className="duration-hint">A Circles account: a person, a group or an organization.</span>
       </label>
 
       {anchor === null && found !== null && (
         <div className="pick-list pick-list-scroll">
           {found.length === 0 ? (
-            <p className="composer-hint">No Circles avatar goes by that name.</p>
+            <p className="composer-hint">No avatar goes by that name.</p>
           ) : (
             found.map((avatar) => (
               <PickRow
                 key={avatar.address}
                 kind={avatar.kind}
                 label={avatar.name}
-                note={mono(avatar.address)}
+                sub={<span className="mono address-full">{avatar.address}</span>}
                 onChoose={() => setAnchor(avatar)}
               />
             ))
@@ -368,12 +239,12 @@ export function CirclesPanel({ access: { registries, factory, createCircles } }:
       {anchor && (
         <>
           <Segmented
-            label="Who the anchor's trust admits"
-            value={requireHuman ? 'humans' : 'anyone'}
-            onChange={(who) => setRequireHuman(who === 'humans')}
+            label="Who this registry admits"
+            value={requireHuman ? 'people' : 'any'}
+            onChange={(who) => setRequireHuman(who === 'people')}
             options={[
-              { id: 'humans', label: 'Humans it trusts' },
-              { id: 'anyone', label: 'Anyone it trusts' },
+              { id: 'people', label: 'People', title: 'Accounts Circles registered as a person.' },
+              { id: 'any', label: 'Any avatar', title: 'People, groups and organizations alike.' },
             ]}
           />
           <p className="composer-hint">Admits {admits(requireHuman, anchor.name)}.</p>

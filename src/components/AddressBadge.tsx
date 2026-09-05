@@ -52,18 +52,21 @@ export function AddressBadge({
   address,
   label,
   asAddress,
+  full,
 }: {
   address: string;
   label?: string;
   /** Leave the marker off where the address is already known to be the viewer's own. */
   asAddress?: boolean;
+  /** Print the whole address, where the row has room and the reader is checking it. */
+  full?: boolean;
 }) {
   const viewer = useContext(ViewerAccount);
   const isViewer = !asAddress && viewer !== null && viewer.toLowerCase() === address.toLowerCase();
   return (
     <span className="address-badge">
       <IdenticonIcon address={address} />
-      <span className="mono">{label ?? shortAddress(address)}</span>
+      <span className={`mono ${full ? 'address-full' : ''}`}>{label ?? (full ? address : shortAddress(address))}</span>
       {isViewer && <span className="address-viewer">(You)</span>}
     </span>
   );

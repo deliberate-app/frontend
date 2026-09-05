@@ -3,6 +3,7 @@ import { zeroAddress, type Address } from 'viem';
 import { useRegistries } from '../data/registries';
 import { looksLikeAddress, parseAddressList, shortAddress } from '../lib/address';
 import { useCirclesNames } from '../lib/circles';
+import { useRegistryNames } from '../lib/registryNames';
 import { PickRow, Tabs } from './Choice';
 import { Modal } from './Modal';
 import { circlesRegistryLabel, RegistryManager } from './RegistryManager';
@@ -46,6 +47,7 @@ export function ParticipantFields({
 }) {
   const access = useRegistries();
   const registries = access?.registries ?? [];
+  const names = useRegistryNames();
 
   const allowlists = registries.filter((registry) => registry.kind === 'allowlist');
   const circles = registries.filter((registry) => registry.kind === 'circles');
@@ -110,9 +112,10 @@ export function ParticipantFields({
               <PickRow
                 key={registry.address}
                 kind="Allowlist"
-                label={<span className="mono">{shortAddress(registry.address)}</span>}
+                label={names[registry.address.toLowerCase()] ?? 'Unnamed'}
+                sub={<span className="mono address-full">{registry.address}</span>}
                 chosen={registry.address === picked}
-                onChoose={() => pick(registry.address, 'your allowlist')}
+                onChoose={() => pick(registry.address, names[registry.address.toLowerCase()] ?? 'your allowlist')}
               />
             ))}
           </div>
@@ -133,6 +136,7 @@ export function ParticipantFields({
                   kind="Circles"
                   label={label}
                   note={registry.address.toLowerCase() === circlesRegistry.toLowerCase() ? 'this network' : undefined}
+                  sub={<span className="mono address-full">{registry.address}</span>}
                   chosen={registry.address === picked}
                   onChoose={() => pick(registry.address, label)}
                 />
@@ -166,7 +170,7 @@ export function ParticipantFields({
       </div>
 
       {managing && (
-        <Modal title="Manage registries" onClose={() => setManaging(false)} wide>
+        <Modal title="Registries" onClose={() => setManaging(false)} wide>
           <RegistryManager />
         </Modal>
       )}

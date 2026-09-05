@@ -116,13 +116,17 @@ export function PickRow({
   kind,
   label,
   note,
+  sub,
   chosen,
   current,
   onChoose,
 }: {
   kind: string;
   label: ReactNode;
+  /** A short aside at the trailing edge of the first line. */
   note?: ReactNode;
+  /** A second line under the label, for what is too long to sit beside it - a whole address. */
+  sub?: ReactNode;
   chosen?: boolean;
   current?: boolean;
   /** Absent where the row is only telling the reader something. */
@@ -134,6 +138,7 @@ export function PickRow({
       <span className="pick-row-kind">{kind}</span>
       <span>{label}</span>
       {note && <span className="pick-row-note">{note}</span>}
+      {sub && <span className="pick-row-sub">{sub}</span>}
     </>
   );
   return onChoose ? (

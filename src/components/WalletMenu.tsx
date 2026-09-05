@@ -117,7 +117,7 @@ export function WalletMenu({
                   setManaging(true);
                 }}
               >
-                Manage registries
+                Registries
               </button>
             )}
             <button
@@ -134,7 +134,7 @@ export function WalletMenu({
           </div>
         )}
         {managing && (
-          <Modal title="Manage registries" onClose={() => setManaging(false)} wide>
+          <Modal title="Registries" onClose={() => setManaging(false)} wide>
             <RegistryManager />
           </Modal>
         )}

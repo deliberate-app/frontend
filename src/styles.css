@@ -2098,8 +2098,9 @@ button {
 
 .pick-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.6rem;
+  gap: 0.35rem 0.6rem;
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--hairline);
   border-radius: 0.5rem;
@@ -2135,6 +2136,10 @@ button {
 }
 
 .pick-row-note {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   margin-left: auto;
   font-size: 0.78rem;
   color: var(--bark);
@@ -2158,6 +2163,25 @@ button {
 .tab-panel {
   display: grid;
   gap: 0.9rem;
+}
+
+/* The second line of a row: what is too long to sit beside the label, and quieter than it. */
+.pick-row-sub {
+  flex-basis: 100%;
+  color: var(--bark);
+}
+
+/* A whole address, where the reader is checking it rather than recognising it. It is one word, so
+   it breaks only where there is no room for it at all. */
+.address-full {
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+/* What a row says about itself beside its address: an aside, not the row's subject. */
+.pick-row-aside {
+  color: var(--bark);
+  white-space: nowrap;
 }
 
 /* A row that only tells the reader something, with no action to promise. */
