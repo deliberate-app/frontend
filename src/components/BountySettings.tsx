@@ -89,9 +89,14 @@ export function BountySettings({
         value={customChosen ? 'custom' : (bounty?.token.address ?? 'none')}
         onChange={(id) => {
           setCustomChosen(id === 'custom');
-          if (id === 'none') apply(null, amountText);
-          const token = BOUNTY_TOKEN_PRESETS.find((preset) => preset.address === id);
-          if (token) apply(token, amountText);
+          if (id === 'custom') {
+            // A custom token is the bounty only once its address resolves, so the one it replaces
+            // goes now rather than lingering under a control that no longer names it.
+            apply(null, amountText);
+            if (customAddress.trim() !== '') void pickCustom();
+            return;
+          }
+          apply(BOUNTY_TOKEN_PRESETS.find((preset) => preset.address === id) ?? null, amountText);
         }}
         options={[
           { id: 'none', label: 'None' },
@@ -102,16 +107,15 @@ export function BountySettings({
 
       <label className="duration-field" hidden={!customChosen}>
         <span className="duration-label">Token address</span>
-        <span className="duration-inputs">
-          <input
-            type="text"
-            className="mono"
-            placeholder="0x…"
-            value={customAddress}
-            onChange={(event) => setCustomAddress(event.target.value)}
-            onBlur={() => void (customAddress.trim() !== '' && pickCustom())}
-          />
-        </span>
+        <input
+          type="text"
+          className="text-input mono"
+          spellCheck={false}
+          placeholder="0x…"
+          value={customAddress}
+          onChange={(event) => setCustomAddress(event.target.value)}
+          onBlur={() => void (customAddress.trim() !== '' && pickCustom())}
+        />
         <span className="duration-hint">
           {customBusy ? 'Reading the token…' : 'Any ERC-20 address; symbol and decimals are read from the chain.'}
         </span>
