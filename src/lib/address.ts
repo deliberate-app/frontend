@@ -1,4 +1,6 @@
-/** Address display helpers: the one truncation used everywhere, and the identicon pattern. */
+import { getAddress, isAddress, type Address } from 'viem';
+
+/** Address helpers: the one truncation used everywhere, the identicon pattern, and pasted lists. */
 
 /**
  * Shortens an address to the canonical `0x1234…abcd` form - one style across the whole app,
@@ -57,4 +59,36 @@ export function identiconOf(address: string): Identicon {
   }
 
   return { cells, color: mainColor, bgColor, spotColor };
+}
+
+/** What a pasted list of addresses came to. */
+export interface AddressList {
+  /** The addresses, checksummed, in the order they were written, with repeats dropped. */
+  addresses: Address[];
+  /** The words that are not addresses, so a reader can find their typo instead of hunting for it. */
+  rejected: string[];
+}
+
+/**
+ * Reads a pasted list of accounts. New lines, commas, semicolons and spaces all separate one
+ * address from the next, because a list arrives from a spreadsheet column as readily as from a
+ * chat message, and a reader should not have to reformat it first.
+ *
+ * A lowercase address is accepted. Wallets and explorers print the checksummed form, but plenty
+ * of tools do not, and rejecting a valid account over its capitalisation would be a puzzle rather
+ * than a safeguard.
+ */
+export function parseAddressList(text: string): AddressList {
+  const seen = new Set<string>();
+  const addresses: Address[] = [];
+  const rejected: string[] = [];
+  for (const word of text.split(/[\s,;]+/).filter((word) => word !== '')) {
+    if (!isAddress(word, { strict: false })) {
+      rejected.push(word);
+    } else if (!seen.has(word.toLowerCase())) {
+      seen.add(word.toLowerCase());
+      addresses.push(getAddress(word));
+    }
+  }
+  return { addresses, rejected };
 }
