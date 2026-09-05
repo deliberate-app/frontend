@@ -2097,6 +2097,24 @@ button {
   overflow-y: auto;
 }
 
+/* The list a reader is looking at, as against the ink of .registry-item-active, which is the one a
+   debate will name. */
+.registry-item-current {
+  border-color: var(--bark);
+}
+
+/* A tab's panel carries the dialog's own rhythm, since it is one grid item holding many. Both
+   panels stay mounted so a half-typed paste survives a tab flip, and an author `display` beats the
+   browser's own rule for `hidden`, so the inactive one is hidden here. */
+.tab-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
 /* A row that only tells the reader something, with no action to promise. */
 .registry-item-static,
 .registry-item-static:hover {
@@ -2139,7 +2157,7 @@ button {
 .address-input {
   width: 100%;
   font: inherit;
-  padding: 0.35rem 0.55rem;
+  padding: 0.3rem 0.5rem;
   border: 1px solid var(--hairline);
   border-radius: 0.5rem;
   background: var(--card);
@@ -2162,19 +2180,16 @@ button {
   gap: 0.35rem;
 }
 
-.member-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin: 0.75rem 0 0;
-  font-size: 0.85rem;
-  color: var(--bark);
-}
-
 .member-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.member-head {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--bark);
 }
 
 .member-pick {

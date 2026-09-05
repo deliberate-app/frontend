@@ -25,7 +25,7 @@ export function Modal({
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
-        className={`modal ${wide ? 'modal-wide' : ''}`}
+        className={`modal${wide ? ' modal-wide' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

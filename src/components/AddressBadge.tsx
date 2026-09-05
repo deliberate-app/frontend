@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, memo, useContext } from 'react';
 import { identiconOf, IDENTICON_SIZE, shortAddress } from '../lib/address';
 
 /**
@@ -7,8 +7,12 @@ import { identiconOf, IDENTICON_SIZE, shortAddress } from '../lib/address';
  */
 export const ViewerAccount = createContext<string | null>(null);
 
-/** The deterministic identicon of an account, sized in em so it rides with its text. */
-function IdenticonIcon({ address }: { address: string }) {
+/**
+ * The deterministic identicon of an account, sized in em so it rides with its text. Memoised
+ * because it draws up to 64 rects from a seeded pattern, and a list of accounts re-renders on every
+ * checkbox and every keystroke beside it.
+ */
+const IdenticonIcon = memo(function IdenticonIcon({ address }: { address: string }) {
   const { cells, color, bgColor, spotColor } = identiconOf(address);
   const palette = [bgColor, color, spotColor];
   return (
@@ -33,7 +37,7 @@ function IdenticonIcon({ address }: { address: string }) {
       )}
     </svg>
   );
-}
+});
 
 /**
  * The one way an account renders anywhere in the app: its identicon plus the canonical

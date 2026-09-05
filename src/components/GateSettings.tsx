@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { isAddress, zeroAddress, type Address } from 'viem';
-import { shortAddress } from '../lib/address';
+import { zeroAddress, type Address } from 'viem';
+import { parseAddressList, shortAddress } from '../lib/address';
 import { Modal } from './Modal';
 import { RegistryManager } from './RegistryManager';
 
@@ -51,8 +51,8 @@ export function GateSettings({
   /** The deployment's Circles preset registry. */
   circlesRegistry: Address;
 }) {
-  const [customAddress, setCustomAddress] = useState(gate.mode === 'registry' ? gate.address : '');
-  const customValid = isAddress(customAddress);
+  const [customAddress, setCustomAddress] = useState<string>(gate.mode === 'registry' ? gate.address : '');
+  const typed = parseAddressList(customAddress);
 
   return (
     <Modal title="Who may join" onClose={onClose} wide>
@@ -77,7 +77,7 @@ export function GateSettings({
       <RegistryManager
         circlesPreset={circlesRegistry}
         picked={gate.mode === 'registry' ? gate.address : undefined}
-        onPick={(registry, label) => onChange({ mode: 'registry', address: registry.address, label })}
+        onPick={(registry, label) => onChange({ mode: 'registry', address: registry, label })}
       />
 
       <label className="duration-field">
@@ -92,7 +92,8 @@ export function GateSettings({
           onChange={(event) => {
             const next = event.target.value.trim();
             setCustomAddress(next);
-            if (isAddress(next)) onChange({ mode: 'registry', address: next as Address });
+            const [address] = parseAddressList(next).addresses;
+            if (address) onChange({ mode: 'registry', address });
           }}
         />
         <span className="duration-hint">
@@ -101,7 +102,7 @@ export function GateSettings({
           joined are unaffected.
         </span>
       </label>
-      {customAddress !== '' && !customValid && <p className="action-error">Not an address.</p>}
+      {typed.rejected.length > 0 && <p className="action-error">Not an address.</p>}
 
       {gate.mode !== 'open' && (
         <p className="composer-hint">

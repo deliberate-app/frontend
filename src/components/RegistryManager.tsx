@@ -1,24 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { zeroAddress, type Address } from 'viem';
 import { actionErrorMessage } from '../data/actions';
 import type { RegistryAccess } from '../data/registries';
 import { useRegistries } from '../data/registries';
 import type { IdentityRegistryInfo } from '../data/source';
 import { parseAddressList, shortAddress } from '../lib/address';
-import { circlesAvatarOf, searchCirclesAvatars, type CirclesAvatar } from '../lib/circles';
+import { searchCirclesAvatars, useCirclesNames, type CirclesAvatar } from '../lib/circles';
 import { AddressBadge } from './AddressBadge';
 
 /** Why the manager is showing lists but offering no way to add to them. */
 const NEEDS_WALLET = 'Making a registry needs a connected wallet on a network that has a registry factory.';
 
+/** Who a Circles registry admits, in the words the app uses for it everywhere. */
+const admits = (requireHuman: boolean, who: string) =>
+  requireHuman ? `Circles humans that ${who} trusts` : `accounts that ${who} trusts`;
+
 /** How a Circles registry reads, given what Circles calls its anchor. */
 function circlesRegistryLabel(registry: IdentityRegistryInfo, anchorName?: string): string {
   const anchor = registry.anchor ?? zeroAddress;
-  if (anchor === zeroAddress) {
-    return 'every Circles human';
-  }
-  const who = anchorName ?? shortAddress(anchor);
-  return registry.requireHuman ? `Circles humans that ${who} trusts` : `accounts that ${who} trusts`;
+  return anchor === zeroAddress
+    ? 'every Circles human'
+    : admits(registry.requireHuman ?? false, anchorName ?? shortAddress(anchor));
 }
 
 /**
@@ -31,21 +33,33 @@ const fromOlderFactory = (registry: IdentityRegistryInfo, factory?: Address) =>
 const currentFactoryFirst = (registries: IdentityRegistryInfo[], factory?: Address) =>
   [...registries].sort((a, b) => Number(fromOlderFactory(a, factory)) - Number(fromOlderFactory(b, factory)));
 
-/** One registry or avatar on a list: what kind it is, what it admits, and where to find it. */
+/** An address as it reads on a row: the app's one truncation, in the app's one address face. */
+const mono = (address: Address) => <span className="mono">{shortAddress(address)}</span>;
+
+/**
+ * One registry or avatar on a list: what kind it is, what it admits, and where to find it.
+ *
+ * Two marks, because a row can be two things at once. `chosen` is the registry the debate will
+ * name. `current` is the list whose members are shown below it, which is where a reader is looking
+ * rather than what they have decided.
+ */
 function Row({
   kind,
   label,
   note,
   chosen,
+  current,
   onChoose,
 }: {
   kind: string;
-  label: string;
-  note?: string;
+  label: ReactNode;
+  note?: ReactNode;
   chosen?: boolean;
+  current?: boolean;
   /** Absent where the row is only telling the reader something. */
   onChoose?: () => void;
 }) {
+  const marks = `${chosen ? ' registry-item-active' : ''}${current ? ' registry-item-current' : ''}`;
   const body = (
     <>
       <span className="registry-kind">{kind}</span>
@@ -54,11 +68,11 @@ function Row({
     </>
   );
   return onChoose ? (
-    <button type="button" className={`registry-item ${chosen ? 'registry-item-active' : ''}`} onClick={onChoose}>
+    <button type="button" className={`registry-item${marks}`} onClick={onChoose}>
       {body}
     </button>
   ) : (
-    <div className="registry-item registry-item-static">{body}</div>
+    <div className={`registry-item registry-item-static${marks}`}>{body}</div>
   );
 }
 
@@ -66,41 +80,37 @@ function Row({
  * The allowlists this account keeps, and who is on the one it is looking at.
  *
  * Accounts arrive as a list rather than one at a time. A list is how they exist elsewhere - a
- * spreadsheet column, a message, another app's export - and adding thirty of them through a
- * single field is thirty transactions where the contract takes one.
+ * spreadsheet column, a message, another app's export - and adding thirty of them through a single
+ * field is thirty transactions where the contract takes one.
  */
 function AllowlistPanel({
-  access,
+  access: { registries, factory, loadMembers, setMembership, createAllowlist },
   picked,
   onPick,
 }: {
   access: RegistryAccess;
   picked?: Address;
-  onPick?: (registry: IdentityRegistryInfo, label: string) => void;
+  onPick?: (registry: Address, label: string) => void;
 }) {
-  const { loadMembers, setMembership, createAllowlist, factory } = access;
   const allowlists = useMemo(
     () =>
       currentFactoryFirst(
-        access.registries.filter((registry) => registry.kind === 'allowlist'),
+        registries.filter((registry) => registry.kind === 'allowlist'),
         factory,
       ),
-    [access.registries, factory],
+    [registries, factory],
   );
 
   const [selected, setSelected] = useState<Address | null>(null);
-  // The list being looked at: the reader's choice while it still exists, else the one they named
-  // for the debate, else the first. Derived, so a reload cannot leave it pointing at nothing.
-  const current =
-    [selected, picked].find((address) => allowlists.some((registry) => registry.address === address)) ??
-    allowlists[0]?.address ??
-    null;
+  // The list whose members are shown: the one the reader opened while it still exists, else the one
+  // the debate names, else the first. Derived, so a reload cannot leave it pointing at nothing.
+  const holds = (address?: Address | null) => allowlists.some((registry) => registry.address === address);
+  const current = (holds(selected) ? selected : holds(picked) ? picked : allowlists[0]?.address) ?? null;
 
   const [members, setMembers] = useState<Address[] | null>(null);
   const [checked, setChecked] = useState<Address[]>([]);
   const [draft, setDraft] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [busy, setBusy] = useState<'creating' | 'adding' | 'removing' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -120,28 +130,12 @@ function AllowlistPanel({
     };
   }, [current, loadMembers]);
 
-  // Circles names for the members, resolved once each; a member Circles does not know keeps its address.
-  const [names, setNames] = useState<Record<string, string>>({});
-  useEffect(() => {
-    const unknown = (members ?? []).filter((member) => names[member] === undefined);
-    if (unknown.length === 0) return;
-    const controller = new AbortController();
-    void Promise.all(unknown.map(async (member) => [member, await circlesAvatarOf(member, controller.signal)] as const))
-      .then((found) => {
-        setNames((known) => ({
-          ...known,
-          ...Object.fromEntries(found.map(([member, avatar]) => [member, avatar?.name ?? ''])),
-        }));
-      })
-      .catch(() => {
-        // Names are a courtesy; the addresses stay legible without them.
-      });
-    return () => controller.abort();
-  }, [members, names]);
+  const names = useCirclesNames(members ?? []);
+  const pasted = useMemo(() => parseAddressList(draft), [draft]);
 
   const change = async (accounts: Address[], member: boolean) => {
     if (current === null || !setMembership) return;
-    setBusy(true);
+    setBusy(member ? 'adding' : 'removing');
     setError(null);
     try {
       await setMembership(current, accounts, member);
@@ -151,26 +145,24 @@ function AllowlistPanel({
     } catch (cause) {
       setError(actionErrorMessage(cause));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
   const create = async () => {
     if (!createAllowlist) return;
-    setCreating(true);
+    setBusy('creating');
     setError(null);
     try {
       const address = await createAllowlist();
       setSelected(address);
-      onPick?.({ address, kind: 'allowlist', factory: factory ?? address }, 'your allowlist');
+      onPick?.(address, 'your allowlist');
     } catch (cause) {
       setError(actionErrorMessage(cause));
     } finally {
-      setCreating(false);
+      setBusy(null);
     }
   };
-
-  const pasted = parseAddressList(draft);
 
   return (
     <>
@@ -185,12 +177,13 @@ function AllowlistPanel({
             <Row
               key={registry.address}
               kind="Allowlist"
-              label={shortAddress(registry.address)}
+              label={mono(registry.address)}
               note={fromOlderFactory(registry, factory) ? 'older factory' : undefined}
-              chosen={registry.address === current}
+              chosen={registry.address === picked}
+              current={registry.address === current}
               onChoose={() => {
                 setSelected(registry.address);
-                onPick?.(registry, 'your allowlist');
+                onPick?.(registry.address, 'your allowlist');
               }}
             />
           ))}
@@ -198,8 +191,8 @@ function AllowlistPanel({
       )}
 
       {createAllowlist ? (
-        <button type="button" className="btn btn-small" disabled={creating} onClick={() => void create()}>
-          {creating ? 'Creating…' : 'New allowlist'}
+        <button type="button" className="btn btn-small" disabled={busy !== null} onClick={() => void create()}>
+          {busy === 'creating' ? 'Creating…' : 'New allowlist'}
         </button>
       ) : (
         <p className="composer-hint">{NEEDS_WALLET}</p>
@@ -207,20 +200,20 @@ function AllowlistPanel({
 
       {current !== null && (
         <>
-          <p className="member-head">
+          <p className="member-row member-head">
             {members === null
               ? 'Loading the list…'
               : members.length === 0
                 ? 'Nobody on this list yet.'
                 : `${members.length} ${members.length === 1 ? 'account' : 'accounts'} on this list`}
-            {setMembership && checked.length > 0 && (
+            {checked.length > 0 && (
               <button
                 type="button"
                 className="btn btn-small member-remove"
-                disabled={busy}
+                disabled={busy !== null}
                 onClick={() => void change(checked, false)}
               >
-                {busy ? 'Removing…' : `Remove ${checked.length}`}
+                {busy === 'removing' ? 'Removing…' : `Remove ${checked.length}`}
               </button>
             )}
           </p>
@@ -229,19 +222,22 @@ function AllowlistPanel({
             <ul className="member-list">
               {members.map((member) => (
                 <li key={member} className="member-row">
-                  <label className="member-pick">
-                    <input
-                      type="checkbox"
-                      checked={checked.includes(member)}
-                      disabled={!setMembership}
-                      onChange={(event) =>
-                        setChecked((chosen) =>
-                          event.target.checked ? [...chosen, member] : chosen.filter((one) => one !== member),
-                        )
-                      }
-                    />
+                  {setMembership ? (
+                    <label className="member-pick">
+                      <input
+                        type="checkbox"
+                        checked={checked.includes(member)}
+                        onChange={(event) =>
+                          setChecked((chosen) =>
+                            event.target.checked ? [...chosen, member] : chosen.filter((one) => one !== member),
+                          )
+                        }
+                      />
+                      <AddressBadge address={member} />
+                    </label>
+                  ) : (
                     <AddressBadge address={member} />
-                  </label>
+                  )}
                   {names[member] && <span className="member-name">{names[member]}</span>}
                 </li>
               ))}
@@ -249,37 +245,39 @@ function AllowlistPanel({
           )}
 
           {setMembership && (
-            <label className="duration-field">
-              <span className="duration-label">Add accounts</span>
-              <textarea
-                className="address-input"
-                rows={3}
-                spellCheck={false}
-                placeholder="0x… one per line"
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-              />
-              <span className="duration-hint">
-                Paste as many as you like. New lines, commas and spaces all separate one from the next. An account on
-                the list may join every debate that names it. Removing one bars it from joining afterwards, and leaves
-                the debates it already joined alone.
-              </span>
-            </label>
-          )}
+            <>
+              <label className="duration-field">
+                <span className="duration-label">Add accounts</span>
+                <textarea
+                  className="address-input"
+                  rows={3}
+                  spellCheck={false}
+                  placeholder="0x… one per line"
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                />
+                <span className="duration-hint">
+                  Paste as many as you like. New lines, commas and spaces all separate one from the next. An account on
+                  the list may join every debate that names it. Removing one bars it from joining afterwards, and leaves
+                  the debates it already joined alone.
+                </span>
+              </label>
 
-          {pasted.rejected.length > 0 && (
-            <p className="action-error">Not an address: {pasted.rejected.slice(0, 3).join(', ')}</p>
-          )}
+              {pasted.rejected.length > 0 && (
+                <p className="action-error">Not an address: {pasted.rejected.slice(0, 3).join(', ')}</p>
+              )}
 
-          {setMembership && pasted.addresses.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-small"
-              disabled={busy}
-              onClick={() => void change(pasted.addresses, true)}
-            >
-              {busy ? 'Adding…' : `Add ${pasted.addresses.length}`}
-            </button>
+              {pasted.addresses.length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  disabled={busy !== null}
+                  onClick={() => void change(pasted.addresses, true)}
+                >
+                  {busy === 'adding' ? 'Adding…' : `Add ${pasted.addresses.length}`}
+                </button>
+              )}
+            </>
           )}
         </>
       )}
@@ -292,12 +290,12 @@ function AllowlistPanel({
 /**
  * The Circles registries on offer, and a new one anchored on an avatar.
  *
- * Circles is a social graph, so a registry over it is named by who its anchor trusts rather than
- * by a list of accounts. The reader searches for that avatar by name, then reads back in one
- * sentence exactly who the registry will admit before making it.
+ * Circles is a social graph, so a registry over it is named by who its anchor trusts rather than by
+ * a list of accounts. The reader searches for that avatar by name, then reads back in one sentence
+ * exactly who the registry will admit before making it.
  */
 function CirclesPanel({
-  access,
+  access: { registries, factory, createCircles },
   preset,
   picked,
   onPick,
@@ -306,39 +304,27 @@ function CirclesPanel({
   /** The deployment's own any-Circles-human registry, which the gate already offers as a preset. */
   preset?: Address;
   picked?: Address;
-  onPick?: (registry: IdentityRegistryInfo, label: string) => void;
+  onPick?: (registry: Address, label: string) => void;
 }) {
-  const { createCircles, factory } = access;
-  const registries = useMemo(
+  const anchored = useMemo(
     () =>
       currentFactoryFirst(
-        access.registries.filter(
+        registries.filter(
           (registry) => registry.kind === 'circles' && registry.address.toLowerCase() !== preset?.toLowerCase(),
         ),
         factory,
       ),
-    [access.registries, factory, preset],
+    [registries, factory, preset],
   );
 
-  // The names Circles gives the anchors on the list, resolved once per anchor.
-  const [anchorNames, setAnchorNames] = useState<Record<string, string>>({});
-  useEffect(() => {
-    const anchors = registries
-      .map((registry) => registry.anchor)
-      .filter((anchor): anchor is Address => anchor !== undefined && anchor !== zeroAddress);
-    if (anchors.length === 0) return;
-    const controller = new AbortController();
-    void Promise.all(anchors.map(async (anchor) => [anchor, await circlesAvatarOf(anchor, controller.signal)] as const))
-      .then((found) => {
-        setAnchorNames(
-          Object.fromEntries(found.flatMap(([anchor, avatar]) => (avatar ? [[anchor, avatar.name]] : []))),
-        );
-      })
-      .catch(() => {
-        // Names are a courtesy; the addresses stay legible without them.
-      });
-    return () => controller.abort();
-  }, [registries]);
+  const anchors = useMemo(
+    () =>
+      anchored
+        .map((registry) => registry.anchor)
+        .filter((anchor): anchor is Address => anchor !== undefined && anchor !== zeroAddress),
+    [anchored],
+  );
+  const anchorNames = useCirclesNames(anchors);
 
   // Finding an anchor by name: the query is sent a moment after typing stops, and a stale answer is
   // dropped when the query has moved on.
@@ -366,28 +352,12 @@ function CirclesPanel({
     };
   }, [query]);
 
-  const admits = anchor
-    ? requireHuman
-      ? `Circles humans that ${anchor.name} trusts`
-      : `accounts that ${anchor.name} trusts`
-    : '';
-
   const create = async () => {
     if (!createCircles || !anchor) return;
     setBusy(true);
     setError(null);
     try {
-      const address = await createCircles(anchor.address, requireHuman);
-      onPick?.(
-        {
-          address,
-          kind: 'circles',
-          factory: factory ?? address,
-          anchor: anchor.address,
-          requireHuman,
-        },
-        admits,
-      );
+      onPick?.(await createCircles(anchor.address, requireHuman), admits(requireHuman, anchor.name));
       setAnchor(null);
       setQuery('');
     } catch (cause) {
@@ -399,18 +369,23 @@ function CirclesPanel({
 
   return (
     <>
-      {registries.length > 0 && (
+      {anchored.length > 0 && (
         <div className="registry-list">
-          {registries.map((registry) => {
+          {anchored.map((registry) => {
             const label = circlesRegistryLabel(registry, registry.anchor && anchorNames[registry.anchor]);
             return (
               <Row
                 key={registry.address}
                 kind="Circles"
                 label={label}
-                note={`${shortAddress(registry.address)}${fromOlderFactory(registry, factory) ? ', older factory' : ''}`}
+                note={
+                  <>
+                    {mono(registry.address)}
+                    {fromOlderFactory(registry, factory) && ', older factory'}
+                  </>
+                }
                 chosen={registry.address === picked}
-                onChoose={onPick ? () => onPick(registry, label) : undefined}
+                onChoose={onPick ? () => onPick(registry.address, label) : undefined}
               />
             );
           })}
@@ -447,7 +422,7 @@ function CirclesPanel({
                 key={avatar.address}
                 kind={avatar.kind}
                 label={avatar.name}
-                note={shortAddress(avatar.address)}
+                note={mono(avatar.address)}
                 onChoose={() => setAnchor(avatar)}
               />
             ))
@@ -473,7 +448,7 @@ function CirclesPanel({
               Anyone it trusts
             </button>
           </div>
-          <p className="composer-hint">Admits {admits}.</p>
+          <p className="composer-hint">Admits {admits(requireHuman, anchor.name)}.</p>
           {createCircles ? (
             <button type="button" className="btn btn-small" disabled={busy} onClick={() => void create()}>
               {busy ? 'Creating…' : 'Create registry'}
@@ -497,7 +472,7 @@ function CirclesPanel({
  *
  * The wallet menu opens it to keep registries. The join settings embed it to choose one, and there
  * choosing is what selecting a row does, the way every other setting in this app applies live
- * (principle 6).
+ * (principle 6). Both panels stay mounted, so flipping tabs does not throw away a half-typed paste.
  */
 export function RegistryManager({
   circlesPreset,
@@ -508,7 +483,7 @@ export function RegistryManager({
   /** The registry a debate names, where this manager is choosing one. */
   picked?: Address;
   /** Choosing a registry. Absent where the manager is only for keeping them. */
-  onPick?: (registry: IdentityRegistryInfo, label: string) => void;
+  onPick?: (registry: Address, label: string) => void;
 }) {
   const access = useRegistries();
   const [tab, setTab] = useState<'allowlists' | 'circles'>('allowlists');
@@ -540,11 +515,12 @@ export function RegistryManager({
         </button>
       </div>
 
-      {tab === 'allowlists' ? (
+      <div className="tab-panel" role="tabpanel" hidden={tab !== 'allowlists'}>
         <AllowlistPanel access={access} picked={picked} onPick={onPick} />
-      ) : (
+      </div>
+      <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
         <CirclesPanel access={access} preset={circlesPreset} picked={picked} onPick={onPick} />
-      )}
+      </div>
     </>
   );
 }

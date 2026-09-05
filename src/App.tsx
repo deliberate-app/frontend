@@ -431,7 +431,7 @@ export default function App() {
     try {
       setRegistries(await source.registries(actions?.account));
     } catch {
-      setRegistries([]);
+      setRegistries((known) => (known.length === 0 ? known : []));
     }
   }, [source, actions?.account]);
   useEffect(() => {
@@ -453,8 +453,8 @@ export default function App() {
   const registryAccess = useMemo<RegistryAccess | null>(() => {
     if (!deployment) return null;
     const factory = deployment.registryFactory;
-    const clone = async <A extends unknown[]>(make: (...args: A) => Promise<Address>, ...args: A) => {
-      const address = await make(...args);
+    const andReload = async (make: () => Promise<Address>) => {
+      const address = await make();
       await reloadRegistries();
       return address;
     };
@@ -465,9 +465,9 @@ export default function App() {
       setMembership,
       ...(actions && factory
         ? {
-            createAllowlist: () => clone(actions.createAllowlistRegistry),
+            createAllowlist: () => andReload(() => actions.createAllowlistRegistry()),
             createCircles: (anchor: Address, requireHuman: boolean) =>
-              clone(actions.createCirclesRegistry, anchor, requireHuman),
+              andReload(() => actions.createCirclesRegistry(anchor, requireHuman)),
           }
         : {}),
     };
