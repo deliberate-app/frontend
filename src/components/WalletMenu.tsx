@@ -1,30 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Address } from 'viem';
-import type { IdentityRegistryInfo } from '../data/source';
+import { useRegistries } from '../data/registries';
 import { chainName, isTestnet } from '../lib/chains';
 import { type WalletState } from '../wallet/useWallet';
 import { AddressBadge } from './AddressBadge';
-import { AllowlistManager } from './AllowlistManager';
+import { Modal } from './Modal';
+import { RegistryManager } from './RegistryManager';
 
 export function WalletMenu({
   wallet,
   deploymentChainId,
   onSwitchChain,
-  allowlists,
-  loadMembers,
-  setMembership,
 }: {
   wallet: WalletState;
   /** The chain the configured deployment lives on; null in sample mode, or before it resolves. */
   deploymentChainId?: number | null;
   /** Asks the wallet to move to the deployment's chain; absent when there is no deployment. */
   onSwitchChain?: () => Promise<void>;
-  /** The allowlists the connected account owns; absent where there is no index to read them from. */
-  allowlists?: IdentityRegistryInfo[];
-  loadMembers?: (registry: Address) => Promise<Address[]>;
-  /** Absent until the account can sign. */
-  setMembership?: (registry: Address, accounts: Address[], member: boolean) => Promise<void>;
 }) {
+  const registries = useRegistries();
   // Two different menus hang off this control - the account menu once connected, and the picker
   // before that. Only the account menu's openness is local: the picker is opened from elsewhere
   // in the app too (an action that needs a wallet asks for one), so it lives in the wallet state.
@@ -114,7 +107,7 @@ export function WalletMenu({
                 {switchError && <p className="wallet-menu-note wallet-menu-error">{switchError}</p>}
               </>
             )}
-            {allowlists && loadMembers && setMembership && (
+            {registries && (
               <button
                 type="button"
                 role="menuitem"
@@ -124,7 +117,7 @@ export function WalletMenu({
                   setManaging(true);
                 }}
               >
-                Your allowlists{allowlists.length > 0 ? ` (${allowlists.length})` : ''}
+                Registries
               </button>
             )}
             <button
@@ -140,13 +133,10 @@ export function WalletMenu({
             </button>
           </div>
         )}
-        {managing && allowlists && loadMembers && setMembership && (
-          <AllowlistManager
-            registries={allowlists}
-            loadMembers={loadMembers}
-            setMembership={setMembership}
-            onClose={() => setManaging(false)}
-          />
+        {managing && (
+          <Modal title="Registries" onClose={() => setManaging(false)} wide>
+            <RegistryManager />
+          </Modal>
         )}
       </div>
     );

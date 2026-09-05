@@ -15,7 +15,6 @@ import { BountySettings, type BountyDraft } from './BountySettings';
 import { ContentBudget } from './ContentBudget';
 import { FeeSettings } from './FeeSettings';
 import { gateAddress, gateLabel, GateSettings, type GateDraft } from './GateSettings';
-import type { IdentityRegistryInfo } from '../data/source';
 import { ScheduleSettings } from './ScheduleSettings';
 
 const PHASE_SHORT: Record<Phase, string> = {
@@ -67,11 +66,6 @@ function CreatePanel({
   onCreate,
   resolveToken,
   circlesRegistry,
-  registries,
-  registryFactory,
-  canCreateRegistry,
-  onCreateAllowlist,
-  onCreateCirclesRegistry,
 }: {
   /** Why creating is impossible here at all; null when the deployment supports it. */
   unavailableHint: string | null;
@@ -90,14 +84,6 @@ function CreatePanel({
   resolveToken?: (address: string) => Promise<TokenInfo>;
   /** The deployment's Circles preset registry; absent only in sample mode, where creating is disabled. */
   circlesRegistry?: Address;
-  /** The registries the creator can pick from: their allowlists and every Circles registry. */
-  registries: IdentityRegistryInfo[];
-  /** The network's current factory, where it has one. */
-  registryFactory?: Address;
-  /** Whether a new registry can be cloned here: a wallet is connected and the network has a factory. */
-  canCreateRegistry: boolean;
-  onCreateAllowlist: () => Promise<Address>;
-  onCreateCirclesRegistry: (anchor: Address, requireHuman: boolean) => Promise<Address>;
 }) {
   const [open, setOpen] = useState(false);
   const [thesis, setThesis] = useState('');
@@ -213,11 +199,6 @@ function CreatePanel({
           onChange={setGate}
           onClose={() => setGateOpen(false)}
           circlesRegistry={circlesRegistry}
-          registries={registries}
-          currentFactory={registryFactory}
-          canCreate={canCreateRegistry}
-          onCreateAllowlist={onCreateAllowlist}
-          onCreateCirclesRegistry={onCreateCirclesRegistry}
         />
       )}
       {bountyOpen && (
@@ -274,11 +255,6 @@ export function BrowseView({
   onCreate,
   resolveToken,
   circlesRegistry,
-  registries,
-  registryFactory,
-  canCreateRegistry,
-  onCreateAllowlist,
-  onCreateCirclesRegistry,
 }: {
   debates: DebateSummary[];
   /** The connected account, enabling the "mine" author-filter shortcut. */
@@ -304,14 +280,6 @@ export function BrowseView({
   resolveToken?: (address: string) => Promise<TokenInfo>;
   /** The deployment's Circles preset registry; absent only in sample mode, where creating is disabled. */
   circlesRegistry?: Address;
-  /** The registries the creator can pick from: their allowlists and every Circles registry. */
-  registries: IdentityRegistryInfo[];
-  /** The network's current factory, where it has one. */
-  registryFactory?: Address;
-  /** Whether a new registry can be cloned here: a wallet is connected and the network has a factory. */
-  canCreateRegistry: boolean;
-  onCreateAllowlist: () => Promise<Address>;
-  onCreateCirclesRegistry: (anchor: Address, requireHuman: boolean) => Promise<Address>;
 }) {
   const filtered = filterDebates(debates, filter);
 
@@ -324,11 +292,6 @@ export function BrowseView({
         onCreate={onCreate}
         resolveToken={resolveToken}
         circlesRegistry={circlesRegistry}
-        registries={registries}
-        registryFactory={registryFactory}
-        canCreateRegistry={canCreateRegistry}
-        onCreateAllowlist={onCreateAllowlist}
-        onCreateCirclesRegistry={onCreateCirclesRegistry}
       />
 
       <div className="filters">

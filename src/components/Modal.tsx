@@ -9,12 +9,23 @@ import { useId, type ReactNode } from 'react';
  * live-editing dialogs alike have the cross and the backdrop as their exits (principle 6); what
  * a dialog does with its contents is its own.
  */
-export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Modal({
+  title,
+  onClose,
+  wide,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  /** Set where the dialog holds lists and a paste field rather than a few fields. */
+  wide?: boolean;
+  children: ReactNode;
+}) {
   const titleId = useId();
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
-        className="modal"
+        className={`modal ${wide ? 'modal-wide' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
