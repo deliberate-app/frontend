@@ -1924,7 +1924,8 @@ button {
 /* Three controls with three jobs, kept apart on purpose. A preset is a verb that writes values you
    may then edit. A segmented track is one value with a few named states. A tab is a place. */
 
-/* Presets: separate outlined chips, quiet, because applying one is an action and not a state. */
+/* Presets: separate chips with gaps between them, which is what tells them from the enclosed track
+   beside them. The filled one is the preset the fields still hold. */
 .preset-row {
   display: flex;
   gap: 0.4rem;
@@ -1944,32 +1945,21 @@ button {
   cursor: pointer;
 }
 
-.preset:hover {
+.preset:hover:not(.preset-current) {
   border-color: var(--bark);
   color: var(--ink);
 }
 
-/* The fields still hold exactly this preset. It carries the dot and nothing else, so the first
-   edit below simply puts the dot out. */
+/* The fields still hold exactly this preset, until the first edit below puts the fill out. Filling
+   takes no width, so the chips beside it do not move as the mark comes and goes. */
 .preset-current {
-  color: var(--ink);
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--canvas);
 }
 
-/* One mark, one meaning, wherever it appears: your current state is here. */
-.current-dot {
-  /* Inline-block, so the mark keeps its size inside a tab's text as well as in a flex row. */
-  display: inline-block;
-  width: 0.32rem;
-  height: 0.32rem;
-  margin-left: 0.35rem;
-  flex: none;
-  vertical-align: 0.1em;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-/* A segmented track: one enclosed control whose filled cell is the value. Enclosure and fill are
-   what separate it from the tabs above and the preset chips beside it. */
+/* A segmented track: one enclosed control whose filled cell is the value. The enclosure is what
+   separates it from the tabs above and the preset chips beside it. */
 .segmented {
   display: inline-flex;
   flex-wrap: wrap;

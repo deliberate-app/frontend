@@ -54,9 +54,8 @@ contouring are exactly right — treat them as the baseline to protect.)
    with ink under the one you are in. A panel answers its own question, except where a tab is
    itself the whole answer ("Everyone"), which opening it settles. **Segmented** is one value with
    a few named states, drawn as a single enclosed track whose filled cell is the state. **Presets**
-   are verbs that write values you may then edit, drawn as separate quiet outlined chips, never
-   filled — a preset is something you did, not somewhere you are, and the dot marks the one the
-   fields still match. **PickRow** is one candidate in a list too long or too wordy for segments;
+   are verbs that write values you may then edit, drawn as separate chips with gaps between them;
+   the filled chip is the one the fields still hold, and the first edit below puts the fill out. **PickRow** is one candidate in a list too long or too wordy for segments;
    the chosen one is marked by its border.
 9. **Neutral looks neutral.** Ratings and impacts are signed percentages around ±0 with diverging,
    center-anchored gauges — a 50% market reads as ±0%, not as "half full".
@@ -79,6 +78,13 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-06 — the current preset is filled, not dotted.** The dot sat inside the chip, so every
+  chip changed width as the mark moved between them and the row shuffled while the reader was
+  reading it. The chip is filled instead: no width, no movement. That leaves fill doing duty in two
+  elements, which is fine, because it was never the fill that told a preset from a segment — chips
+  with gaps between them against one enclosed track is what does that, and it is visible before
+  anything is chosen. (Principle 8.)
+
 - **2026-09-05 — a debate is started in five steps, not five kinds of control.** The create panel
   was a textarea plus a row of chips, and each chip opened a modal built differently from the
   others: presets in one, a bare number in another, a list in a third. Five decisions that make one
@@ -96,6 +102,7 @@ contouring are exactly right — treat them as the baseline to protect.)
   dot meaning "your current state is here", which sits on the tab holding the choice and on the
   preset the fields still match, and goes out on the first edit. A preset is never filled, because
   filling is what a state looks like. `Choice.tsx` holds all four so they cannot drift apart.
+  *Superseded 2026-09-06:* the current preset is filled after all — see below.
 - **2026-09-05 — "Who may join" asks one question, and sends the others away.** The modal used to
   open with two preset chips above a list, so "Everyone" and "Circles humans" were choices while
   everything else was a list. It is now Everyone | Allowlists | Circles | Custom. Everyone needs

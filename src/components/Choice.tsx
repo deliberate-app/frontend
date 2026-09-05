@@ -8,16 +8,14 @@ import type { ReactNode } from 'react';
  * - `Tabs` change what you are looking at. They never change a value by themselves.
  * - `Segmented` is one value with a few named states. The filled cell is the state.
  * - `Presets` are verbs. They write values into the fields below, which you are then free to edit,
- *   so a preset is never a state you are in.
+ *   and the filled chip is the one the fields still match.
  * - `PickRow` is one candidate in a list too long or too wordy for segments.
  * - `Steps` is an ordered walk through a form, numbered because the order carries meaning.
  *
- * `CurrentDot` marks a preset the values still match, and goes out the moment they stop matching -
- * which is why a preset needs no other highlight.
+ * What tells them apart is their shape, not their fill: chips with gaps between them, one enclosed
+ * track, a hairline rail. Each is therefore free to mark its own choice by filling it, which is the
+ * one mark that takes no width and so leaves the controls beside it where they were.
  */
-export function CurrentDot() {
-  return <span className="current-dot" aria-hidden="true" />;
-}
 
 /** A rail of places. Selecting a tab shows its panel; what a panel then does is its own. */
 export function Tabs<Id extends string>({
@@ -80,9 +78,9 @@ export function Segmented<Id extends string>({
 }
 
 /**
- * Shortcuts that fill in the fields below. A preset carries the dot while the fields still match
- * it, and loses it on the first edit, because a preset is something you did and not somewhere you
- * are.
+ * Shortcuts that fill in the fields below. The filled chip is the preset the fields still hold, and
+ * the first edit under it puts the fill out, because a preset lasts only as long as nothing it
+ * wrote has moved.
  */
 export function Presets({
   presets,
@@ -98,7 +96,6 @@ export function Presets({
       {presets.map(({ name, current, onApply }) => (
         <button key={name} type="button" className={`preset ${current ? 'preset-current' : ''}`} onClick={onApply}>
           {name}
-          {current && <CurrentDot />}
         </button>
       ))}
     </div>
