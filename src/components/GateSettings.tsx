@@ -6,7 +6,7 @@ import { useCirclesNames } from '../lib/circles';
 import { useRegistryNames } from '../lib/registryNames';
 import { PickRow, Tabs } from './Choice';
 import { Modal } from './Modal';
-import { circlesRegistryLabel, RegistryManager } from './RegistryManager';
+import { circlesRegistryLabel, RegistryManager, type RegistryKind } from './RegistryManager';
 
 /**
  * Who may join a debate, as chosen before creation. Two shapes, both expressed to the contract as
@@ -70,15 +70,16 @@ export function ParticipantFields({
   const [tab, setTab] = useState<GateTab>(
     gate.mode === 'open' ? 'everyone' : held ? (held.kind === 'allowlist' ? 'allowlists' : 'circles') : 'custom',
   );
-  const [managing, setManaging] = useState(false);
+  // Which kind of registry the manager was opened for, and null while it is closed.
+  const [managing, setManaging] = useState<RegistryKind | null>(null);
   const [customAddress, setCustomAddress] = useState(gate.mode === 'registry' && !held ? gate.address : '');
 
   const picked = gate.mode === 'registry' ? gate.address : undefined;
   const pick = (address: Address, label: string) => onChange({ mode: 'registry', address, label });
 
-  const manage = (
-    <button type="button" className="btn btn-small" onClick={() => setManaging(true)}>
-      Manage registries
+  const manage = (kind: RegistryKind) => (
+    <button type="button" className="btn btn-small" onClick={() => setManaging(kind)}>
+      Manage {kind === 'circles' ? 'Circles registries' : 'allowlists'}
     </button>
   );
 
@@ -120,7 +121,7 @@ export function ParticipantFields({
             ))}
           </div>
         )}
-        {manage}
+        {manage('allowlists')}
       </div>
 
       <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
@@ -144,7 +145,7 @@ export function ParticipantFields({
             })}
           </div>
         )}
-        {manage}
+        {manage('circles')}
       </div>
 
       <div className="tab-panel" role="tabpanel" hidden={tab !== 'custom'}>
@@ -170,8 +171,12 @@ export function ParticipantFields({
       </div>
 
       {managing && (
-        <Modal title="Registries" onClose={() => setManaging(false)} wide>
-          <RegistryManager />
+        <Modal
+          title={managing === 'circles' ? 'Circles registries' : 'Allowlists'}
+          onClose={() => setManaging(null)}
+          wide
+        >
+          <RegistryManager only={managing} />
         </Modal>
       )}
     </>

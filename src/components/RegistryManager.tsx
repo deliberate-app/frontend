@@ -10,6 +10,9 @@ import { useRegistryNames } from '../lib/registryNames';
 import { PickRow, Segmented, Tabs } from './Choice';
 import { ModifyAllowlist } from './ModifyAllowlist';
 
+/** The two kinds of registry, which are also the manager's two tabs. */
+export type RegistryKind = 'allowlists' | 'circles';
+
 /** Why the manager is showing lists but offering no way to add to them. */
 const NEEDS_WALLET = 'Connect a wallet to make one.';
 
@@ -273,9 +276,10 @@ export function CirclesPanel({ access: { registries, factory, createCircles } }:
  * what exists and links here. Both panels stay mounted, so flipping tabs does not throw away a
  * half-typed address.
  */
-export function RegistryManager() {
+export function RegistryManager({ only }: { only?: RegistryKind }) {
   const access = useRegistries();
-  const [tab, setTab] = useState<'allowlists' | 'circles'>('allowlists');
+  const [tab, setTab] = useState<RegistryKind>('allowlists');
+  const shown = only ?? tab;
 
   if (!access) {
     return <p className="composer-hint">No deployment to read registries from.</p>;
@@ -283,21 +287,28 @@ export function RegistryManager() {
 
   return (
     <>
-      <Tabs
-        active={tab}
-        onSelect={setTab}
-        tabs={[
-          { id: 'allowlists', label: 'Allowlists' },
-          { id: 'circles', label: 'Circles' },
-        ]}
-      />
+      {/* Opened from a list of one kind, the manager keeps to that kind: the reader came here to
+          work on it, not to be handed the other one back. */}
+      {only === undefined && (
+        <Tabs
+          active={tab}
+          onSelect={setTab}
+          tabs={[
+            { id: 'allowlists', label: 'Allowlists' },
+            { id: 'circles', label: 'Circles' },
+          ]}
+        />
+      )}
 
-      <div className="tab-panel" role="tabpanel" hidden={tab !== 'allowlists'}>
-        <AllowlistPanel access={access} />
-      </div>
-      <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
-        <CirclesPanel access={access} />
-      </div>
+      {shown === 'allowlists' ? (
+        <div className="tab-panel" role="tabpanel">
+          <AllowlistPanel access={access} />
+        </div>
+      ) : (
+        <div className="tab-panel" role="tabpanel">
+          <CirclesPanel access={access} />
+        </div>
+      )}
     </>
   );
 }
