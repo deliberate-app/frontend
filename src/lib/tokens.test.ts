@@ -39,7 +39,7 @@ describe('the preset cache', () => {
 });
 
 describe('bountyPresets', () => {
-  test('offers the Circles group token only inside the Circles app', () => {
+  test('offers the Circles group token only inside the Gnosis App', () => {
     const outside = bountyPresets(false).map((token) => token.symbol);
     const inside = bountyPresets(true).map((token) => token.symbol);
     expect(outside).not.toContain('s-gCRC');

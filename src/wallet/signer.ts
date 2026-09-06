@@ -53,7 +53,7 @@ export interface ContractCall {
  *
  * The app has two kinds of account and only this differs between them. A browser wallet signs and
  * broadcasts through its own EIP-1193 provider, and the reader may have it on the wrong network. A
- * Circles mini-app host holds the account itself: it takes calldata, pays the gas, and is on Gnosis
+ * Gnosis App holds the account itself: it takes calldata, pays the gas, and is on Gnosis
  * by construction - it exposes no provider at all, so nothing above this seam may reach for one.
  *
  * Reads never come through here. They go to the deployment's own RPC, which is why the mini-app
@@ -91,7 +91,7 @@ export function walletSigner(provider: EIP1193Provider, account: Address): Signe
 }
 
 /**
- * The Circles mini-app host, which holds the account and pays the gas.
+ * The Gnosis App, which runs the page in a frame, holds the account and pays the gas.
  *
  * The host takes plain calldata and answers with the hash of the transaction it sent. It is on
  * Gnosis Chain and cannot be moved, so there is no chain to ensure; and it sets its own gas, so the
@@ -110,7 +110,7 @@ export function miniappSigner(account: Address): Signer {
         },
       ]);
       if (hash === undefined) {
-        throw new Error('The Circles app did not send the transaction.');
+        throw new Error('The Gnosis App did not send the transaction.');
       }
       return hash as Hex;
     },

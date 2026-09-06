@@ -27,7 +27,7 @@ import { useNow } from './lib/time';
 import { formatVotes, INITIAL_UNITS } from './lib/votes';
 import type { AccountPosition, Debate, DebateFilter, DebateSummary } from './types';
 import { availablePhasePoke, livePhaseOf, PHASE_LABEL } from './types';
-import { CirclesApp } from './wallet/circlesApp';
+import { HostedAccount } from './wallet/hostedAccount';
 import { ensureWalletChain, miniappSigner, walletSigner } from './wallet/signer';
 import { useWallet } from './wallet/useWallet';
 
@@ -521,7 +521,7 @@ export default function App() {
     // Every badge below can tell whether the account it names is the one connected, so none of the
     // views in between have to carry the answer down to it.
     <ViewerAccount.Provider value={wallet.account}>
-      <CirclesApp.Provider value={wallet.hosted && wallet.account !== null}>
+      <HostedAccount.Provider value={wallet.hosted && wallet.account !== null}>
         <Connect.Provider value={connectAccess}>
           <Registries.Provider value={registryAccess}>
             <header className="topbar">
@@ -638,7 +638,7 @@ export default function App() {
             </footer>
           </Registries.Provider>
         </Connect.Provider>
-      </CirclesApp.Provider>
+      </HostedAccount.Provider>
     </ViewerAccount.Provider>
   );
 }

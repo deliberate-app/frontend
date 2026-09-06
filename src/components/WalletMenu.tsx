@@ -150,7 +150,7 @@ export function WalletMenu({
     );
   }
 
-  // In the Circles app the account is the host's Safe. There is nothing here for the reader to
+  // In the Gnosis App the account is the host's Safe. There is nothing here for the reader to
   // connect, so this control only ever reports: the address once the host names it, and that it is
   // waiting until then. Offering browser wallets would send them to install one that cannot sign.
   if (wallet.embedded) {

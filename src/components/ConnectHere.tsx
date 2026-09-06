@@ -17,11 +17,11 @@ export const Connect = createContext<ConnectAccess | null>(null);
 export const NO_WALLET_FOUND = 'No wallet extensions found. Install MetaMask or another browser wallet, then reload.';
 
 /**
- * The same situation inside the Circles app, where the answer is different. The account is the
+ * The same situation inside the Gnosis App, where the answer is different. The account is the
  * host's Safe, so a browser wallet is not the way in and naming one would send the reader to
  * install something that cannot help.
  */
-export const NO_HOSTED_ACCOUNT = 'The Circles app has not connected an account yet.';
+export const NO_HOSTED_ACCOUNT = 'The Gnosis App has not connected an account yet.';
 
 /**
  * Connecting where the action is.

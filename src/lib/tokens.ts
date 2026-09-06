@@ -32,9 +32,9 @@ export const CIRCLES_BOUNTY_TOKEN: TokenInfo = {
   decimals: 18,
 };
 
-/** The bounty tokens on offer. The Circles group token is one only inside the Circles app. */
-export const bountyPresets = (inCirclesApp: boolean): readonly TokenInfo[] =>
-  inCirclesApp ? [...BOUNTY_TOKEN_PRESETS, CIRCLES_BOUNTY_TOKEN] : BOUNTY_TOKEN_PRESETS;
+/** The bounty tokens on offer. The Circles group token is one only inside the Gnosis App. */
+export const bountyPresets = (hostedAccount: boolean): readonly TokenInfo[] =>
+  hostedAccount ? [...BOUNTY_TOKEN_PRESETS, CIRCLES_BOUNTY_TOKEN] : BOUNTY_TOKEN_PRESETS;
 
 /**
  * Resolved token identities by lowercased address. Every preset is seeded, the Circles one included

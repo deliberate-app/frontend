@@ -8,7 +8,7 @@ import { createWalletClient, custom, getAddress, type Address, type EIP1193Provi
  *
  * Being embedded is therefore only a reason to listen. The app counts itself hosted once a host has
  * actually named an account, and until then keeps offering the browser wallets - a page framed by
- * something that is not the Circles app would otherwise have no way in at all.
+ * something that is not the Gnosis App would otherwise have no way in at all.
  */
 const EMBEDDED = isMiniappMode();
 
@@ -30,12 +30,12 @@ interface EIP6963AnnounceEvent extends Event {
 export interface WalletState {
   /**
    * Whether the page is running inside a frame, which is all the mini-app SDK can tell us. In the
-   * Circles app the account is the host's Safe, so there is nothing here for the reader to connect
+   * Gnosis App the account is the host's Safe, so there is nothing here for the reader to connect
    * and no browser wallet to offer them.
    */
   embedded: boolean;
   /**
-   * Whether a Circles mini-app host holds the account: it has named one, so it signs and pays. True
+   * Whether the mini-app host holds the account: it has named one, so it signs and pays. True
    * only once that has happened, never merely because the page is in a frame.
    */
   hosted: boolean;
@@ -150,7 +150,7 @@ export function useWallet(): WalletState {
     account: hostedAccount ?? account,
     // No provider when hosted: the host signs, and nothing may reach past it for one.
     provider: hosted ? null : (connected?.provider ?? null),
-    walletName: hosted ? 'Circles' : (connected?.info.name ?? null),
+    walletName: hosted ? 'Gnosis App' : (connected?.info.name ?? null),
     // The host's chain is its own business, and it is on Gnosis. Left unsaid so the wrong-network
     // warning, which is about a wallet the reader can move, does not fire on one they cannot.
     chainId: hosted ? null : chainId,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { getAddress, zeroAddress, type Address } from 'viem';
 import { useRegistries, type RegistryAccess } from '../data/registries';
 import { looksLikeAddress, shortAddress } from '../lib/address';
-import { useCirclesApp } from '../wallet/circlesApp';
+import { useHostedAccount } from '../wallet/hostedAccount';
 import { PickRow, Tabs } from './Choice';
 import { Modal } from './Modal';
 import {
@@ -94,7 +94,7 @@ function RegistryTab({
  */
 export function ParticipantFields({ gate, onChange }: { gate: GateDraft; onChange: (gate: GateDraft) => void }) {
   const access = useRegistries();
-  const circlesOffered = useCirclesApp();
+  const circlesOffered = useHostedAccount();
 
   // The tab the debate's current choice lives in, which is where the fields open. Read once, for
   // the initial state: after that the reader owns the tab.
@@ -139,7 +139,7 @@ export function ParticipantFields({ gate, onChange }: { gate: GateDraft; onChang
           { id: 'everyone', label: 'Everyone' },
           { id: 'allowlist', label: 'Allowlists' },
           // Circles admits by trust between Circles accounts, so it is offered only where the
-          // reader has one - inside the Circles app.
+          // reader has one - inside the Gnosis App.
           ...(circlesOffered ? ([{ id: 'circles', label: 'Circles' }] as const) : []),
           { id: 'custom', label: 'Custom' },
         ]}

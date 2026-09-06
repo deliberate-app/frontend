@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Segmented } from './Choice';
 import { isAddress } from 'viem';
 import { bountyPresets, formatTokenAmount, parseTokenAmount, type TokenInfo } from '../lib/tokens';
-import { useCirclesApp } from '../wallet/circlesApp';
+import { useHostedAccount } from '../wallet/hostedAccount';
 
 /** A bounty as configured in the create form: the token's identity plus the raw amount. */
 export interface BountyDraft {
@@ -24,7 +24,7 @@ export function BountyFields({
   /** Resolves a custom address to its token identity (chain read); absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
 }) {
-  const presets = bountyPresets(useCirclesApp());
+  const presets = bountyPresets(useHostedAccount());
   const [amountText, setAmountText] = useState(() =>
     bounty && bounty.amount > 0n ? formatTokenAmount(bounty.amount, bounty.token).split(' ')[0] : '',
   );
