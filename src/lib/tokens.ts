@@ -11,17 +11,37 @@ export interface TokenInfo {
 /**
  * The Gnosis Chain tokens offered as bounty presets: the wrapped gas token and Monerium's EURe.
  * The contract accepts any ERC-20 - these are just the one-click choices; the custom field takes
- * any address. Circles is not a preset yet: its tokens are ERC-1155 balances per avatar, and only
- * their ERC-20 wrappers could serve (see TODO.md).
+ * any address.
  */
 export const BOUNTY_TOKEN_PRESETS: readonly TokenInfo[] = [
   { address: getAddress('0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d'), symbol: 'WXDAI', decimals: 18 },
   { address: getAddress('0x420CA0f9B9b604cE0fd9C18EF134C705e5Fa3430'), symbol: 'EURe', decimals: 18 },
 ];
 
-/** Resolved token identities by lowercased address; presets are pre-seeded. */
+/**
+ * The Circles group token of Gnosis, as an ERC-20 a bounty can hold.
+ *
+ * Circles itself is ERC-1155, one balance per avatar, so only a wrapper can serve as a bounty. Two
+ * wrappers exist for the group and this is the static one. The other demurrages: its balances fall
+ * by roughly seven percent a year, and a bounty pool is recorded once at funding time and divided
+ * on claim, so a pool that shrank under the contract would promise more than it could pay.
+ */
+export const CIRCLES_BOUNTY_TOKEN: TokenInfo = {
+  address: getAddress('0x78Bab8D5EA6B72f8375Cc21436857815210F7D02'),
+  symbol: 's-gCRC',
+  decimals: 18,
+};
+
+/** The bounty tokens on offer. The Circles group token is one only inside the Circles app. */
+export const bountyPresets = (inCirclesApp: boolean): readonly TokenInfo[] =>
+  inCirclesApp ? [...BOUNTY_TOKEN_PRESETS, CIRCLES_BOUNTY_TOKEN] : BOUNTY_TOKEN_PRESETS;
+
+/**
+ * Resolved token identities by lowercased address. Every preset is seeded, the Circles one included
+ * wherever it came from, so an address written by hand is named without a read.
+ */
 const tokenCache = new Map<string, TokenInfo>(
-  BOUNTY_TOKEN_PRESETS.map((token) => [token.address.toLowerCase(), token]),
+  [...BOUNTY_TOKEN_PRESETS, CIRCLES_BOUNTY_TOKEN].map((token) => [token.address.toLowerCase(), token]),
 );
 
 /** The cached identity of a token, when it is a preset or was resolved before. */

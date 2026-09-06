@@ -7,6 +7,7 @@ import type { IdentityRegistryInfo } from '../data/source';
 import { shortAddress } from '../lib/address';
 import { searchCirclesAvatars, useCirclesNames, type CirclesAvatar } from '../lib/circles';
 import { nameOf, useRegistryNames } from '../lib/registryNames';
+import { useCirclesApp } from '../wallet/circlesApp';
 import { PickRow, Segmented, Tabs } from './Choice';
 import { ConnectHere } from './ConnectHere';
 import { ModifyAllowlist } from './ModifyAllowlist';
@@ -361,18 +362,22 @@ function CirclesPanel({ access }: { access: RegistryAccess }) {
  */
 export function RegistryManager({ only }: { only?: RegistryKind }) {
   const access = useRegistries();
+  const circlesOffered = useCirclesApp();
   const [tab, setTab] = useState<RegistryKind>('allowlist');
-  const shown = only ?? tab;
 
   if (!access) {
     return <p className="composer-hint">No deployment to read registries from.</p>;
   }
 
+  // Without the Circles app there is no Circles account to keep a registry for, so allowlists are
+  // the only kind and the rail that would offer a choice between two says nothing.
+  const shown = circlesOffered ? (only ?? tab) : 'allowlist';
+
   return (
     <>
       {/* Opened from a list of one kind, the manager keeps to that kind: the reader came here to
           work on it, not to be handed the other one back. */}
-      {only === undefined && (
+      {only === undefined && circlesOffered && (
         <Tabs
           active={tab}
           onSelect={setTab}

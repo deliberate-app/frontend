@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Segmented } from './Choice';
 import { isAddress } from 'viem';
-import { BOUNTY_TOKEN_PRESETS, formatTokenAmount, parseTokenAmount, type TokenInfo } from '../lib/tokens';
+import { bountyPresets, formatTokenAmount, parseTokenAmount, type TokenInfo } from '../lib/tokens';
+import { useCirclesApp } from '../wallet/circlesApp';
 
 /** A bounty as configured in the create form: the token's identity plus the raw amount. */
 export interface BountyDraft {
@@ -23,12 +24,13 @@ export function BountyFields({
   /** Resolves a custom address to its token identity (chain read); absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
 }) {
+  const presets = bountyPresets(useCirclesApp());
   const [amountText, setAmountText] = useState(() =>
     bounty && bounty.amount > 0n ? formatTokenAmount(bounty.amount, bounty.token).split(' ')[0] : '',
   );
   // The reader can be on Custom before a token resolves, when there is no bounty to read it from.
   const [customChosen, setCustomChosen] = useState(
-    bounty !== null && !BOUNTY_TOKEN_PRESETS.some((token) => token.address === bounty.token.address),
+    () => bounty !== null && !presets.some((token) => token.address === bounty.token.address),
   );
   const [customAddress, setCustomAddress] = useState(customChosen && bounty ? bounty.token.address : '');
   const [customBusy, setCustomBusy] = useState(false);
@@ -87,11 +89,11 @@ export function BountyFields({
             if (customAddress.trim() !== '') void pickCustom();
             return;
           }
-          apply(BOUNTY_TOKEN_PRESETS.find((preset) => preset.address === id) ?? null, amountText);
+          apply(presets.find((preset) => preset.address === id) ?? null, amountText);
         }}
         options={[
           { id: 'none', label: 'None' },
-          ...BOUNTY_TOKEN_PRESETS.map((token) => ({ id: token.address, label: token.symbol })),
+          ...presets.map((token) => ({ id: token.address, label: token.symbol })),
           { id: 'custom', label: 'Custom' },
         ]}
       />

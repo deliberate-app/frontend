@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getAddress, zeroAddress, type Address } from 'viem';
 import { useRegistries, type RegistryAccess } from '../data/registries';
 import { looksLikeAddress, shortAddress } from '../lib/address';
+import { useCirclesApp } from '../wallet/circlesApp';
 import { PickRow, Tabs } from './Choice';
 import { Modal } from './Modal';
 import {
@@ -93,12 +94,16 @@ function RegistryTab({
  */
 export function ParticipantFields({ gate, onChange }: { gate: GateDraft; onChange: (gate: GateDraft) => void }) {
   const access = useRegistries();
+  const circlesOffered = useCirclesApp();
 
   // The tab the debate's current choice lives in, which is where the fields open. Read once, for
   // the initial state: after that the reader owns the tab.
   const [tab, setTab] = useState<GateTab>(() => {
     if (gate.mode === 'open') return 'everyone';
     const held = access?.registries.find((registry) => registry.address.toLowerCase() === gate.address.toLowerCase());
+    // A debate already gated by a Circles registry opens on Custom where that tab is not offered:
+    // the address is still shown, and still the answer, on the one tab that can hold it.
+    if (held?.kind === 'circles' && !circlesOffered) return 'custom';
     return held ? held.kind : 'custom';
   });
   // Which kind of registry the manager was opened for, and null while it is closed.
@@ -133,7 +138,9 @@ export function ParticipantFields({ gate, onChange }: { gate: GateDraft; onChang
         tabs={[
           { id: 'everyone', label: 'Everyone' },
           { id: 'allowlist', label: 'Allowlists' },
-          { id: 'circles', label: 'Circles' },
+          // Circles admits by trust between Circles accounts, so it is offered only where the
+          // reader has one - inside the Circles app.
+          ...(circlesOffered ? ([{ id: 'circles', label: 'Circles' }] as const) : []),
           { id: 'custom', label: 'Custom' },
         ]}
       />
@@ -153,7 +160,7 @@ export function ParticipantFields({ gate, onChange }: { gate: GateDraft; onChang
         />
       </div>
 
-      <div className="tab-panel" role="tabpanel" hidden={tab !== 'circles'}>
+      <div className="tab-panel" role="tabpanel" hidden={!circlesOffered || tab !== 'circles'}>
         <RegistryTab
           access={access}
           kind="circles"

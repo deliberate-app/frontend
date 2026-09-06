@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { BOUNTY_TOKEN_PRESETS, formatTokenAmount, knownToken, parseTokenAmount } from './tokens';
+import {
+  BOUNTY_TOKEN_PRESETS,
+  bountyPresets,
+  CIRCLES_BOUNTY_TOKEN,
+  formatTokenAmount,
+  knownToken,
+  parseTokenAmount,
+} from './tokens';
 
 describe('formatTokenAmount', () => {
   const usdc = { symbol: 'USDC', decimals: 6 };
@@ -28,5 +35,21 @@ describe('the preset cache', () => {
       expect(knownToken(preset.address.toLowerCase())).toEqual(preset);
     }
     expect(knownToken('0x0000000000000000000000000000000000000001')).toBeUndefined();
+  });
+});
+
+describe('bountyPresets', () => {
+  test('offers the Circles group token only inside the Circles app', () => {
+    const outside = bountyPresets(false).map((token) => token.symbol);
+    const inside = bountyPresets(true).map((token) => token.symbol);
+    expect(outside).not.toContain('s-gCRC');
+    expect(inside).toEqual([...outside, 's-gCRC']);
+  });
+
+  // The static wrapper, not the demurraged one: a pool is recorded at funding and divided on claim,
+  // so a balance that fell under the contract would promise more than it could pay.
+  test('names the static Circles wrapper', () => {
+    expect(CIRCLES_BOUNTY_TOKEN.symbol.startsWith('s-')).toBe(true);
+    expect(CIRCLES_BOUNTY_TOKEN.decimals).toBe(18);
   });
 });
