@@ -150,15 +150,11 @@ export function WalletMenu({
     );
   }
 
-  // In the Gnosis App the account is the host's Safe. There is nothing here for the reader to
-  // connect, so this control only ever reports: the address once the host names it, and that it is
-  // waiting until then. Offering browser wallets would send them to install one that cannot sign.
+  // In the Gnosis App the account is the host's Safe, and the host's own control sits directly
+  // above this one saying so. There is nothing here for the reader to connect and nothing to tell
+  // them twice, so until the host names an account this says nothing at all.
   if (wallet.embedded) {
-    return (
-      <div className="wallet">
-        <span className="wallet-button wallet-waiting">Connecting…</span>
-      </div>
-    );
+    return null;
   }
 
   return (

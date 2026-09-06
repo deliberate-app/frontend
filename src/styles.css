@@ -197,6 +197,14 @@ button {
   overflow: hidden;
 }
 
+/* An account Circles knows, read as a name rather than as an address: no longer mono, since it is
+   words now and not a hash to compare character by character. */
+.circles-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* The icon's place in a row where no account has been written yet: kept, so the field beside it
    does not move when one is. */
 .identicon-blank {
@@ -260,14 +268,6 @@ button {
 
 .wallet-button:hover {
   background: var(--canvas);
-}
-
-/* The host has not named its Safe yet. It reports rather than invites, so it is quiet and does
-   not answer a click. */
-.wallet-waiting {
-  border-color: var(--hairline);
-  color: var(--bark);
-  cursor: default;
 }
 
 .wallet-menu {

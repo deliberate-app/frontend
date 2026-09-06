@@ -1,5 +1,7 @@
 import { createContext, memo, useContext } from 'react';
 import { identiconOf, IDENTICON_SIZE, shortAddress } from '../lib/address';
+import { useCirclesIdentity } from '../lib/circles';
+import { useHostedAccount } from '../wallet/hostedAccount';
 
 /**
  * The connected account, so a badge can recognise itself without every view between here and the
@@ -66,10 +68,21 @@ export function AddressBadge({
 }) {
   const viewer = useContext(ViewerAccount);
   const isViewer = !asAddress && viewer !== null && viewer.toLowerCase() === address.toLowerCase();
+  // Inside the Gnosis App the reader knows people by their Circles profile, so an account they
+  // could recognise is drawn as itself. Only there, and only for an account Circles knows: an
+  // address Circles has never heard of is still an address, wherever it is read.
+  const circles = useCirclesIdentity(address, useHostedAccount());
+  const named = circles.name !== undefined && label === undefined && !full;
   return (
     <span className="address-badge">
-      <IdenticonIcon address={address} />
-      <span className={`mono ${full ? 'address-full' : ''}`}>{label ?? (full ? address : shortAddress(address))}</span>
+      {circles.picture ? (
+        <img className="identicon" src={circles.picture} alt="" />
+      ) : (
+        <IdenticonIcon address={address} />
+      )}
+      <span className={named ? 'circles-name' : `mono ${full ? 'address-full' : ''}`}>
+        {named ? circles.name : (label ?? (full ? address : shortAddress(address)))}
+      </span>
       {isViewer && <span className="address-viewer">(You)</span>}
     </span>
   );

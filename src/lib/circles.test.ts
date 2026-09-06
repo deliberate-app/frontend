@@ -15,6 +15,8 @@ describe('reading the Circles profile service', () => {
       name: 't3 crc safe _5',
       kind: 'group',
       description: 'test',
+      // Kept because the picture lives at the profile the CID names, not in this answer.
+      cid: 'Qm…',
     });
   });
 
