@@ -78,6 +78,16 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-06 — a pill never wraps.** The top bar is a flex row and its pills were the items
+  that gave way, so "Tally the debate" shrank until its label broke over three lines - and three
+  lines inside a 999px radius is a circle, not a button. The rule holds for every pill in the bar,
+  the phase chip and the wallet control included; they broke the same way and were fixed with it. Buttons keep their width now and the row
+  overflows instead, where the crowding belongs. The label lost its object at the same time: the
+  chip beside it already says TALLYING PHASE, so the button only has to say the verb. It stays
+  where it is, outlined and next to that chip, for the reason `Redeem all shares` does - the action
+  sits on the state it acts on, and a public chore the reader pays gas for should not be shouting.
+  (Principles 5, 10.)
+
 - **2026-09-06 — a wallet is asked for where the action is.** An action that needed a wallet asked
   for one by opening the picker in the header, which a modal covers, so "Connect a wallet to make
   one." meant leaving what you were doing and starting it again. The wallets are offered in place

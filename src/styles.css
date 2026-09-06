@@ -140,6 +140,7 @@ button {
 }
 
 .phase {
+  flex: none;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -148,6 +149,7 @@ button {
   border-radius: 999px;
   border: 1px solid var(--hairline);
   color: var(--bark);
+  white-space: nowrap;
 }
 
 /* The quiet global footer: project links under a hairline, pinned to the page bottom. */
@@ -235,8 +237,11 @@ button {
 }
 
 /* ── Wallet ──────────────────────────────────────────────────────────── */
+/* Holds the button and the menu that hangs off it. It does not give way either: the button inside
+   is a pill, and the row is what should overflow. */
 .wallet {
   position: relative;
+  flex: none;
 }
 
 .wallet-button {
@@ -250,6 +255,7 @@ button {
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .wallet-button:hover {
@@ -1294,7 +1300,12 @@ button {
 }
 
 /* ── Actions ─────────────────────────────────────────────────────────── */
+/* A pill never wraps. In a crowded flex row - the top bar, an action row - the button is the item
+   that gives way, and a label broken over three lines inside a 999px radius is a circle rather than
+   a button. It keeps its width and lets the row overflow instead, where the crowding is visible and
+   belongs to the row. */
 .btn {
+  flex: none;
   padding: 0.45rem 0.9rem;
   border: 1px solid var(--ink);
   border-radius: 999px;
@@ -1302,6 +1313,7 @@ button {
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .btn:hover:enabled {
