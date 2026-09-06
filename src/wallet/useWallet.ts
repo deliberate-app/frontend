@@ -2,6 +2,8 @@ import { isMiniappMode, onWalletChange } from '@aboutcircles/miniapp-sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { createWalletClient, custom, getAddress, type Address, type EIP1193Provider } from 'viem';
 
+import { HOST_CHAIN_ID } from '../lib/chains';
+
 /**
  * Whether this page is embedded at all, which is all the SDK can tell us: its check is
  * `window.parent !== window`, so any site that frames the app answers yes.
@@ -151,9 +153,10 @@ export function useWallet(): WalletState {
     // No provider when hosted: the host signs, and nothing may reach past it for one.
     provider: hosted ? null : (connected?.provider ?? null),
     walletName: hosted ? 'Gnosis App' : (connected?.info.name ?? null),
-    // The host's chain is its own business, and it is on Gnosis. Left unsaid so the wrong-network
-    // warning, which is about a wallet the reader can move, does not fire on one they cannot.
-    chainId: hosted ? null : chainId,
+    // The host is on Gnosis Chain, so the connection names its network like any other. A mismatch
+    // still shows - it is worth knowing - but the offer to switch does not, since that needs a
+    // provider and the reader cannot move the host anyway.
+    chainId: hosted ? HOST_CHAIN_ID : chainId,
     connect,
     disconnect,
   };
