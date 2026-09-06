@@ -86,9 +86,9 @@ export function WalletMenu({
             <p className="wallet-menu-note">Connected with {wallet.walletName}</p>
             {wallet.chainId !== null && (
               <p className={`wallet-chain${wrongChain ? ' wallet-chain-warn' : ''}`}>
-                <span className="wallet-chain-dot" aria-hidden />
+                <span className={`chain-dot${wrongChain ? ' chain-dot-warn' : ''}`} aria-hidden />
                 {chainName(wallet.chainId)}
-                {isTestnet(wallet.chainId) && <span className="wallet-chain-tag">testnet</span>}
+                {isTestnet(wallet.chainId) && <span className="chain-tag">testnet</span>}
               </p>
             )}
             {wrongChain && deploymentChainId != null && (

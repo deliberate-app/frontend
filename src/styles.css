@@ -320,7 +320,10 @@ button {
   font-weight: 500;
 }
 
-.wallet-chain-dot {
+/* One dot for every place a network is named, and it says one thing: whether the connection is
+   sound. Play money is said in words instead (.chain-tag) - an outlined dot only reads as "not
+   filled" beside a filled one, and both menus name a network standing alone. */
+.chain-dot {
   flex: none;
   width: 0.45rem;
   height: 0.45rem;
@@ -328,15 +331,15 @@ button {
   background: var(--pro);
 }
 
+.chain-dot-warn {
+  background: var(--con);
+}
+
 .wallet-chain-warn {
   color: var(--con);
 }
 
-.wallet-chain-warn .wallet-chain-dot {
-  background: var(--con);
-}
-
-.wallet-chain-tag {
+.chain-tag {
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -365,20 +368,6 @@ button {
    the lie. */
 .network-button {
   font-weight: 500;
-}
-
-.network-dot {
-  flex: none;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--pro);
-}
-
-/* Play money reads as an outline rather than a fill - present, but not asserting solidity. */
-.network-dot-testnet {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--bark);
 }
 
 .network-current {
