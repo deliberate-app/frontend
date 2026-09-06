@@ -5,7 +5,7 @@ import type { MembershipChange } from '../data/actions';
 import type { RegistryAccess } from '../data/registries';
 import { looksLikeAddress, parseAddressList, writeAddressRow } from '../lib/address';
 import { useCirclesNames } from '../lib/circles';
-import { setRegistryName, useRegistryNames } from '../lib/registryNames';
+import { registryName, setRegistryName } from '../lib/registryNames';
 import { AddressBadge, IdenticonIcon } from './AddressBadge';
 import { Modal } from './Modal';
 
@@ -65,13 +65,12 @@ export function ModifyAllowlist({
   access: RegistryAccess;
   onClose: () => void;
 }) {
-  const names = useRegistryNames();
   const [members, setMembers] = useState<Address[] | null>(null);
   const [dropping, setDropping] = useState<Address[]>([]);
   const [rows, setRows] = useState<string[]>(['']);
   // The field keeps what was typed; the store keeps it trimmed. Reading the stored form back into
   // the field would eat a trailing space the moment it was typed, since a name is stored trimmed.
-  const [name, setName] = useState(() => names[registry.toLowerCase()] ?? '');
+  const [name, setName] = useState(() => registryName(registry) ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -144,7 +143,7 @@ export function ModifyAllowlist({
           ? 'Loading the list…'
           : members.length === 0
             ? 'Nobody on this list yet.'
-            : `${members.length} ${members.length === 1 ? 'account' : 'accounts'} on this list`}
+            : `${counted(members.length, 'account')} on this list`}
       </p>
 
       {/* The accounts on the list and the ones being written run as one column, so an addition
