@@ -2082,6 +2082,47 @@ button {
     padding: 0.75rem 1rem;
   }
 
+  /* The browse screen follows the gutter down with everything else. Left at 1.5rem it was the page
+     itself that overflowed a phone, and the mini app frame clipped what ran past. */
+  .browse {
+    padding: 1.5rem 1rem;
+  }
+
+  /* One filter per line. They are a flex row that wraps, but a wrapped item still keeps its own
+     minimum width, and four fields with minimums do not fit a phone however they are wrapped. */
+  .filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .filter-author {
+    min-width: 0;
+  }
+
+  /* A field fills its line rather than asking for a width of its own. */
+  .filter {
+    min-width: 0;
+  }
+
+  /* A debate's row is four columns - the thesis, the phase, the verdict, the creator - and the last
+     three keep their widths. On a phone the thesis takes the line and they follow on the next,
+     which is the same move the focused claim's meta row makes. */
+  .debate-row {
+    flex-wrap: wrap;
+  }
+
+  .debate-open {
+    flex-basis: 100%;
+  }
+
+  .filter select,
+  .filter input {
+    width: 100%;
+    min-width: 0;
+  }
+
   .debate {
     padding: 1rem 1rem 3rem;
   }
