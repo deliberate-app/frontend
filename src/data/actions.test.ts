@@ -7,7 +7,8 @@ import { loadArtifact } from '../../scripts/devstack/artifacts';
 import { anvilAccount, devChainClient } from '../../scripts/devstack/debate';
 import { classicSchedule } from '../lib/debateTiming';
 import type { Debate } from '../types';
-import { connectDebateActions, ensureWalletChain, gasLimitFor } from './actions';
+import { connectDebateActions, gasLimitFor } from './actions';
+import { ensureWalletChain, walletSigner } from '../wallet/signer';
 import { contractSource } from './source';
 
 const RPC_URL = 'http://127.0.0.1:8545';
@@ -78,10 +79,10 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
 
       // The action layer, as the UI uses it.
       const config = { address, rpcUrl: RPC_URL };
-      const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
-      const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
+      const author = await connectDebateActions(config, walletSigner(anvilProvider, anvilAccount(7).address));
+      const rater = await connectDebateActions(config, walletSigner(anvilProvider, anvilAccount(8).address));
       // The keeper never joins: the tally is permissionless.
-      const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
+      const keeper = await connectDebateActions(config, walletSigner(anvilProvider, anvilAccount(9).address));
       // Reads come from the source layer (here the chain source; the app prefers the indexer).
       const reads = contractSource(address, RPC_URL);
 
@@ -163,7 +164,7 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       const address = await deploy('Deliberate.sol', 'Deliberate', []);
 
       const config = { address, rpcUrl: RPC_URL };
-      const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
+      const author = await connectDebateActions(config, walletSigner(anvilProvider, anvilAccount(7).address));
 
       const timeUnit = 60;
       await author.createDebate('A movable thesis', classicSchedule(timeUnit), 5, zeroAddress);
@@ -220,9 +221,9 @@ describe('debate actions (against a fresh deployment on the local anvil)', () =>
       const warpTo = async (timestamp: number) => warp(timestamp - Number((await client.getBlock()).timestamp));
 
       const config = { address, rpcUrl: RPC_URL };
-      const author = await connectDebateActions(config, anvilProvider, anvilAccount(7).address);
-      const rater = await connectDebateActions(config, anvilProvider, anvilAccount(8).address);
-      const keeper = await connectDebateActions(config, anvilProvider, anvilAccount(9).address);
+      const author = await connectDebateActions(config, walletSigner(anvilProvider, anvilAccount(7).address));
+      const rater = await connectDebateActions(config, walletSigner(anvilProvider, anvilAccount(8).address));
+      const keeper = await connectDebateActions(config, walletSigner(anvilProvider, anvilAccount(9).address));
       // Reads come from the source layer (here the indexer-less chain source).
       const reads = contractSource(address, RPC_URL);
 

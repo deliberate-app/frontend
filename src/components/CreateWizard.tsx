@@ -5,13 +5,16 @@ import { contentError, MAX_CONTENT_BYTES } from '../lib/content';
 import { DEFAULT_SCHEDULE, scheduleError, type DebateSchedule } from '../lib/debateTiming';
 import { DEFAULT_FEE_PERCENT, feeError } from '../lib/fees';
 import { formatDuration } from '../lib/time';
-import { formatTokenAmount, type TokenInfo } from '../lib/tokens';
+import { CIRCLES_BOUNTY_TOKEN, formatTokenAmount, type TokenInfo } from '../lib/tokens';
+import { useRegistries } from '../data/registries';
+import { useHostedAccount } from '../wallet/hostedAccount';
 import { BountyFields, type BountyDraft } from './BountySettings';
 import { Steps } from './Choice';
 import { ConnectHere } from './ConnectHere';
 import { ContentBudget } from './ContentBudget';
 import { FeeFields } from './FeeSettings';
 import { gateAddress, gateLabel, ParticipantFields, type GateDraft } from './GateSettings';
+import { circlesRegistryLabel } from './RegistryManager';
 import { Modal } from './Modal';
 import { ScheduleFields } from './ScheduleSettings';
 
@@ -49,6 +52,8 @@ export function CreateWizard({
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
 }) {
+  const access = useRegistries();
+  const hostedAccount = useHostedAccount();
   const [step, setStep] = useState(0);
   // A step's panel is built when the reader first reaches it and stays built after, so an answer
   // typed three steps back is still there on the way forward. Building all six at once would send
@@ -60,9 +65,21 @@ export function CreateWizard({
   };
   const [thesis, setThesis] = useState('');
   const [schedule, setSchedule] = useState<DebateSchedule>(DEFAULT_SCHEDULE);
-  const [gate, setGate] = useState<GateDraft>({ mode: 'open' });
+  // In the Gnosis App the reader's account is a Circles account, so the network's Circles registry
+  // and the Circles group token are what a debate is for by default. Elsewhere neither means
+  // anything to them, and the debate opens to everyone with no bounty as before.
+  const [gate, setGate] = useState<GateDraft>(() => {
+    const address = access?.circlesRegistry;
+    if (!hostedAccount || !address) return { mode: 'open' };
+    const registry = access?.registries.find((one) => one.address.toLowerCase() === address.toLowerCase());
+    return { mode: 'registry', address, label: registry && circlesRegistryLabel(registry) };
+  });
   const [fee, setFee] = useState(DEFAULT_FEE_PERCENT);
-  const [bounty, setBounty] = useState<BountyDraft | null>(null);
+  // The token, not an amount: a debate may name what it pays in and leave the funding to top-ups,
+  // which is what the contract's zero-amount bounty is for.
+  const [bounty, setBounty] = useState<BountyDraft | null>(() =>
+    hostedAccount ? { token: CIRCLES_BOUNTY_TOKEN, amount: 0n } : null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -157,7 +174,15 @@ export function CreateWizard({
           </div>
           <div className="summary-row">
             <dt>Bounty</dt>
-            <dd>{bounty ? formatTokenAmount(bounty.amount, bounty.token) : 'None'}</dd>
+            {/* A debate may name what it pays in and leave the funding to top-ups, so a pool of
+                nothing is a state worth naming rather than a bounty of zero. */}
+            <dd>
+              {bounty === null
+                ? 'None'
+                : bounty.amount > 0n
+                  ? formatTokenAmount(bounty.amount, bounty.token)
+                  : `${bounty.token.symbol}, left to top-ups`}
+            </dd>
           </div>
         </dl>
       </div>

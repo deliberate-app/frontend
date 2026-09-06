@@ -1,5 +1,18 @@
+import { isMiniappMode, onWalletChange } from '@aboutcircles/miniapp-sdk';
 import { useCallback, useEffect, useState } from 'react';
-import { createWalletClient, custom, type Address, type EIP1193Provider } from 'viem';
+import { createWalletClient, custom, getAddress, type Address, type EIP1193Provider } from 'viem';
+
+import { HOST_CHAIN_ID } from '../lib/chains';
+
+/**
+ * Whether this page is embedded at all, which is all the SDK can tell us: its check is
+ * `window.parent !== window`, so any site that frames the app answers yes.
+ *
+ * Being embedded is therefore only a reason to listen. The app counts itself hosted once a host has
+ * actually named an account, and until then keeps offering the browser wallets - a page framed by
+ * something that is not the Gnosis App would otherwise have no way in at all.
+ */
+const EMBEDDED = isMiniappMode();
 
 /** An EIP-6963 announced wallet provider. */
 export interface AnnouncedWallet {
@@ -17,6 +30,17 @@ interface EIP6963AnnounceEvent extends Event {
 }
 
 export interface WalletState {
+  /**
+   * Whether the page is running inside a frame, which is all the mini-app SDK can tell us. In the
+   * Gnosis App the account is the host's Safe, so there is nothing here for the reader to connect
+   * and no browser wallet to offer them.
+   */
+  embedded: boolean;
+  /**
+   * Whether the mini-app host holds the account: it has named one, so it signs and pays. True
+   * only once that has happened, never merely because the page is in a frame.
+   */
+  hosted: boolean;
   /** Wallets discovered via EIP-6963 (MetaMask, Rabby, Coinbase Wallet, ...). */
   wallets: AnnouncedWallet[];
   /** The connected account, if any. */
@@ -37,8 +61,18 @@ export interface WalletState {
 export function useWallet(): WalletState {
   const [wallets, setWallets] = useState<AnnouncedWallet[]>([]);
   const [account, setAccount] = useState<Address | null>(null);
+  // The host's account, which it connects and disconnects on its own. Held apart from `account` so
+  // the two ways in cannot overwrite each other.
+  const [hostedAccount, setHostedAccount] = useState<Address | null>(null);
   const [connected, setConnected] = useState<AnnouncedWallet | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
+
+  // The host announces its account, and announces again whenever it changes. Listening costs
+  // nothing where no host is there to answer.
+  useEffect(() => {
+    if (!EMBEDDED) return;
+    return onWalletChange((address) => setHostedAccount(address === null ? null : getAddress(address)));
+  }, []);
 
   useEffect(() => {
     const onAnnounce = (event: Event) => {
@@ -109,12 +143,20 @@ export function useWallet(): WalletState {
     setConnected(null);
   }, []);
 
+  const hosted = hostedAccount !== null;
   return {
-    wallets,
-    account,
-    provider: connected?.provider ?? null,
-    walletName: connected?.info.name ?? null,
-    chainId,
+    embedded: EMBEDDED,
+    hosted,
+    // A host that has named an account has answered the question the picker asks.
+    wallets: hosted ? [] : wallets,
+    account: hostedAccount ?? account,
+    // No provider when hosted: the host signs, and nothing may reach past it for one.
+    provider: hosted ? null : (connected?.provider ?? null),
+    walletName: hosted ? 'Gnosis App' : (connected?.info.name ?? null),
+    // The host is on Gnosis Chain, so the connection names its network like any other. A mismatch
+    // still shows - it is worth knowing - but the offer to switch does not, since that needs a
+    // provider and the reader cannot move the host anyway.
+    chainId: hosted ? HOST_CHAIN_ID : chainId,
     connect,
     disconnect,
   };

@@ -187,7 +187,9 @@ export function BrowseView({
                   <span>
                     <span className="mono">{formatVotes(debate.stake)} ⬡</span> staked
                   </span>
-                  {debate.bounty && (
+                  {/* A debate can name its bounty token before anyone funds it - the pool is open to
+                      top-ups - so the row waits for a pool rather than announcing a bounty of nothing. */}
+                  {debate.bounty && debate.bounty.pool > 0n && (
                     <span>
                       <span className="mono">{formatTokenAmount(debate.bounty.pool, debate.bounty)}</span> bounty
                     </span>

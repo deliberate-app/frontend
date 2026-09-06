@@ -86,9 +86,9 @@ export function WalletMenu({
             <p className="wallet-menu-note">Connected with {wallet.walletName}</p>
             {wallet.chainId !== null && (
               <p className={`wallet-chain${wrongChain ? ' wallet-chain-warn' : ''}`}>
-                <span className="wallet-chain-dot" aria-hidden />
+                <span className={`chain-dot${wrongChain ? ' chain-dot-warn' : ''}`} aria-hidden />
                 {chainName(wallet.chainId)}
-                {isTestnet(wallet.chainId) && <span className="wallet-chain-tag">testnet</span>}
+                {isTestnet(wallet.chainId) && <span className="chain-tag">testnet</span>}
               </p>
             )}
             {wrongChain && deploymentChainId != null && (
@@ -124,17 +124,21 @@ export function WalletMenu({
                 Registries
               </button>
             )}
-            <button
-              type="button"
-              role="menuitem"
-              className="wallet-menu-item"
-              onClick={() => {
-                wallet.disconnect();
-                setAccountMenuOpen(false);
-              }}
-            >
-              Disconnect
-            </button>
+            {/* The host holds its own account, so there is no connection here to end - offering it
+                would be a control that answers nothing. */}
+            {!wallet.hosted && (
+              <button
+                type="button"
+                role="menuitem"
+                className="wallet-menu-item"
+                onClick={() => {
+                  wallet.disconnect();
+                  setAccountMenuOpen(false);
+                }}
+              >
+                Disconnect
+              </button>
+            )}
           </div>
         )}
         {managing && (
@@ -142,6 +146,17 @@ export function WalletMenu({
             <RegistryManager />
           </Modal>
         )}
+      </div>
+    );
+  }
+
+  // In the Gnosis App the account is the host's Safe. There is nothing here for the reader to
+  // connect, so this control only ever reports: the address once the host names it, and that it is
+  // waiting until then. Offering browser wallets would send them to install one that cannot sign.
+  if (wallet.embedded) {
+    return (
+      <div className="wallet">
+        <span className="wallet-button wallet-waiting">Connecting…</span>
       </div>
     );
   }

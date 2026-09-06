@@ -86,7 +86,8 @@ export function NetworkMenu({
         setOpen(false);
       }}
     >
-      <span className={`network-dot${deploymentIsTestnet(network) ? ' network-dot-testnet' : ''}`} aria-hidden />
+      {/* No testnet word on a row: these sit under the Testnets heading, which has said it. */}
+      <span className="chain-dot" aria-hidden />
       {deploymentLabel(network)}
     </button>
   );
@@ -94,8 +95,10 @@ export function NetworkMenu({
   return (
     <div className="wallet network" ref={menuRef}>
       <button type="button" className="wallet-button network-button" onClick={() => setOpen((o) => !o)}>
-        <span className={`network-dot${deploymentIsTestnet(selected) ? ' network-dot-testnet' : ''}`} aria-hidden />
+        <span className="chain-dot" aria-hidden />
         {deploymentLabel(selected)}
+        {/* Standing alone, with no list to be read against, the network says what kind it is. */}
+        {deploymentIsTestnet(selected) && <span className="chain-tag">testnet</span>}
       </button>
       {open && (
         <div className="wallet-menu" role="menu">

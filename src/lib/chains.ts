@@ -23,6 +23,13 @@ import { anvil, base, baseSepolia, gnosis, gnosisChiado, mainnet, sepolia } from
  */
 const KNOWN_CHAINS: readonly Chain[] = [mainnet, sepolia, base, baseSepolia, gnosis, gnosisChiado, anvil];
 
+/**
+ * The chain a mini-app host signs on. The Gnosis App's host is on Gnosis Chain and cannot be
+ * moved, so the app reports that rather than leaving the connection's network unsaid - the SDK
+ * carries no chain of its own to ask.
+ */
+export const HOST_CHAIN_ID = gnosis.id;
+
 /** viem's definition for a chain id, or undefined when it is not one the app knows. */
 export function knownChain(id: number): Chain | undefined {
   return KNOWN_CHAINS.find((chain) => chain.id === id);
