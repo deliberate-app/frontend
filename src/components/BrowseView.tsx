@@ -23,7 +23,6 @@ function CreatePanel({
   needsWallet,
   onCreate,
   resolveToken,
-  circlesRegistry,
 }: {
   /** Why creating is impossible here at all; null when the deployment supports it. */
   unavailableHint: string | null;
@@ -38,8 +37,6 @@ function CreatePanel({
   ) => Promise<void>;
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
-  /** The deployment's Circles preset registry; absent only in sample mode, where creating is disabled. */
-  circlesRegistry?: Address;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -64,7 +61,6 @@ function CreatePanel({
           onCreate={onCreate}
           needsWallet={needsWallet}
           resolveToken={resolveToken}
-          circlesRegistry={circlesRegistry}
         />
       )}
     </>
@@ -82,7 +78,6 @@ export function BrowseView({
   onOpen,
   onCreate,
   resolveToken,
-  circlesRegistry,
 }: {
   debates: DebateSummary[];
   /** The connected account, enabling the "mine" author-filter shortcut. */
@@ -104,8 +99,6 @@ export function BrowseView({
   ) => Promise<void>;
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
-  /** The deployment's Circles preset registry; absent only in sample mode, where creating is disabled. */
-  circlesRegistry?: Address;
 }) {
   const filtered = filterDebates(debates, filter);
 
@@ -116,7 +109,6 @@ export function BrowseView({
         needsWallet={needsWallet}
         onCreate={onCreate}
         resolveToken={resolveToken}
-        circlesRegistry={circlesRegistry}
       />
 
       <div className="filters">

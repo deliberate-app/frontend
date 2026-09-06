@@ -52,7 +52,7 @@ export function Segmented<Id extends string>({
   onChange,
   label,
 }: {
-  options: ReadonlyArray<{ id: Id; label: string; title?: string }>;
+  options: ReadonlyArray<{ id: Id; label: string }>;
   value: Id;
   onChange: (id: Id) => void;
   /** Names the control for a screen reader, which cannot read the label beside it. */
@@ -60,13 +60,12 @@ export function Segmented<Id extends string>({
 }) {
   return (
     <div className="segmented" role="radiogroup" aria-label={label}>
-      {options.map(({ id, label: text, title }) => (
+      {options.map(({ id, label: text }) => (
         <button
           key={id}
           type="button"
           role="radio"
           aria-checked={id === value}
-          title={title}
           className={`segment ${id === value ? 'segment-active' : ''}`}
           onClick={() => onChange(id)}
         >
@@ -105,37 +104,34 @@ export function Presets({
 /**
  * One candidate on a list: what kind it is, what it is, and where to find it.
  *
- * Two marks, because a row can be two things at once. `chosen` is what the reader has settled on.
- * `current` is what they are looking at, which for a list with contents of its own - an allowlist
- * and its members - is not the same question.
+ * The address is the row's own second line rather than something each caller composes, because
+ * every list of these is a list of accounts and they must all print one the same way.
  */
 export function PickRow({
   kind,
   label,
   note,
-  sub,
+  address,
   chosen,
-  current,
   onChoose,
 }: {
   kind: string;
   label: ReactNode;
   /** A short aside at the trailing edge of the first line. */
   note?: ReactNode;
-  /** A second line under the label, for what is too long to sit beside it - a whole address. */
-  sub?: ReactNode;
+  /** Printed in full under the label, where the reader is checking it. */
+  address?: string;
   chosen?: boolean;
-  current?: boolean;
   /** Absent where the row is only telling the reader something. */
   onChoose?: () => void;
 }) {
-  const marks = `${chosen ? ' pick-row-chosen' : ''}${current ? ' pick-row-current' : ''}`;
+  const marks = chosen ? ' pick-row-chosen' : '';
   const body = (
     <>
       <span className="pick-row-kind">{kind}</span>
       <span>{label}</span>
       {note && <span className="pick-row-note">{note}</span>}
-      {sub && <span className="pick-row-sub">{sub}</span>}
+      {address && <span className="pick-row-sub mono address-full">{address}</span>}
     </>
   );
   return onChoose ? (

@@ -17,8 +17,7 @@ import { ScheduleFields } from './ScheduleSettings';
 
 const STEPS = ['Thesis', 'Schedule', 'Participants', 'Fee', 'Bounty', 'Summary'] as const;
 
-/** What still stands between the summary and a signature, wherever in the form it was left. */
-const unfinishedOf = (...problems: (string | null)[]) => problems.find((problem) => problem !== null) ?? null;
+type Step = (typeof STEPS)[number];
 
 /**
  * Starting a debate, in five steps.
@@ -36,7 +35,6 @@ export function CreateWizard({
   onCreate,
   needsWallet,
   resolveToken,
-  circlesRegistry,
 }: {
   onClose: () => void;
   onCreate: (
@@ -50,10 +48,16 @@ export function CreateWizard({
   needsWallet: boolean;
   /** Resolves a custom bounty token address to its identity; absent in sample mode. */
   resolveToken?: (address: string) => Promise<TokenInfo>;
-  /** The deployment's Circles preset registry; absent only in sample mode, where creating is off. */
-  circlesRegistry?: Address;
 }) {
   const [step, setStep] = useState(0);
+  // A step's panel is built when the reader first reaches it and stays built after, so an answer
+  // typed three steps back is still there on the way forward. Building all six at once would send
+  // the participants step's Circles lookups before anyone had asked to see it.
+  const [visited, setVisited] = useState<ReadonlySet<number>>(() => new Set([0]));
+  const go = (next: number) => {
+    setStep(next);
+    setVisited((seen) => (seen.has(next) ? seen : new Set(seen).add(next)));
+  };
   const [thesis, setThesis] = useState('');
   const [schedule, setSchedule] = useState<DebateSchedule>(DEFAULT_SCHEDULE);
   const [gate, setGate] = useState<GateDraft>({ mode: 'open' });
@@ -65,9 +69,18 @@ export function CreateWizard({
   const badThesis = contentError(thesis.trim());
   const badSchedule = scheduleError(schedule);
   const badFee = feeError(fee);
-  // What keeps this step from being left, and on the last step from being signed.
-  const blocking =
-    [badThesis, badSchedule, null, badFee, null, unfinishedOf(badThesis, badSchedule, badFee)][step] ?? null;
+  // What keeps this step from being left, and on the summary from being signed - which is whatever
+  // is still wrong anywhere in the form. Keyed by the step's own name, so inserting or reordering a
+  // step cannot silently hand one step another's rule.
+  const BLOCKING: Record<Step, string | null> = {
+    Thesis: badThesis,
+    Schedule: badSchedule,
+    Participants: null,
+    Fee: badFee,
+    Bounty: null,
+    Summary: badThesis ?? badSchedule ?? badFee,
+  };
+  const blocking = BLOCKING[STEPS[step]];
   // An untouched thesis is not a mistake yet, so the disabled Next says it rather than a red line.
   const shown = step === 0 && thesis === '' ? null : blocking;
   const last = step === STEPS.length - 1;
@@ -86,7 +99,7 @@ export function CreateWizard({
 
   return (
     <Modal title="Start a debate" onClose={onClose} wide>
-      <Steps steps={STEPS} active={step} onSelect={setStep} />
+      <Steps steps={STEPS} active={step} onSelect={go} />
 
       <div className="tab-panel" hidden={step !== 0}>
         <label className="duration-field">
@@ -105,23 +118,19 @@ export function CreateWizard({
       </div>
 
       <div className="tab-panel" hidden={step !== 1}>
-        <ScheduleFields schedule={schedule} onChange={setSchedule} />
+        {visited.has(1) && <ScheduleFields schedule={schedule} onChange={setSchedule} />}
       </div>
 
       <div className="tab-panel" hidden={step !== 2}>
-        {circlesRegistry ? (
-          <ParticipantFields gate={gate} onChange={setGate} circlesRegistry={circlesRegistry} />
-        ) : (
-          <p className="composer-hint">Anyone may join.</p>
-        )}
+        {visited.has(2) && <ParticipantFields gate={gate} onChange={setGate} />}
       </div>
 
       <div className="tab-panel" hidden={step !== 3}>
-        <FeeFields feePercentage={fee} onChange={setFee} />
+        {visited.has(3) && <FeeFields feePercentage={fee} onChange={setFee} />}
       </div>
 
       <div className="tab-panel" hidden={step !== 4}>
-        <BountyFields bounty={bounty} onChange={setBounty} resolveToken={resolveToken} />
+        {visited.has(4) && <BountyFields bounty={bounty} onChange={setBounty} resolveToken={resolveToken} />}
       </div>
 
       <div className="tab-panel" hidden={step !== 5}>
@@ -154,7 +163,7 @@ export function CreateWizard({
       </div>
 
       <div className="action-row">
-        <button type="button" className="btn" onClick={() => setStep(step - 1)} disabled={step === 0 || busy}>
+        <button type="button" className="btn" onClick={() => go(step - 1)} disabled={step === 0 || busy}>
           Back
         </button>
         {last ? (
@@ -177,7 +186,7 @@ export function CreateWizard({
             className="btn btn-solid"
             disabled={blocking !== null}
             title={blocking ?? undefined}
-            onClick={() => setStep(step + 1)}
+            onClick={() => go(step + 1)}
           >
             Next
           </button>
