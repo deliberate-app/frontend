@@ -9,6 +9,7 @@ import { AddressChip } from './AddressChip';
 import { VerdictMark, verdictLabel } from './VerdictMark';
 import type { BountyDraft } from './BountySettings';
 import { CreateWizard } from './CreateWizard';
+import { CreatorFilter } from './CreatorFilter';
 
 const PHASE_SHORT: Record<Phase, string> = {
   editing: 'Editing',
@@ -146,28 +147,7 @@ export function BrowseView({
             <option value="bounty">Highest bounty</option>
           </select>
         </label>
-        <label className="filter filter-author">
-          Creator
-          <span className="author-field">
-            <input
-              type="text"
-              value={filter.author}
-              placeholder="0x…"
-              onChange={(event) => onFilter({ ...filter, author: event.target.value })}
-            />
-            {/* The mine shortcut lives inside the field it fills. */}
-            {account && (
-              <button
-                type="button"
-                className={`author-mine${filter.author === account ? ' author-mine-active' : ''}`}
-                title={filter.author === account ? 'Show all creators' : 'Only my debates'}
-                onClick={() => onFilter({ ...filter, author: filter.author === account ? '' : account })}
-              >
-                mine
-              </button>
-            )}
-          </span>
-        </label>
+        <CreatorFilter value={filter.author} onChange={(author) => onFilter({ ...filter, author })} account={account} />
       </div>
 
       {debates.length === 0 ? (
