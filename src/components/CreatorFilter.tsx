@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
 import { getAddress } from 'viem';
 import { looksLikeAddress } from '../lib/address';
-import { searchCirclesAvatars, type CirclesAvatar } from '../lib/circles';
+import { useCirclesAvatarSearch } from '../lib/circles';
 import { useHostedAccount } from '../wallet/hostedAccount';
 import { AddressBadge } from './AddressBadge';
 import { PickRow } from './Choice';
@@ -29,29 +28,12 @@ export function CreatorFilter({
   account?: string;
 }) {
   const inCirclesApp = useHostedAccount();
-  const chosen = looksLikeAddress(value) ? getAddress(value) : undefined;
+  // Trimmed for both, because the guard trims and `getAddress` does not: a pasted address with a
+  // space around it would otherwise pass the test and throw while rendering.
+  const written = value.trim();
+  const chosen = looksLikeAddress(written) ? getAddress(written) : undefined;
 
-  // Finding a creator by name: the query is sent a moment after typing stops, and a stale answer is
-  // dropped when the query has moved on.
-  const [found, setFound] = useState<CirclesAvatar[] | null>(null);
-  const searching = inCirclesApp && value.trim() !== '' && chosen === undefined;
-
-  useEffect(() => {
-    if (!searching) {
-      setFound(null);
-      return;
-    }
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      searchCirclesAvatars(value, controller.signal)
-        .then(setFound)
-        .catch(() => setFound([]));
-    }, 250);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [value, searching]);
+  const found = useCirclesAvatarSearch(written, inCirclesApp && chosen === undefined);
 
   return (
     <label className="filter filter-author">

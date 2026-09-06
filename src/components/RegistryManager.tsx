@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { zeroAddress, type Address } from 'viem';
 import { actionErrorMessage } from '../data/actions';
 import type { RegistryAccess } from '../data/registries';
 import { useRegistries } from '../data/registries';
 import type { IdentityRegistryInfo } from '../data/source';
 import { shortAddress } from '../lib/address';
-import { searchCirclesAvatars, useCirclesNames, type CirclesAvatar } from '../lib/circles';
+import { useCirclesAvatarSearch, useCirclesNames, type CirclesAvatar } from '../lib/circles';
 import { nameOf, useRegistryNames } from '../lib/registryNames';
 import { useHostedAccount } from '../wallet/hostedAccount';
 import { PickRow, Segmented, Tabs } from './Choice';
@@ -226,31 +226,12 @@ function CirclesPanel({ access }: { access: RegistryAccess }) {
   const { createCircles } = access;
   const rows = useRegistryRows(access, 'circles');
 
-  // Finding an anchor by name: the query is sent a moment after typing stops, and a stale answer is
-  // dropped when the query has moved on.
   const [query, setQuery] = useState('');
-  const [found, setFound] = useState<CirclesAvatar[] | null>(null);
   const [anchor, setAnchor] = useState<CirclesAvatar | null>(null);
+  const found = useCirclesAvatarSearch(query, anchor === null);
   const [requireHuman, setRequireHuman] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (query.trim() === '') {
-      setFound(null);
-      return;
-    }
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      searchCirclesAvatars(query, controller.signal)
-        .then(setFound)
-        .catch(() => setFound([]));
-    }, 250);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query]);
 
   const create = async () => {
     if (!createCircles || !anchor) return;

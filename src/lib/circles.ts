@@ -68,16 +68,6 @@ async function search(params: Record<string, string>, signal?: AbortSignal): Pro
   return parseCirclesProfiles(await response.json());
 }
 
-/** The avatars whose name matches, groups and organizations first: the ones a registry is anchored on. */
-export async function searchCirclesAvatars(query: string, signal?: AbortSignal): Promise<CirclesAvatar[]> {
-  const trimmed = query.trim();
-  if (trimmed === '') {
-    return [];
-  }
-  const rank: Record<CirclesAvatarKind, number> = { group: 0, organization: 1, human: 2 };
-  return (await search({ name: trimmed }, signal)).sort((a, b) => rank[a.kind] - rank[b.kind]);
-}
-
 /**
  * The lookups already made, by lowercase address. What Circles calls an account is a fact about the
  * account, not about the view asking, so the answer outlives the dialog: a list reopened, a tab
@@ -87,6 +77,21 @@ export async function searchCirclesAvatars(query: string, signal?: AbortSignal):
  * A request that fails leaves the map, so a network blip is not permanent.
  */
 const avatarRequests = new Map<string, Promise<CirclesAvatar | null>>();
+
+/** The avatars whose name matches, groups and organizations first: the ones a registry is anchored on. */
+export async function searchCirclesAvatars(query: string, signal?: AbortSignal): Promise<CirclesAvatar[]> {
+  const trimmed = query.trim();
+  if (trimmed === '') {
+    return [];
+  }
+  const rank: Record<CirclesAvatarKind, number> = { group: 0, organization: 1, human: 2 };
+  const avatars = await search({ name: trimmed }, signal);
+  for (const avatar of avatars) {
+    // What the search returned is what an address lookup would return, so remember it as one.
+    avatarRequests.set(avatar.address.toLowerCase(), Promise.resolve(avatar));
+  }
+  return avatars.sort((a, b) => rank[a.kind] - rank[b.kind]);
+}
 
 /** The avatar at an address, or null where Circles knows none. Asked once per address per page. */
 export function circlesAvatarOf(address: string): Promise<CirclesAvatar | null> {
@@ -168,6 +173,39 @@ export function useCirclesIdentity(address: string | undefined, wanted: boolean)
   }, [address, wanted]);
 
   return identity;
+}
+
+/**
+ * The avatars matching a name, a moment after typing stops.
+ *
+ * Both places that look an avatar up by name - anchoring a registry, and filtering the debate list
+ * by creator - want the same debounce, the same abort when the query moves on, and the same "no
+ * answer reads as no matches". Written twice they drifted on the first day, so they are written
+ * here once. Null means nothing has been asked yet, which a caller may show differently from an
+ * answer of none.
+ */
+export function useCirclesAvatarSearch(query: string, wanted: boolean): CirclesAvatar[] | null {
+  const [found, setFound] = useState<CirclesAvatar[] | null>(null);
+  const asked = query.trim();
+
+  useEffect(() => {
+    if (!wanted || asked === '') {
+      setFound(null);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      searchCirclesAvatars(asked, controller.signal)
+        .then(setFound)
+        .catch(() => setFound([]));
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [asked, wanted]);
+
+  return found;
 }
 
 /**

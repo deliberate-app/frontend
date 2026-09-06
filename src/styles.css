@@ -53,6 +53,15 @@
 }
 
 /* The app column fills the viewport so the footer sits at the bottom even on short pages. */
+/* The page's columns are flex items, and an auto margin on a flex item's cross axis switches off
+   the stretch that would fill the line - so a centred column has to claim the width before
+   `margin: 0 auto` can centre it. Without this each one shrinks to whatever it happens to hold: a
+   filter matching nothing collapsed the browse page, and a loading note sat centred in the
+   viewport instead of starting at the page's own gutter. */
+#root > * {
+  width: 100%;
+}
+
 #root {
   min-height: 100vh;
   display: flex;
@@ -426,10 +435,6 @@ button {
 
 /* ── Debate layout ───────────────────────────────────────────────────── */
 .debate {
-  /* Auto margins on a flex item's cross axis switch off the stretch that would otherwise fill the
-     line, so the column has to claim the width itself: without this it shrinks to whatever it
-     happens to hold, and a filter that matches nothing collapses the page. */
-  width: 100%;
   max-width: 64rem;
   margin: 0 auto;
   padding: 1.5rem 1.5rem 4rem;
@@ -1544,10 +1549,6 @@ button {
 
 /* ── Browse (home) ───────────────────────────────────────────────────── */
 .browse {
-  /* Auto margins on a flex item's cross axis switch off the stretch that would otherwise fill the
-     line, so the column has to claim the width itself: without this it shrinks to whatever it
-     happens to hold, and a filter that matches nothing collapses the page. */
-  width: 100%;
   max-width: 46rem;
   margin: 0 auto;
   padding: 1.5rem;
@@ -1590,6 +1591,8 @@ button {
 .filter-author {
   flex: 1;
   min-width: 12rem;
+  /* The matches hang off this, so it is what they are positioned against. */
+  position: relative;
 }
 
 .filter-author input {
@@ -1602,6 +1605,24 @@ button {
 .author-field {
   position: relative;
   display: flex;
+}
+
+/* The matches for a name, laid over the row rather than in it. Everywhere else this list lives in a
+   dialog with room to grow; here its siblings are the other filters, and they align to the bottom
+   of the line - so a list in the flow would push Search, Status and Sort down the page at the
+   moment the reader is still typing. */
+.filter-author .pick-list {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0.35rem 0 0;
+  padding: 0.35rem;
+  border: 1px solid var(--hairline);
+  border-radius: 0.5rem;
+  background: var(--card);
+  box-shadow: 0 8px 24px rgb(34 48 31 / 12%);
 }
 
 /* A creator settled on: the account as it is drawn everywhere else, in the box the field left. */
@@ -1650,12 +1671,6 @@ button {
 
 .author-mine:hover {
   color: var(--ink);
-}
-
-.author-mine-active {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
 }
 
 .btn-small {

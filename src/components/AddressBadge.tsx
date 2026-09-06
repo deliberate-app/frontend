@@ -45,17 +45,6 @@ export const IdenticonIcon = memo(function IdenticonIcon({ address }: { address:
 });
 
 /**
- * The face of an account, in the one size every list draws it at: the Circles picture where there
- * is one, and the address' own identicon otherwise.
- *
- * The picture is passed in rather than looked up here, so a badge that has already asked for the
- * account's Circles identity does not ask a second time for its face.
- */
-export function AccountIcon({ address, picture }: { address: string; picture?: string }) {
-  return picture ? <img className="identicon" src={picture} alt="" /> : <IdenticonIcon address={address} />;
-}
-
-/**
  * The one way an account renders anywhere in the app: its identicon plus the canonical
  * `0x1234…abcd` truncation, marked **(You)** where that account is the one connected.
  * Presentational - interactive wrappers (the copy chip, the wallet button) compose it.
@@ -86,7 +75,11 @@ export function AddressBadge({
   const named = circles.name !== undefined && label === undefined && !full;
   return (
     <span className="address-badge">
-      <AccountIcon address={address} picture={circles.picture} />
+      {circles.picture ? (
+        <img className="identicon" src={circles.picture} alt="" />
+      ) : (
+        <IdenticonIcon address={address} />
+      )}
       <span className={named ? 'circles-name' : `mono ${full ? 'address-full' : ''}`}>
         {named ? circles.name : (label ?? (full ? address : shortAddress(address)))}
       </span>
