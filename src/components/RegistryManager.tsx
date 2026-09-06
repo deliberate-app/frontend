@@ -75,7 +75,7 @@ const admits = (requireHuman: boolean, who: string) =>
   requireHuman ? `the people ${who} trusts` : `anyone ${who} trusts`;
 
 /** How a Circles registry reads, given what Circles calls its anchor. */
-function circlesRegistryLabel(registry: IdentityRegistryInfo, anchorName?: string): string {
+export function circlesRegistryLabel(registry: IdentityRegistryInfo, anchorName?: string): string {
   const anchor = registry.anchor ?? zeroAddress;
   return anchor === zeroAddress
     ? 'every person on Circles'

@@ -104,7 +104,11 @@ export function ParticipantFields({ gate, onChange }: { gate: GateDraft; onChang
     // A debate already gated by a Circles registry opens on Custom where that tab is not offered:
     // the address is still shown, and still the answer, on the one tab that can hold it.
     if (held?.kind === 'circles' && !circlesOffered) return 'custom';
-    return held ? held.kind : 'custom';
+    if (held) return held.kind;
+    // The network's own Circles registry, before the index has listed it - the debate opens on the
+    // tab that holds it rather than on the one for an address it does not recognise.
+    if (circlesOffered && access?.circlesRegistry?.toLowerCase() === gate.address.toLowerCase()) return 'circles';
+    return 'custom';
   });
   // Which kind of registry the manager was opened for, and null while it is closed.
   const [managing, setManaging] = useState<RegistryKind | null>(null);
@@ -119,11 +123,12 @@ export function ParticipantFields({ gate, onChange }: { gate: GateDraft; onChang
   if (!access) return <p className="composer-hint">{ANYONE_MAY_JOIN}</p>;
 
   const picked = gate.mode === 'registry' ? gate.address : undefined;
-  const pick = ({ registry, name }: RegistryRow) =>
+  // The row is picked by its words, so the summary can say what was picked rather than an address.
+  const pick = ({ registry, name, label }: RegistryRow) =>
     onChange({
       mode: 'registry',
       address: registry.address,
-      label: registry.kind === 'allowlist' ? (name ?? 'your allowlist') : undefined,
+      label: registry.kind === 'allowlist' ? (name ?? 'your allowlist') : label,
     });
 
   return (
@@ -136,11 +141,12 @@ export function ParticipantFields({ gate, onChange }: { gate: GateDraft; onChang
           if (next === 'everyone') onChange({ mode: 'open' });
         }}
         tabs={[
+          // Circles admits by trust between Circles accounts, so it is offered only where the
+          // reader has one - inside the Gnosis App, where it also leads, because there it is the
+          // answer a debate starts with.
+          ...(circlesOffered ? ([{ id: 'circles', label: 'Circles' }] as const) : []),
           { id: 'everyone', label: 'Everyone' },
           { id: 'allowlist', label: 'Allowlists' },
-          // Circles admits by trust between Circles accounts, so it is offered only where the
-          // reader has one - inside the Gnosis App.
-          ...(circlesOffered ? ([{ id: 'circles', label: 'Circles' }] as const) : []),
           { id: 'custom', label: 'Custom' },
         ]}
       />

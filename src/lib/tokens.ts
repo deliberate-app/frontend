@@ -32,9 +32,15 @@ export const CIRCLES_BOUNTY_TOKEN: TokenInfo = {
   decimals: 18,
 };
 
-/** The bounty tokens on offer. The Circles group token is one only inside the Gnosis App. */
+/**
+ * The bounty tokens on offer. The Circles group token is one only inside the Gnosis App, and there
+ * it leads: the reader's account is a Circles account, so it is what a debate pays in unless they
+ * say otherwise. Order is the whole emphasis - a chip that is first and already chosen needs no
+ * mark of its own, and marking an unchosen cell of a segmented control would fight what the fill
+ * means (docs/design.md, principle 8).
+ */
 export const bountyPresets = (hostedAccount: boolean): readonly TokenInfo[] =>
-  hostedAccount ? [...BOUNTY_TOKEN_PRESETS, CIRCLES_BOUNTY_TOKEN] : BOUNTY_TOKEN_PRESETS;
+  hostedAccount ? [CIRCLES_BOUNTY_TOKEN, ...BOUNTY_TOKEN_PRESETS] : BOUNTY_TOKEN_PRESETS;
 
 /**
  * Resolved token identities by lowercased address. Every preset is seeded, the Circles one included

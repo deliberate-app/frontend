@@ -43,7 +43,8 @@ describe('bountyPresets', () => {
     const outside = bountyPresets(false).map((token) => token.symbol);
     const inside = bountyPresets(true).map((token) => token.symbol);
     expect(outside).not.toContain('s-gCRC');
-    expect(inside).toEqual([...outside, 's-gCRC']);
+    // First, not last: in the Gnosis App it is what a debate pays in unless the reader says otherwise.
+    expect(inside).toEqual(['s-gCRC', ...outside]);
   });
 
   // The static wrapper, not the demurraged one: a pool is recorded at funding and divided on claim,
