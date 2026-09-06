@@ -552,7 +552,7 @@ export default function App() {
             {!browsing && debate && <PhaseClock debate={debate} now={now} />}
             {!browsing && poke && (
               <button type="button" className="btn" onClick={runPoke} disabled={poking}>
-                {poking ? 'Tallying…' : 'Tally the debate'}
+                {poking ? 'Tallying…' : 'Tally'}
               </button>
             )}
             <span className="topbar-spacer" />
