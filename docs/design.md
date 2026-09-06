@@ -78,6 +78,14 @@ contouring are exactly right — treat them as the baseline to protect.)
 
 ## Decision log
 
+- **2026-09-06 — one settle action, and it is in the top bar.** A finished debate offered two:
+  "Redeem all shares" beside the Finished label, and "Redeem & claim bounty share" floating in the
+  strip above the thesis card. The second does the first's job and claims fees besides, so the two
+  were one transaction wearing two buttons - and the longer label existed only to say it was not
+  the shorter one. The claim now takes that slot and stands in for redeeming wherever it is open,
+  which leaves it free to be called what it is: **Claim bounty**. The strip keeps the facts it was
+  for, the pool and the closing window. (Principle 5, extending the 2026-07-23 entry below.)
+
 - **2026-09-06 — a wallet is asked for where the action is.** An action that needed a wallet asked
   for one by opening the picker in the header, which a modal covers, so "Connect a wallet to make
   one." meant leaving what you were doing and starting it again. The wallets are offered in place

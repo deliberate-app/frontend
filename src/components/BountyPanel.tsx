@@ -139,19 +139,6 @@ export function BountyPanel({ debate, tx, now }: { debate: Debate; tx: DebateTx 
   const isCreator = tx.account.toLowerCase() === (thesisCreatorOf(debate) ?? '').toLowerCase();
   const remainder = bounty.pool - bounty.claimed;
 
-  const claim = () =>
-    run(async () => {
-      // Settle-and-claim: the account's share positions plus its authored arguments (their
-      // fees), so the excess is complete before the one-shot claim.
-      const positions = await tx.loadPositions();
-      const authored = debate.nodes
-        .filter((node) => node.creator?.toLowerCase() === tx.account.toLowerCase() && node.parentId !== null)
-        .map((node) => node.id);
-      const ids = [...new Set([...positions.map((position) => position.argumentId), ...authored])];
-      // The awaited refresh flips tx.bountyClaimed, which renders the claimed state.
-      await tx.claimBounty(ids);
-    });
-
   return (
     <div className="bounty-panel">
       <span className="action-hint facts">
@@ -167,17 +154,8 @@ export function BountyPanel({ debate, tx, now }: { debate: Debate; tx: DebateTx 
               : 'claims closed'}
         </span>
       </span>
-      {windowOpen && tx.joined && !tx.bountyClaimed && (
-        <button
-          type="button"
-          className="btn btn-solid"
-          disabled={busy}
-          title="One transaction, once - it also redeems your shares and claims your fees."
-          onClick={() => void claim()}
-        >
-          {busy ? 'Claiming…' : 'Redeem & claim bounty share'}
-        </button>
-      )}
+      {/* Claiming is the finished debate's settle action, so it lives in the top bar beside the
+          Finished label with the others. What is left here is what this line is for: the facts. */}
       {tx.bountyClaimed && <span className="action-hint">Your share is claimed.</span>}
       {!windowOpen && isCreator && !bounty.swept && remainder > 0n && (
         <button

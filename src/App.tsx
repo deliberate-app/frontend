@@ -26,7 +26,7 @@ import { tokenInfo } from './lib/tokens';
 import { useNow } from './lib/time';
 import { formatVotes, INITIAL_UNITS } from './lib/votes';
 import type { AccountPosition, Debate, DebateFilter, DebateSummary } from './types';
-import { availablePhasePoke, livePhaseOf, PHASE_LABEL } from './types';
+import { availablePhasePoke, liveChainTime, livePhaseOf, PHASE_LABEL } from './types';
 import { HostedAccount } from './wallet/hostedAccount';
 import { ensureWalletChain, miniappSigner, walletSigner } from './wallet/signer';
 import { useWallet } from './wallet/useWallet';
@@ -401,6 +401,8 @@ export default function App() {
   const [redeemable, setRedeemable] = useState<AccountPosition[] | null>(null);
   const [redeeming, setRedeeming] = useState(false);
   const [redeemError, setRedeemError] = useState<string | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
   useEffect(() => {
     if (!tx || !tx.joined || phase !== 'finished') {
       setRedeemable(null);
@@ -420,6 +422,37 @@ export default function App() {
       cancelled = true;
     };
   }, [tx, phase]);
+  // A bounty claim settles the same positions and claims the account's fees besides, so where one
+  // is open it stands in for redeeming rather than sitting beside it: two buttons for one
+  // transaction is what made the longer of them have to explain itself.
+  const bountyClaimable =
+    tx !== null &&
+    tx.joined &&
+    !tx.bountyClaimed &&
+    phase === 'finished' &&
+    debate?.bounty !== undefined &&
+    debate.bounty.claimEndTime > 0 &&
+    (debate.timing ? liveChainTime(debate.timing, now) : now) <= debate.bounty.claimEndTime;
+
+  const claimBounty = async () => {
+    if (!tx || !debate) return;
+    setClaiming(true);
+    setClaimError(null);
+    try {
+      // The account's share positions plus the arguments it authored, so the excess the claim
+      // divides is complete before the one-shot claim.
+      const positions = await tx.loadPositions();
+      const authored = debate.nodes
+        .filter((node) => node.creator?.toLowerCase() === tx.account.toLowerCase() && node.parentId !== null)
+        .map((node) => node.id);
+      await tx.claimBounty([...new Set([...positions.map((position) => position.argumentId), ...authored])]);
+    } catch (cause) {
+      setClaimError(actionErrorMessage(cause));
+    } finally {
+      setClaiming(false);
+    }
+  };
+
   const redeemAll = async () => {
     if (!tx || !redeemable || redeemable.length === 0) return;
     setRedeeming(true);
@@ -551,7 +584,18 @@ export default function App() {
                 </a>
               )}
               {!browsing && debate && phase && <span className={`phase phase-${phase}`}>{PHASE_LABEL[phase]}</span>}
-              {!browsing && redeemable && redeemable.length > 0 && (
+              {!browsing && bountyClaimable && (
+                <button
+                  type="button"
+                  className="btn"
+                  title="One transaction, once - it also redeems your shares and claims your fees."
+                  onClick={() => void claimBounty()}
+                  disabled={claiming}
+                >
+                  {claiming ? 'Claiming…' : 'Claim bounty'}
+                </button>
+              )}
+              {!browsing && !bountyClaimable && redeemable && redeemable.length > 0 && (
                 <button
                   type="button"
                   className="btn"
@@ -586,6 +630,7 @@ export default function App() {
             {joinError && <p className="load-error">Could not join: {joinError}</p>}
             {pokeError && <p className="load-error">Could not tally the debate: {pokeError}</p>}
             {redeemError && <p className="load-error">Could not redeem: {redeemError}</p>}
+            {claimError && <p className="load-error">Could not claim: {claimError}</p>}
             {error && (
               <p className="load-error">
                 Could not load {browsing ? 'the debates' : 'the debate'}: {error}. Check VITE_DELIBERATE_ADDRESS and
