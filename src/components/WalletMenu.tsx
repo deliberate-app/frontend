@@ -150,6 +150,17 @@ export function WalletMenu({
     );
   }
 
+  // In the Circles app the account is the host's Safe. There is nothing here for the reader to
+  // connect, so this control only ever reports: the address once the host names it, and that it is
+  // waiting until then. Offering browser wallets would send them to install one that cannot sign.
+  if (wallet.embedded) {
+    return (
+      <div className="wallet">
+        <span className="wallet-button wallet-waiting">Connecting…</span>
+      </div>
+    );
+  }
+
   return (
     <div className="wallet" ref={menuRef}>
       <button type="button" className="wallet-button" onClick={() => setPicking((showing) => !showing)}>

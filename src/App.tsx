@@ -511,8 +511,8 @@ export default function App() {
   // An action that needs a wallet offers one where it stands, so the way in travels as context
   // rather than as a prop through views that only pass it on.
   const connectAccess = useMemo<ConnectAccess>(
-    () => ({ wallets: wallet.wallets, connect: wallet.connect }),
-    [wallet.wallets, wallet.connect],
+    () => ({ wallets: wallet.wallets, connect: wallet.connect, embedded: wallet.embedded }),
+    [wallet.wallets, wallet.connect, wallet.embedded],
   );
 
   const browsing = debateId === null;

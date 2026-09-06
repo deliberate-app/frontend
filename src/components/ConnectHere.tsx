@@ -6,6 +6,8 @@ import type { AnnouncedWallet } from '../wallet/useWallet';
 export interface ConnectAccess {
   wallets: AnnouncedWallet[];
   connect: (wallet: AnnouncedWallet) => Promise<void>;
+  /** Whether the page is framed, where the account is the host's and not the reader's to pick. */
+  embedded: boolean;
 }
 
 /** Null where nothing is signed, as in sample mode. */
@@ -13,6 +15,13 @@ export const Connect = createContext<ConnectAccess | null>(null);
 
 /** One sentence for one situation, wherever the reader meets it. */
 export const NO_WALLET_FOUND = 'No wallet extensions found. Install MetaMask or another browser wallet, then reload.';
+
+/**
+ * The same situation inside the Circles app, where the answer is different. The account is the
+ * host's Safe, so a browser wallet is not the way in and naming one would send the reader to
+ * install something that cannot help.
+ */
+export const NO_HOSTED_ACCOUNT = 'The Circles app has not connected an account yet.';
 
 /**
  * Connecting where the action is.
@@ -31,6 +40,7 @@ export function ConnectHere({ why }: { why?: string }) {
   const [error, setError] = useState<string | null>(null);
 
   if (!access) return null;
+  if (access.embedded) return <p className="composer-hint">{NO_HOSTED_ACCOUNT}</p>;
   if (access.wallets.length === 0) return <p className="composer-hint">{NO_WALLET_FOUND}</p>;
 
   const choose = async (wallet: AnnouncedWallet) => {

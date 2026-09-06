@@ -29,6 +29,12 @@ interface EIP6963AnnounceEvent extends Event {
 
 export interface WalletState {
   /**
+   * Whether the page is running inside a frame, which is all the mini-app SDK can tell us. In the
+   * Circles app the account is the host's Safe, so there is nothing here for the reader to connect
+   * and no browser wallet to offer them.
+   */
+  embedded: boolean;
+  /**
    * Whether a Circles mini-app host holds the account: it has named one, so it signs and pays. True
    * only once that has happened, never merely because the page is in a frame.
    */
@@ -137,6 +143,7 @@ export function useWallet(): WalletState {
 
   const hosted = hostedAccount !== null;
   return {
+    embedded: EMBEDDED,
     hosted,
     // A host that has named an account has answered the question the picker asks.
     wallets: hosted ? [] : wallets,

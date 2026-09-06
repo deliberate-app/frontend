@@ -256,6 +256,14 @@ button {
   background: var(--canvas);
 }
 
+/* The host has not named its Safe yet. It reports rather than invites, so it is quiet and does
+   not answer a click. */
+.wallet-waiting {
+  border-color: var(--hairline);
+  color: var(--bark);
+  cursor: default;
+}
+
 .wallet-menu {
   position: absolute;
   right: 0;
