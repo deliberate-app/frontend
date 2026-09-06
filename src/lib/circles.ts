@@ -20,6 +20,8 @@ export interface CirclesAvatar {
   name: string;
   kind: CirclesAvatarKind;
   description?: string;
+  /** Where the avatar's full profile lives, which is where its picture is. */
+  cid?: string;
 }
 
 /** One row of the service's answer, as far as this app reads it. */
@@ -28,6 +30,7 @@ interface ProfileRow {
   name?: unknown;
   avatarType?: unknown;
   description?: unknown;
+  CID?: unknown;
 }
 
 const KINDS: ReadonlySet<string> = new Set<CirclesAvatarKind>(['human', 'group', 'organization']);
@@ -38,7 +41,7 @@ export function parseCirclesProfiles(rows: unknown): CirclesAvatar[] {
     return [];
   }
   return rows.flatMap((row: ProfileRow) => {
-    const { address, name, avatarType, description } = row;
+    const { address, name, avatarType, description, CID } = row;
     if (typeof address !== 'string' || !isAddress(address) || typeof name !== 'string' || name === '') {
       return [];
     }
@@ -51,6 +54,7 @@ export function parseCirclesProfiles(rows: unknown): CirclesAvatar[] {
         name,
         kind: avatarType as CirclesAvatarKind,
         ...(typeof description === 'string' && description !== '' ? { description } : {}),
+        ...(typeof CID === 'string' && CID !== '' ? { cid: CID } : {}),
       },
     ];
   });
@@ -99,6 +103,71 @@ export function circlesAvatarOf(address: string): Promise<CirclesAvatar | null> 
     });
   avatarRequests.set(key, request);
   return request;
+}
+
+/**
+ * An avatar's picture, by the CID its profile lives at.
+ *
+ * The search answer names the profile but does not carry it, so the picture is a second lookup and
+ * one this app makes only where it will be shown. The document holds the small preview as a data
+ * URI, so there is no image request after it and no gateway to depend on.
+ *
+ * Cached and de-duplicated like the avatars themselves: one avatar on twenty rows costs one
+ * request, and a failure leaves the map so a blip is not permanent.
+ */
+const pictureRequests = new Map<string, Promise<string | null>>();
+
+export function circlesPictureOf(cid: string): Promise<string | null> {
+  const pending = pictureRequests.get(cid);
+  if (pending) {
+    return pending;
+  }
+  const request = fetch(`https://rpc.aboutcircles.com/profiles/get?cid=${encodeURIComponent(cid)}`)
+    .then((response) => (response.ok ? response.json() : null))
+    .then((profile: { previewImageUrl?: unknown } | null) =>
+      typeof profile?.previewImageUrl === 'string' && profile.previewImageUrl.startsWith('data:image/')
+        ? profile.previewImageUrl
+        : null,
+    )
+    .catch(() => {
+      pictureRequests.delete(cid);
+      return null;
+    });
+  pictureRequests.set(cid, request);
+  return request;
+}
+
+/** What Circles knows about one account: nothing at all, or a name and perhaps a picture. */
+export interface CirclesIdentity {
+  name?: string;
+  picture?: string;
+}
+
+/**
+ * What Circles knows about one account, for the places that show an account.
+ *
+ * `wanted` is what decides whether to ask at all, so a page outside the Gnosis App makes no
+ * lookups: there the reader has no Circles account and every byline is an address.
+ */
+export function useCirclesIdentity(address: string | undefined, wanted: boolean): CirclesIdentity {
+  const [identity, setIdentity] = useState<CirclesIdentity>({});
+
+  useEffect(() => {
+    if (!wanted || !address) return;
+    let stale = false;
+    void circlesAvatarOf(address).then(async (avatar) => {
+      if (stale || !avatar) return;
+      setIdentity({ name: avatar.name });
+      if (!avatar.cid) return;
+      const picture = await circlesPictureOf(avatar.cid);
+      if (!stale && picture) setIdentity({ name: avatar.name, picture });
+    });
+    return () => {
+      stale = true;
+    };
+  }, [address, wanted]);
+
+  return identity;
 }
 
 /**
