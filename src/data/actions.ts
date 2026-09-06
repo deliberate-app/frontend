@@ -10,18 +10,13 @@ import {
   BaseError,
   ContractFunctionRevertedError,
   createPublicClient,
-  createWalletClient,
-  custom,
   erc20Abi,
   http,
   parseEventLogs,
   zeroAddress,
   type Abi,
   type Address,
-  type Chain,
-  type EIP1193Provider,
   type TransactionReceipt,
-  type WalletClient,
 } from 'viem';
 
 import abi from '../abi/Deliberate.abi.json';
@@ -31,6 +26,7 @@ import { deploymentChain } from '../lib/chains';
 import type { DebateSchedule } from '../lib/debateTiming';
 import { contentError } from '../lib/content';
 import type { Side } from '../types';
+import type { Signer } from '../wallet/signer';
 import type { ContractConfig } from './config';
 import { waitForIndexerBlock } from './source';
 
@@ -150,39 +146,8 @@ export function gasLimitFor(estimate: bigint): bigint {
   return (estimate * 150n) / 100n;
 }
 
-/** True when the wallet rejected a switch because it does not know the chain (EIP-3085 code 4902). */
-function isUnknownChainError(cause: unknown): boolean {
-  if ((cause as { code?: number } | null)?.code === 4902) {
-    return true;
-  }
-  return cause instanceof BaseError && cause.walk((error) => (error as { code?: number }).code === 4902) !== null;
-}
-
-/**
- * Switches the wallet to the deployment's chain before transacting - wallets routinely sit on
- * another network, which would otherwise fail every write with a chain mismatch. A chain the
- * wallet does not know is added first (EIP-3085), then switched to.
- */
-export async function ensureWalletChain(walletClient: WalletClient, chain: Chain): Promise<void> {
-  if ((await walletClient.getChainId()) === chain.id) {
-    return;
-  }
-  try {
-    await walletClient.switchChain({ id: chain.id });
-  } catch (cause) {
-    if (!isUnknownChainError(cause)) {
-      throw cause;
-    }
-    await walletClient.addChain({ chain });
-    await walletClient.switchChain({ id: chain.id });
-  }
-}
-
-export async function connectDebateActions(
-  config: ContractConfig,
-  provider: EIP1193Provider,
-  account: Address,
-): Promise<DebateActions> {
+export async function connectDebateActions(config: ContractConfig, signer: Signer): Promise<DebateActions> {
+  const account = signer.account;
   // Fast polling, low cache: viem serves block numbers from a per-client cache
   // (default 4 s), which would delay every receipt wait by a full cache window
   // once the cache is warm - sequential transactions crawl on instant-mining chains.
@@ -193,7 +158,6 @@ export async function connectDebateActions(
   });
   const chainId = await publicClient.getChainId();
   const chain = deploymentChain(chainId, config.rpcUrl);
-  const walletClient = createWalletClient({ account, chain, transport: custom(provider) });
 
   // Simulates (surfacing reverts before any signature), sends, and waits for the
   // receipt. Returns the receipt so callers can read the *mined* effects from the
@@ -205,14 +169,14 @@ export async function connectDebateActions(
     args: unknown[],
     opts: { settle?: boolean } = {},
   ): Promise<TransactionReceipt> => {
-    await ensureWalletChain(walletClient, chain);
-    const call = { account, address: target.address, abi: target.abi, functionName, args };
-    const [{ request }, estimate] = await Promise.all([
-      publicClient.simulateContract(call),
-      publicClient.estimateContractGas(call),
+    await signer.ensureChain(chain);
+    const call = { address: target.address, abi: target.abi, functionName, args };
+    // Simulating surfaces a revert before anything is signed; the estimate only sets the limit.
+    const [, estimate] = await Promise.all([
+      publicClient.simulateContract({ ...call, account }),
+      publicClient.estimateContractGas({ ...call, account }),
     ]);
-    // The limit travels with the request, so the wallet signs it as sent rather than estimating anew.
-    const hash = await walletClient.writeContract({ ...request, gas: gasLimitFor(estimate) });
+    const hash = await signer.send(call, gasLimitFor(estimate));
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     // A mined transaction can still revert when another one beat it in a race.
     if (receipt.status === 'reverted') {
@@ -259,7 +223,7 @@ export async function connectDebateActions(
 
   /** Approves the contract for a token amount when the current allowance does not cover it. */
   const approveIfNeeded = async (token: Address, amount: bigint): Promise<void> => {
-    await ensureWalletChain(walletClient, chain);
+    await signer.ensureChain(chain);
     const allowance = await publicClient.readContract({
       address: token,
       abi: erc20Abi,
@@ -269,14 +233,9 @@ export async function connectDebateActions(
     if (allowance >= amount) {
       return;
     }
-    const { request } = await publicClient.simulateContract({
-      account,
-      address: token,
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [config.address, amount],
-    });
-    const hash = await walletClient.writeContract(request);
+    const approval = { address: token, abi: erc20Abi as Abi, functionName: 'approve', args: [config.address, amount] };
+    await publicClient.simulateContract({ ...approval, account });
+    const hash = await signer.send(approval);
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     if (receipt.status === 'reverted') {
       throw new Error('The token approval was mined but reverted.');
