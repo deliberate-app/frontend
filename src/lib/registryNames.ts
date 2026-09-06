@@ -19,6 +19,13 @@ export function nextNames(current: RegistryNames, address: string, name: string)
   return { ...current, [key]: trimmed };
 }
 
+/**
+ * The name held for one registry, or undefined where it has none. The keys are lowercase, and this
+ * is the only place that knows it - a caller that indexed the map itself would silently find no
+ * name for a checksummed address.
+ */
+export const nameOf = (names: RegistryNames, address: string): string | undefined => names[address.toLowerCase()];
+
 /** The names in stored text, ignoring anything that is not a `{address: name}` object. */
 export function parseNames(stored: string | null): RegistryNames {
   if (stored === null) return {};
@@ -57,6 +64,9 @@ function load(): RegistryNames {
   return names;
 }
 
+/** The name held for one registry, read outside a render - for seeding a field with it. */
+export const registryName = (address: string): string | undefined => nameOf(load(), address);
+
 /** Names a registry, or clears its name when given a blank one. */
 export function setRegistryName(address: string, name: string): void {
   names = nextNames(load(), address, name);
@@ -68,14 +78,19 @@ export function setRegistryName(address: string, name: string): void {
   listeners.forEach((listener) => listener());
 }
 
+// Both arguments are stable, because a new function or a new object on either would make React
+// tear the subscription down and re-establish it after every commit - and the app re-renders once
+// a second, from the clock.
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
+const NO_NAMES: RegistryNames = {};
+
 /** Every name this browser holds, re-read whenever one changes. */
 export function useRegistryNames(): RegistryNames {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    load,
-    () => ({}),
-  );
+  return useSyncExternalStore(subscribe, load, () => NO_NAMES);
 }

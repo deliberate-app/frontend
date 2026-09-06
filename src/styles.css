@@ -2128,11 +2128,6 @@ button {
   color: var(--ink);
 }
 
-/* The row a reader is looking at, which for an allowlist is not the same as the one they chose. */
-.pick-row-current {
-  border-color: var(--bark);
-}
-
 .pick-row-kind {
   flex: none;
   min-width: 5.5rem;
@@ -2160,14 +2155,7 @@ button {
   overflow-y: auto;
 }
 
-/* The list a reader is looking at, as against the ink of .pick-row-chosen, which is the one a
-   debate will name. */
-.pick-row-current {
-  border-color: var(--bark);
-}
-
-/* A tab's panel carries the dialog's own rhythm, since it is one grid item holding many. Both
-   panels stay mounted, so a half-typed paste survives a tab flip. */
+/* A tab's panel carries the dialog's own rhythm, since it is one grid item holding many. */
 .tab-panel {
   display: grid;
   gap: 0.9rem;
@@ -2324,12 +2312,6 @@ button {
   color: var(--ink);
 }
 
-/* One account per row, so a list is read down a column the way it was written. */
-.address-rows {
-  display: grid;
-  gap: 0.35rem;
-}
-
 .address-row {
   font-family: var(--font-mono);
   font-size: 0.8rem;
@@ -2423,8 +2405,4 @@ button {
 .member-name {
   font-size: 0.85rem;
   color: var(--ink);
-}
-
-.member-remove {
-  margin-left: auto;
 }

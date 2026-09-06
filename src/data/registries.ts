@@ -20,6 +20,8 @@ export interface RegistryAccess {
   registries: IdentityRegistryInfo[];
   /** The network's current factory. Factories are immutable and superseded, so older ones are marked. */
   factory?: Address;
+  /** The deployment's own Circles registry, which its rows are marked by. */
+  circlesRegistry?: Address;
   /** The accounts on an allowlist, from the index. */
   loadMembers: (registry: Address) => Promise<Address[]>;
   /** Clones a new allowlist for the viewer, and answers with its address. */

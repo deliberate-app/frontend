@@ -463,6 +463,7 @@ export default function App() {
     return {
       registries,
       factory,
+      circlesRegistry: deployment.circlesRegistry,
       loadMembers,
       setMembership,
       ...(actions && factory
@@ -593,7 +594,6 @@ export default function App() {
                 onOpen={openDebate}
                 onCreate={createDebate}
                 resolveToken={resolveToken}
-                circlesRegistry={deployment?.circlesRegistry}
               />
             )
           ) : debate ? (
